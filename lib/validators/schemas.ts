@@ -23,6 +23,7 @@ export const officeSettingsSchema = z.object({
 export type OfficeSettingsInput = z.infer<typeof officeSettingsSchema>;
 
 export const clientSchema = z.object({
+  tipo_pedido: z.union([z.string().min(1), z.literal(''), z.null()]).optional(),
   data_entrada_pedido: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal(''), z.null()]).optional(),
   status_pedido: z.union([z.enum(['deferido', 'indeferido']), z.literal(''), z.null()]).optional(),
   nome_completo: z.string().min(3, 'Nome obrigatório'),

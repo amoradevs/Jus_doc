@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { maskCPF } from '@/lib/validators/cpf';
 import { calcularIdade } from '@/lib/format/age';
+import { labelTipoPedido } from '@/lib/processo';
 
 export default async function ClientePage({ params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
@@ -69,14 +70,18 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
         </div>
       </div>
 
-      {/* Card Pedido BPC */}
+      {/* Card Processo */}
       <div className="bg-white rounded-2xl border border-border p-5 mb-4">
         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
-          Pedido BPC
+          Processo
         </h2>
         <div className="flex flex-wrap gap-x-10 gap-y-3">
           <div className="flex gap-3 text-sm">
-            <span className="text-muted-foreground text-xs pt-0.5 w-28 shrink-0">Data de entrada</span>
+            <span className="text-muted-foreground text-xs pt-0.5 w-32 shrink-0">Tipo de benefício</span>
+            <span className="text-foreground">{labelTipoPedido(client.tipo_pedido)}</span>
+          </div>
+          <div className="flex gap-3 text-sm">
+            <span className="text-muted-foreground text-xs pt-0.5 w-32 shrink-0">Data de entrada</span>
             <span className="text-foreground">
               {client.data_entrada_pedido
                 ? new Date(client.data_entrada_pedido + 'T12:00:00').toLocaleDateString('pt-BR')
@@ -84,7 +89,7 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
             </span>
           </div>
           <div className="flex gap-3 text-sm items-center">
-            <span className="text-muted-foreground text-xs w-28 shrink-0">Situação</span>
+            <span className="text-muted-foreground text-xs w-32 shrink-0">Situação</span>
             <StatusBadge status={client.status_pedido} />
           </div>
         </div>

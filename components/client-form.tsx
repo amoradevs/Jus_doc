@@ -3,6 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { clientSchema, type ClientInput } from '@/lib/validators/schemas';
+import { TIPOS_PEDIDO } from '@/lib/processo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,6 +40,7 @@ export function ClientForm({ mode, clientId, defaultValues }: Props) {
     const payload = {
       ...data,
       cpf: unmaskCPF(data.cpf),
+      tipo_pedido: data.tipo_pedido || null,
       data_entrada_pedido: data.data_entrada_pedido || null,
       status_pedido: data.status_pedido || null,
     };
@@ -82,9 +84,24 @@ export function ClientForm({ mode, clientId, defaultValues }: Props) {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
 
       <section>
-        <h2 className="font-semibold text-foreground mb-4">Pedido BPC</h2>
+        <h2 className="font-semibold text-foreground mb-4">Processo</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {field('data_entrada_pedido', 'Data de entrada do pedido', 'date')}
+          <div className="sm:col-span-2 space-y-1">
+            <Label htmlFor="tipo_pedido">Tipo de benefício / processo</Label>
+            <Select
+              onValueChange={(v) => setValue('tipo_pedido', v)}
+              defaultValue={defaultValues?.tipo_pedido ?? ''}
+            >
+              <SelectTrigger id="tipo_pedido"><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">— Não informado</SelectItem>
+                {TIPOS_PEDIDO.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {field('data_entrada_pedido', 'Data de entrada / protocolo', 'date')}
           <div className="space-y-1">
             <Label htmlFor="status_pedido">Situação</Label>
             <Select

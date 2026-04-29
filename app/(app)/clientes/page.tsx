@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { maskCPF, unmaskCPF } from '@/lib/validators/cpf';
 import { ClientFilters } from '@/components/client-filters';
+import { labelTipoPedido } from '@/lib/processo';
 import { Suspense } from 'react';
 
 type Props = {
@@ -23,6 +24,7 @@ type Client = {
   criado_em: string;
   endereco_cidade: string;
   endereco_uf: string;
+  tipo_pedido: string | null;
   status_pedido: string | null;
   data_entrada_pedido: string | null;
 };
@@ -144,7 +146,12 @@ export default async function ClientesPage({ searchParams }: Props) {
             <tbody className="divide-y divide-border">
               {lista.map((c) => (
                 <tr key={c.id} className="hover:bg-secondary/20 transition-colors">
-                  <td className="px-5 py-3.5 font-medium text-foreground">{c.nome_completo}</td>
+                  <td className="px-5 py-3.5">
+                    <p className="font-medium text-foreground">{c.nome_completo}</p>
+                    {c.tipo_pedido && (
+                      <p className="text-xs text-muted-foreground mt-0.5">{labelTipoPedido(c.tipo_pedido)}</p>
+                    )}
+                  </td>
                   <td className="px-5 py-3.5 text-muted-foreground font-mono text-xs">{maskCPF(c.cpf)}</td>
                   <td className="px-5 py-3.5 text-muted-foreground">
                     {c.endereco_cidade} / {c.endereco_uf}
