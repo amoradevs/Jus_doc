@@ -89,12 +89,12 @@ export function ClientForm({ mode, clientId, defaultValues }: Props) {
           <div className="sm:col-span-2 space-y-1">
             <Label htmlFor="tipo_pedido">Tipo de benefício / processo</Label>
             <Select
-              onValueChange={(v) => setValue('tipo_pedido', v)}
-              defaultValue={defaultValues?.tipo_pedido ?? ''}
+              onValueChange={(v) => setValue('tipo_pedido', v === 'none' ? '' : v)}
+              defaultValue={defaultValues?.tipo_pedido || 'none'}
             >
               <SelectTrigger id="tipo_pedido"><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">— Não informado</SelectItem>
+                <SelectItem value="none">— Não informado</SelectItem>
                 {TIPOS_PEDIDO.map((t) => (
                   <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
                 ))}
@@ -105,12 +105,12 @@ export function ClientForm({ mode, clientId, defaultValues }: Props) {
           <div className="space-y-1">
             <Label htmlFor="status_pedido">Situação</Label>
             <Select
-              onValueChange={(v) => setValue('status_pedido', v as 'deferido' | 'indeferido' | '')}
-              defaultValue={defaultValues?.status_pedido ?? ''}
+              onValueChange={(v) => setValue('status_pedido', v === 'none' ? '' : v as 'deferido' | 'indeferido')}
+              defaultValue={defaultValues?.status_pedido || 'none'}
             >
               <SelectTrigger id="status_pedido"><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Em andamento (sem resposta)</SelectItem>
+                <SelectItem value="none">Em andamento (sem resposta)</SelectItem>
                 <SelectItem value="deferido">Deferido</SelectItem>
                 <SelectItem value="indeferido">Indeferido</SelectItem>
               </SelectContent>
