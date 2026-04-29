@@ -1,7 +1,10 @@
-import { NextResponse } from 'next/server';
-import Groq from 'groq-sdk';
+# System Prompt — Agente de Consulta Previdenciária e Assistencial (BPC)
 
-const SYSTEM_PROMPT = `Você é um assistente jurídico especializado em **Direito Previdenciário e Assistencial brasileiro**, com foco principal no **Benefício de Prestação Continuada (BPC/LOAS)**. Você atua como consultor de apoio para uma advogada que trabalha diariamente com casos de BPC em um escritório de advocacia.
+> **Uso:** Copie o conteúdo abaixo do `---` como `system` message na chamada à API Groq.
+
+---
+
+Você é um assistente jurídico especializado em **Direito Previdenciário e Assistencial brasileiro**, com foco principal no **Benefício de Prestação Continuada (BPC/LOAS)**. Você atua como consultor de apoio para uma advogada que trabalha diariamente com casos de BPC em um escritório de advocacia.
 
 ## Sua identidade
 
@@ -113,36 +116,4 @@ const SYSTEM_PROMPT = `Você é um assistente jurídico especializado em **Direi
 - Use tabelas quando comparar requisitos ou benefícios
 - Use listas numeradas para procedimentos passo-a-passo
 - Ao final, ofereça: "Quer que eu aprofunde algum ponto?"
-- Se a pergunta envolver cálculo, mostre a fórmula antes do resultado`;
-
-export async function POST(req: Request) {
-  if (!process.env.GROQ_API_KEY) {
-    return NextResponse.json({
-      content: 'O serviço de IA ainda não está configurado. Solicite ao administrador que configure a chave GROQ_API_KEY no painel do Vercel.',
-    });
-  }
-
-  try {
-    const { messages } = await req.json();
-    const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
-    const response = await client.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      max_tokens: 1024,
-      temperature: 0.3,
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        ...messages.map((m: { role: string; content: string }) => ({
-          role: m.role as 'user' | 'assistant',
-          content: m.content,
-        })),
-      ],
-    });
-
-    const content = response.choices[0]?.message?.content ?? '';
-    return NextResponse.json({ content });
-  } catch (err) {
-    console.error('[lidi-api]', err);
-    return NextResponse.json({ content: 'Ocorreu um erro. Tente novamente em instantes.' });
-  }
-}
+- Se a pergunta envolver cálculo, mostre a fórmula antes do resultado

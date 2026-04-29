@@ -24,6 +24,7 @@
     "docxtemplater": "^3.68.6",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
+    "groq-sdk": "^1.1.2",
     "jszip": "^3.10.1",
     "lucide-react": "^1.12.0",
     "next": "16.2.4",
