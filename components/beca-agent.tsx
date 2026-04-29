@@ -13,6 +13,8 @@ export function BecaAgent() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [hovering, setHovering] = useState(false);
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const initialized = useRef(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -54,6 +56,13 @@ export function BecaAgent() {
     }
   }, [input, loading, messages]);
 
+  const copyMessage = useCallback((text: string, idx: number) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedIdx(idx);
+      setTimeout(() => setCopiedIdx(null), 2000);
+    });
+  }, []);
+
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4 pointer-events-none">
 
@@ -92,7 +101,7 @@ export function BecaAgent() {
         {/* Mensagens */}
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
           {messages.map((m, i) => (
-            <div key={i} className={`flex items-end gap-2 ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+            <div key={i} className={`group flex items-end gap-2 ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
               {m.role === 'assistant' && (
                 <div className="relative w-6 h-6 rounded-full overflow-hidden shrink-0 mb-0.5 border border-border">
                   <Image
@@ -113,6 +122,24 @@ export function BecaAgent() {
               >
                 {m.content}
               </div>
+              {m.role === 'assistant' && (
+                <button
+                  onClick={() => copyMessage(m.content, i)}
+                  title="Copiar texto"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mb-0.5 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary"
+                >
+                  {copiedIdx === i ? (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                  ) : (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <rect x="9" y="9" width="13" height="13" rx="2" />
+                      <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                    </svg>
+                  )}
+                </button>
+              )}
             </div>
           ))}
 
@@ -168,15 +195,18 @@ export function BecaAgent() {
       </div>
 
       {/* CTA + botão flutuante */}
-      <div className="flex items-center gap-3 pointer-events-auto">
-
-        {/* CTA pill */}
+      <div
+        className="flex items-center gap-3 pointer-events-auto"
+        onMouseEnter={() => setHovering(true)}
+        onMouseLeave={() => setHovering(false)}
+      >
+        {/* CTA pill — só aparece no hover do avatar quando o chat está fechado */}
         <button
           onClick={() => setOpen(true)}
           className={`bg-card border border-border rounded-full pl-4 pr-3 py-2.5 shadow-lg flex items-center gap-2.5 text-sm font-medium text-foreground hover:bg-secondary transition-all duration-200 whitespace-nowrap ${
-            open
-              ? 'opacity-0 translate-x-3 pointer-events-none'
-              : 'opacity-100 translate-x-0'
+            hovering && !open
+              ? 'opacity-100 translate-x-0'
+              : 'opacity-0 translate-x-3 pointer-events-none'
           }`}
         >
           Fale com a Beca
