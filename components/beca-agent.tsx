@@ -55,12 +55,12 @@ export function BecaAgent() {
   }, [input, loading, messages]);
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4">
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4 pointer-events-none">
 
       {/* Chat panel */}
       <div
-        className={`w-[340px] flex flex-col rounded-2xl border border-border bg-card shadow-2xl shadow-black/15 overflow-hidden transition-all duration-200 origin-bottom-right ${
-          open ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'
+        className={`w-[340px] flex flex-col rounded-2xl border border-border bg-card shadow-2xl shadow-black/15 overflow-hidden transition-all duration-200 origin-bottom-right pointer-events-auto ${
+          open ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
         }`}
         style={{ height: '460px' }}
       >
@@ -168,7 +168,7 @@ export function BecaAgent() {
       </div>
 
       {/* CTA + botão flutuante */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 pointer-events-auto">
 
         {/* CTA pill */}
         <button
