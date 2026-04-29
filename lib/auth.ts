@@ -1,6 +1,6 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import { db } from '@/lib/db';
+import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 
@@ -18,7 +18,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) return null;
 
-        const { data: rows, error } = await db
+        const supabase = createClient(
+          process.env.SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_KEY!
+        );
+
+        const { data: rows, error } = await supabase
           .from('users')
           .select('*')
           .eq('email', parsed.data.email)
