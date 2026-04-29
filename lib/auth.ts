@@ -18,10 +18,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) return null;
 
-        const supabase = createClient(
-          process.env.SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_KEY!
-        );
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+        console.log('[auth] SUPABASE_URL defined:', !!supabaseUrl);
+        console.log('[auth] SUPABASE_SERVICE_KEY defined:', !!supabaseKey);
+
+        if (!supabaseUrl || !supabaseKey) {
+          console.error('[auth] Missing Supabase env vars');
+          return null;
+        }
+
+        const supabase = createClient(supabaseUrl, supabaseKey);
 
         const { data: rows, error } = await supabase
           .from('users')
@@ -29,10 +36,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           .eq('email', parsed.data.email)
           .limit(1);
 
+        console.log('[auth] query rows:', rows?.length, 'error:', error?.message);
+
         if (error || !rows || rows.length === 0) return null;
         const user = rows[0];
 
         const ok = await bcrypt.compare(parsed.data.password, user.senha_hash);
+        console.log('[auth] bcrypt ok:', ok);
         if (!ok) return null;
 
         return {
