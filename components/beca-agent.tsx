@@ -6,7 +6,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 type Message = { role: 'user' | 'assistant'; content: string };
 
 const GREETING =
-  'Olá, Dra. Lidiane! Sou o Consultor JusDoc, especializado em BPC/LOAS e Direito Previdenciário. Pode me perguntar sobre requisitos, jurisprudência, prazos ou procedimentos. Como posso ajudar?';
+  'Olá, Dra. Lidiane! Sou a consultora jurídica Beca, especializada em BPC/LOAS e Direito Previdenciário. Pode me perguntar sobre requisitos, jurisprudência, prazos ou procedimentos. Como posso ajudar?';
 
 export function BecaAgent() {
   const [open, setOpen] = useState(false);
