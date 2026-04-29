@@ -41,9 +41,9 @@ export default function ResultadoPage() {
 
   if (status === 'loading') {
     return (
-      <div className="flex flex-col items-center justify-center py-20 gap-4">
-        <div className="w-8 h-8 border-2 border-slate-300 border-t-slate-800 rounded-full animate-spin" />
-        <p className="text-slate-500 text-sm">Gerando documentos, aguarde…</p>
+      <div className="flex flex-col items-center justify-center py-24 gap-4">
+        <div className="w-9 h-9 border-2 border-muted border-t-primary rounded-full animate-spin" />
+        <p className="text-muted-foreground text-sm">Gerando documentos, aguarde…</p>
       </div>
     );
   }
@@ -52,30 +52,47 @@ export default function ResultadoPage() {
     return (
       <div className="max-w-lg">
         <h1 className="text-xl font-bold text-destructive mb-2">Erro na geração</h1>
-        <p className="text-slate-600 text-sm mb-4">{errorMsg}</p>
-        <Button variant="outline" asChild><Link href={`/clientes/${id}/gerar`}>Tentar novamente</Link></Button>
+        <p className="text-muted-foreground text-sm mb-5">{errorMsg}</p>
+        <Button variant="outline" asChild className="rounded-lg">
+          <Link href={`/clientes/${id}/gerar`}>Tentar novamente</Link>
+        </Button>
       </div>
     );
   }
 
   return (
     <div className="max-w-lg">
-      <h1 className="text-2xl font-bold text-slate-800 mb-1">Documentos gerados</h1>
-      <p className="text-slate-500 text-sm mb-6">{docs.length} documento(s) prontos para download.</p>
+      <h1 className="text-2xl font-bold text-foreground mb-1">Documentos gerados</h1>
+      <p className="text-muted-foreground text-sm mb-6">
+        {docs.length} documento(s) prontos para download.
+      </p>
 
-      <Button asChild className="mb-6 w-full sm:w-auto">
+      <Button asChild className="mb-6 w-full sm:w-auto rounded-xl">
         <a href={`/api/download/${packageId}`} download>Baixar todos em ZIP</a>
       </Button>
 
-      <div className="space-y-2 mb-8">
-        {docs.map((doc) => (
-          <div key={doc.codigo} className="flex items-center justify-between bg-white border rounded-lg px-4 py-3">
-            <span className="text-sm text-slate-700 truncate mr-3">{doc.nome_arquivo}</span>
+      <div className="bg-white rounded-2xl border border-border overflow-hidden mb-8">
+        {docs.map((doc, i) => (
+          <div
+            key={doc.codigo}
+            className={`flex items-center px-5 py-3.5${i !== 0 ? ' border-t border-border' : ''}`}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="none"
+              className="text-primary mr-3 shrink-0"
+            >
+              <rect x="2.5" y="1.5" width="11" height="13" rx="1.5" stroke="currentColor" strokeWidth="1.2"/>
+              <path d="M5 6h6M5 8.5h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+            </svg>
+            <span className="text-sm text-foreground truncate">{doc.nome_arquivo}</span>
           </div>
         ))}
       </div>
 
-      <Link href={`/clientes/${id}`} className="text-sm text-slate-500 hover:underline">
+      <Link href={`/clientes/${id}`} className="text-sm text-primary hover:underline font-medium">
         ← Voltar ao cliente
       </Link>
     </div>

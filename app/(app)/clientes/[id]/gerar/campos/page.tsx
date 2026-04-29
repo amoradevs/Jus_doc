@@ -45,8 +45,8 @@ export default async function CamposPage({ params, searchParams }: Props) {
 
   return (
     <div className="max-w-xl">
-      <h1 className="text-2xl font-bold text-slate-800 mb-1">Informações complementares</h1>
-      <p className="text-slate-500 text-sm mb-6">
+      <h1 className="text-2xl font-bold text-foreground mb-1">Informações complementares</h1>
+      <p className="text-muted-foreground text-sm mb-6">
         Os documentos selecionados precisam dos dados abaixo para serem preenchidos.
       </p>
       <ContextualFieldsForm clientId={id} missingGroups={missing} codigos={codigos} />

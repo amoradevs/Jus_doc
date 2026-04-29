@@ -14,7 +14,7 @@ export default async function ConfiguracoesPage() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-2xl font-bold text-slate-800 mb-6">Configurações do escritório</h1>
+      <h1 className="text-2xl font-bold text-foreground mb-6">Configurações do escritório</h1>
       <OfficeSettingsForm defaultValues={settings ? { ...settings, endereco_complemento: settings.endereco_complemento ?? undefined } : undefined} />
     </div>
   );

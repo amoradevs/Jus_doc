@@ -21,7 +21,7 @@ export default async function EditarClientePage({ params }: { params: Promise<{ 
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-2xl font-bold text-slate-800 mb-6">Editar cliente</h1>
+      <h1 className="text-2xl font-bold text-foreground mb-6">Editar cliente</h1>
       <ClientForm mode="edit" clientId={id} defaultValues={{
         ...client,
         estado_civil: client.estado_civil as ClientInput['estado_civil'],
