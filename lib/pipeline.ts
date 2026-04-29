@@ -3,14 +3,14 @@
  */
 
 export const ETAPAS_PIPELINE = [
-  { value: 'triagem',          label: 'Triagem',          color: 'slate',   icon: '📋' },
-  { value: 'consulta',         label: 'Consulta',         color: 'violet',  icon: '🗣️' },
-  { value: 'documentos',       label: 'Documentos',       color: 'amber',   icon: '📄' },
-  { value: 'aguardando_inss',  label: 'Aguardando INSS',  color: 'blue',    icon: '🏛️' },
-  { value: 'pericia',          label: 'Perícia',          color: 'orange',   icon: '🩺' },
-  { value: 'judicial',         label: 'Judicial',         color: 'rose',    icon: '⚖️' },
-  { value: 'concedido',        label: 'Concedido',        color: 'emerald', icon: '✅' },
-  { value: 'encerrado',        label: 'Encerrado',        color: 'gray',    icon: '📁' },
+  { value: 'triagem',          label: 'Triagem',          color: 'slate',   icon: 'triagem' },
+  { value: 'consulta',         label: 'Consulta',         color: 'violet',  icon: 'consulta' },
+  { value: 'documentos',       label: 'Documentos',       color: 'amber',   icon: 'documentos' },
+  { value: 'aguardando_inss',  label: 'Aguardando INSS',  color: 'blue',    icon: 'aguardando_inss' },
+  { value: 'pericia',          label: 'Perícia',          color: 'orange',  icon: 'pericia' },
+  { value: 'judicial',         label: 'Judicial',         color: 'rose',    icon: 'judicial' },
+  { value: 'concedido',        label: 'Concedido',        color: 'emerald', icon: 'concedido' },
+  { value: 'encerrado',        label: 'Encerrado',        color: 'gray',    icon: 'encerrado' },
 ] as const;
 
 export type EtapaPipeline = (typeof ETAPAS_PIPELINE)[number]['value'];
