@@ -17,7 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="bg-white/96 dark:bg-card/95 backdrop-blur-md border-b border-border/50 sticky top-0 z-40 shadow-[0_1px_12px_rgba(43,29,42,0.07)]">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-[72px] sm:h-[100px] flex items-center gap-3 sm:gap-5">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-[84px] sm:h-[124px] flex items-center gap-3 sm:gap-5">
 
           {/* Logo — light / dark */}
           <Link href="/" className="shrink-0 flex items-center">
@@ -26,7 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               alt="Lidiane Abreu Advogada"
               width={500}
               height={500}
-              className="h-[56px] sm:h-[88px] w-auto dark:hidden"
+              className="h-[68px] sm:h-[110px] w-auto dark:hidden"
               priority
             />
             <Image
@@ -34,7 +34,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               alt="Lidiane Abreu Advogada"
               width={500}
               height={500}
-              className="h-[56px] sm:h-[88px] w-auto hidden dark:block"
+              className="h-[68px] sm:h-[110px] w-auto hidden dark:block"
               priority
             />
           </Link>
