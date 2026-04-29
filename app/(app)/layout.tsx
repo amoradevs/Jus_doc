@@ -30,6 +30,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               Clientes
             </Link>
             <Link
+              href="/contagem-prazo"
+              className="px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors font-medium"
+            >
+              Contagem de Prazo
+            </Link>
+            <Link
               href="/configuracoes"
               className="px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors font-medium"
             >
