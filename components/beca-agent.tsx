@@ -7,7 +7,7 @@ type Message = { role: 'user' | 'assistant'; content: string };
 
 const GREETING = 'Olá, Dra. Lidiane! Sou o Consultor JusDoc, especializado em BPC/LOAS e Direito Previdenciário. Pode me perguntar sobre requisitos, jurisprudência, prazos ou procedimentos. Como posso ajudar?';
 
-export function LidiAgent() {
+export function BecaAgent() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -64,15 +64,15 @@ export function LidiAgent() {
           <div className="relative w-9 h-9 rounded-full overflow-hidden border-2 border-white/20 shrink-0">
             <Image
               src="/Figurinha_Lidi.png"
-              alt="Lidi"
+              alt="Beca"
               fill
               className="object-cover"
               style={{ objectPosition: '50% 8%' }}
             />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-white text-sm font-semibold leading-none">Lidi</p>
-            <p className="text-white/50 text-xs mt-0.5">Assistente da Dra. Lidiane</p>
+            <p className="text-white text-sm font-semibold leading-none">Beca</p>
+            <p className="text-white/50 text-xs mt-0.5">Consultora Jurídica — BPC/LOAS</p>
           </div>
           <button
             onClick={() => setOpen(false)}
@@ -140,7 +140,7 @@ export function LidiAgent() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && send()}
-              placeholder="Escreva sua dúvida…"
+              placeholder="Escreva sua dúvida jurídica…"
               className="flex-1 text-xs bg-transparent focus:outline-none placeholder:text-muted-foreground/70 text-foreground"
             />
             <button
@@ -159,17 +159,17 @@ export function LidiAgent() {
       {/* Floating button */}
       <button
         onClick={() => setOpen((o) => !o)}
-        aria-label="Abrir assistente Lidi"
-        className={`fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full overflow-hidden border-[3px] shadow-xl shadow-black/15 transition-all duration-200 hover:scale-105 ${
+        aria-label="Abrir assistente Beca"
+        className={`fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full overflow-hidden border-[3px] shadow-xl shadow-black/15 transition-all duration-200 hover:scale-[1.28] ${
           open
-            ? 'border-primary ring-2 ring-primary/30'
-            : 'border-white ring-2 ring-primary/15 hover:ring-primary/30'
+            ? 'border-primary ring-2 ring-primary/30 scale-[1.08]'
+            : 'border-white ring-2 ring-primary/15 hover:ring-primary/35'
         }`}
       >
         <div className="relative w-full h-full">
           <Image
             src="/Figurinha_Lidi.png"
-            alt="Lidi"
+            alt="Beca"
             fill
             className="object-cover"
             style={{ objectPosition: '50% 8%' }}

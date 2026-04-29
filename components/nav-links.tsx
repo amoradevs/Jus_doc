@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation';
 const links = [
   { href: '/clientes', label: 'Clientes' },
   { href: '/contagem-prazo', label: 'Contagem de Prazo' },
-  { href: '/configuracoes', label: 'Configurações' },
 ];
 
 export function NavLinks() {
