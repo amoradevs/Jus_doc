@@ -1,54 +1,62 @@
 import { getCurrentUser } from '@/lib/auth-helpers';
 import { signOut } from '@/lib/auth';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 import { Toaster } from '@/components/ui/sonner';
+import { NavLinks } from '@/components/nav-links';
+import { LidiAgent } from '@/components/lidi-agent';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
-  const firstName = user.name?.split(' ')[0] ?? 'Usuária';
+  const nameParts = user.name?.split(' ') ?? [];
+  const firstName = nameParts[0] ?? 'Usuária';
+  const initials = nameParts
+    .filter(Boolean)
+    .map((n) => n[0].toUpperCase())
+    .slice(0, 2)
+    .join('');
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <header className="bg-white border-b border-border sticky top-0 z-50 shadow-[0_1px_3px_rgba(166,102,138,0.06)]">
-        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="2.5" y="1.5" width="11" height="13" rx="1.5" stroke="white" strokeWidth="1.2"/>
-                <path d="M5 6h6M5 8.5h6M5 11h4" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <span className="font-bold text-foreground text-[15px] tracking-tight">JusDoc</span>
+      <header className="bg-white/96 backdrop-blur-md border-b border-border/50 sticky top-0 z-40 shadow-[0_1px_12px_rgba(43,29,42,0.06)]">
+        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center gap-6">
+          {/* Logo */}
+          <Link href="/" className="shrink-0 flex items-center">
+            <Image
+              src="/Claro.png"
+              alt="Lidiane Abreu Advogada"
+              width={500}
+              height={500}
+              className="h-[46px] w-auto"
+              priority
+            />
           </Link>
 
-          <nav className="flex items-center gap-1 text-sm">
-            <Link
-              href="/clientes"
-              className="px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors font-medium"
-            >
-              Clientes
-            </Link>
-            <Link
-              href="/contagem-prazo"
-              className="px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors font-medium"
-            >
-              Contagem de Prazo
-            </Link>
-            <Link
-              href="/configuracoes"
-              className="px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors font-medium"
-            >
-              Configurações
-            </Link>
-            <div className="w-px h-4 bg-border mx-2" />
-            <span className="text-muted-foreground text-xs">{firstName}</span>
+          {/* Separador */}
+          <div className="w-px h-5 bg-border/70 shrink-0" />
+
+          {/* Nav links */}
+          <NavLinks />
+
+          {/* Espaçador */}
+          <div className="flex-1" />
+
+          {/* Usuária */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <div className="h-7 w-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+              <span className="text-[10px] font-bold text-primary tracking-wide leading-none">{initials}</span>
+            </div>
+            <span className="text-sm text-muted-foreground hidden sm:block">{firstName}</span>
+            <span className="text-border">·</span>
             <form action={async () => { 'use server'; await signOut({ redirectTo: '/login' }); }}>
-              <Button variant="ghost" size="sm" type="submit" className="text-muted-foreground hover:text-foreground text-xs h-7 ml-1">
+              <button
+                type="submit"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+              >
                 Sair
-              </Button>
+              </button>
             </form>
-          </nav>
+          </div>
         </div>
       </header>
 
@@ -56,6 +64,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         {children}
       </main>
 
+      <LidiAgent />
       <Toaster richColors position="top-right" />
     </div>
   );
