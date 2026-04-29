@@ -1,16 +1,16 @@
 import { getCurrentUser } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
-import { office_settings } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
 import { OfficeSettingsForm } from '@/components/office-settings-form';
 
 export default async function ConfiguracoesPage() {
   const user = await getCurrentUser();
-  const [settings] = await db
-    .select()
-    .from(office_settings)
-    .where(eq(office_settings.tenant_id, user.tenantId))
+  const { data: rows } = await db
+    .from('office_settings')
+    .select('*')
+    .eq('tenant_id', user.tenantId)
     .limit(1);
+
+  const settings = rows?.[0] ?? undefined;
 
   return (
     <div className="max-w-2xl">

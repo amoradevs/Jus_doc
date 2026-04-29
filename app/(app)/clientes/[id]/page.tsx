@@ -1,7 +1,5 @@
 import { getCurrentUser } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
-import { clients, client_contextual_data, generation_packages, generated_documents } from '@/lib/db/schema';
-import { eq, and, isNull, desc } from 'drizzle-orm';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -12,25 +10,23 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
   const user = await getCurrentUser();
   const { id } = await params;
 
-  const [client] = await db
-    .select()
-    .from(clients)
-    .where(and(eq(clients.id, id), eq(clients.tenant_id, user.tenantId), isNull(clients.deletado_em)))
+  const { data: clientRows } = await db
+    .from('clients')
+    .select('*')
+    .eq('id', id)
+    .eq('tenant_id', user.tenantId)
+    .is('deletado_em', null)
     .limit(1);
 
+  const client = clientRows?.[0];
   if (!client) notFound();
 
-  const [contextual] = await db
-    .select()
-    .from(client_contextual_data)
-    .where(eq(client_contextual_data.client_id, id))
-    .limit(1);
-
-  const packages = await db
-    .select()
-    .from(generation_packages)
-    .where(and(eq(generation_packages.client_id, id), eq(generation_packages.tenant_id, user.tenantId)))
-    .orderBy(desc(generation_packages.criado_em))
+  const { data: packages } = await db
+    .from('generation_packages')
+    .select('*')
+    .eq('client_id', id)
+    .eq('tenant_id', user.tenantId)
+    .order('criado_em', { ascending: false })
     .limit(10);
 
   const agora = new Date();
@@ -72,20 +68,19 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
 
       <div>
         <h2 className="font-semibold text-slate-800 mb-4">Histórico de documentos gerados</h2>
-        {packages.length === 0 ? (
+        {!packages || packages.length === 0 ? (
           <p className="text-slate-500 text-sm">Nenhum pacote gerado ainda.</p>
         ) : (
           <div className="space-y-3">
-            {packages.map((pkg) => {
+            {packages.map((pkg: { id: string; criado_em: string; expira_em: string; templates_usados: string[] }) => {
               const expirado = new Date(pkg.expira_em) < agora;
-              const templates = pkg.templates_usados as string[];
               return (
                 <div key={pkg.id} className="bg-white border rounded-lg p-4 flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-slate-700">
                       {new Date(pkg.criado_em).toLocaleDateString('pt-BR')}
                     </p>
-                    <p className="text-xs text-slate-400 mt-1">{templates.length} documento(s)</p>
+                    <p className="text-xs text-slate-400 mt-1">{pkg.templates_usados.length} documento(s)</p>
                   </div>
                   {expirado ? (
                     <span className="text-xs text-slate-400 border rounded px-2 py-1">Expirado</span>

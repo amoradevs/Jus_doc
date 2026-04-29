@@ -1,18 +1,18 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
-import { office_settings } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
 import { officeSettingsSchema } from '@/lib/validators/schemas';
 
 export async function GET() {
   const user = await getCurrentUser();
-  const [settings] = await db
-    .select()
-    .from(office_settings)
-    .where(eq(office_settings.tenant_id, user.tenantId))
+  const { data, error } = await db
+    .from('office_settings')
+    .select('*')
+    .eq('tenant_id', user.tenantId)
     .limit(1);
-  return NextResponse.json(settings ?? null);
+
+  if (error) return NextResponse.json(null);
+  return NextResponse.json(data?.[0] ?? null);
 }
 
 export async function PUT(req: Request) {
@@ -23,16 +23,16 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.issues[0].message } }, { status: 400 });
   }
 
-  const [existing] = await db
-    .select({ id: office_settings.id })
-    .from(office_settings)
-    .where(eq(office_settings.tenant_id, user.tenantId))
+  const { data: existing } = await db
+    .from('office_settings')
+    .select('id')
+    .eq('tenant_id', user.tenantId)
     .limit(1);
 
-  if (existing) {
-    await db.update(office_settings).set(parsed.data).where(eq(office_settings.id, existing.id));
+  if (existing && existing.length > 0) {
+    await db.from('office_settings').update(parsed.data).eq('id', existing[0].id);
   } else {
-    await db.insert(office_settings).values({ ...parsed.data, tenant_id: user.tenantId });
+    await db.from('office_settings').insert({ ...parsed.data, tenant_id: user.tenantId });
   }
 
   return NextResponse.json({ ok: true });

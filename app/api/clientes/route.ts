@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
-import { clients, client_contextual_data } from '@/lib/db/schema';
-import { eq, and, or, ilike, isNull } from 'drizzle-orm';
 import { clientSchema } from '@/lib/validators/schemas';
 import { unmaskCPF } from '@/lib/validators/cpf';
 
@@ -14,22 +12,22 @@ export async function GET(req: Request) {
   const limit = 20;
   const offset = (page - 1) * limit;
 
-  const searchFilter = search
-    ? or(
-        ilike(clients.nome_completo, `%${search}%`),
-        ilike(clients.cpf, `%${unmaskCPF(search)}%`)
-      )
-    : undefined;
+  let query = db
+    .from('clients')
+    .select('*')
+    .eq('tenant_id', user.tenantId)
+    .is('deletado_em', null)
+    .order('atualizado_em', { ascending: false })
+    .range(offset, offset + limit - 1);
 
-  const rows = await db
-    .select()
-    .from(clients)
-    .where(and(eq(clients.tenant_id, user.tenantId), isNull(clients.deletado_em), searchFilter))
-    .orderBy(clients.atualizado_em)
-    .limit(limit)
-    .offset(offset);
+  if (search) {
+    const term = unmaskCPF(search);
+    query = query.or(`nome_completo.ilike.%${search}%,cpf.ilike.%${term}%`);
+  }
 
-  return NextResponse.json(rows);
+  const { data, error } = await query;
+  if (error) return NextResponse.json({ error: { code: 'DB_ERROR' } }, { status: 500 });
+  return NextResponse.json(data ?? []);
 }
 
 export async function POST(req: Request) {
@@ -40,22 +38,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.issues[0].message } }, { status: 400 });
   }
 
-  const [existing] = await db
-    .select({ id: clients.id })
-    .from(clients)
-    .where(and(eq(clients.cpf, parsed.data.cpf), eq(clients.tenant_id, user.tenantId), isNull(clients.deletado_em)))
+  const { data: existing } = await db
+    .from('clients')
+    .select('id')
+    .eq('cpf', parsed.data.cpf)
+    .eq('tenant_id', user.tenantId)
+    .is('deletado_em', null)
     .limit(1);
 
-  if (existing) {
-    return NextResponse.json({ error: { code: 'CPF_ALREADY_EXISTS', existing_client_id: existing.id } }, { status: 409 });
+  if (existing && existing.length > 0) {
+    return NextResponse.json({ error: { code: 'CPF_ALREADY_EXISTS', existing_client_id: existing[0].id } }, { status: 409 });
   }
 
-  const [client] = await db
-    .insert(clients)
-    .values({ ...parsed.data, tenant_id: user.tenantId })
-    .returning({ id: clients.id });
+  const { data: client, error } = await db
+    .from('clients')
+    .insert({ ...parsed.data, tenant_id: user.tenantId })
+    .select('id')
+    .single();
 
-  await db.insert(client_contextual_data).values({ client_id: client.id });
+  if (error || !client) return NextResponse.json({ error: { code: 'DB_ERROR' } }, { status: 500 });
+
+  await db.from('client_contextual_data').insert({ client_id: client.id });
 
   return NextResponse.json({ id: client.id }, { status: 201 });
 }

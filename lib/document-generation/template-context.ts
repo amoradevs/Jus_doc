@@ -1,6 +1,4 @@
 import { db } from '@/lib/db';
-import { clients, client_contextual_data, office_settings } from '@/lib/db/schema';
-import { eq, and, isNull } from 'drizzle-orm';
 import { formatDateExtenso } from '@/lib/format/date';
 
 export type TemplateContext = {
@@ -16,25 +14,31 @@ export type TemplateContext = {
 };
 
 export async function buildTemplateContext(clientId: string, tenantId: string): Promise<TemplateContext> {
-  const [client] = await db
-    .select()
-    .from(clients)
-    .where(and(eq(clients.id, clientId), eq(clients.tenant_id, tenantId), isNull(clients.deletado_em)))
+  const { data: clientRows } = await db
+    .from('clients')
+    .select('*')
+    .eq('id', clientId)
+    .eq('tenant_id', tenantId)
+    .is('deletado_em', null)
     .limit(1);
 
+  const client = clientRows?.[0];
   if (!client) throw new Error('Cliente não encontrado');
 
-  const [contextual] = await db
-    .select()
-    .from(client_contextual_data)
-    .where(eq(client_contextual_data.client_id, clientId))
+  const { data: contextualRows } = await db
+    .from('client_contextual_data')
+    .select('*')
+    .eq('client_id', clientId)
     .limit(1);
 
-  const [settings] = await db
-    .select()
-    .from(office_settings)
-    .where(eq(office_settings.tenant_id, tenantId))
+  const { data: settingsRows } = await db
+    .from('office_settings')
+    .select('*')
+    .eq('tenant_id', tenantId)
     .limit(1);
+
+  const contextual = contextualRows?.[0] ?? null;
+  const settings = settingsRows?.[0] ?? null;
 
   const ctx: TemplateContext = {
     cliente: {
@@ -80,12 +84,11 @@ export async function buildTemplateContext(clientId: string, tenantId: string): 
     },
   };
 
-  const c = contextual;
-  if (c?.representante_legal) ctx.representante = c.representante_legal as Record<string, string>;
-  if (c?.conjuge) ctx.conjuge = c.conjuge as Record<string, string>;
-  if (c?.filho_dependente) ctx.filho_dependente = c.filho_dependente as Record<string, string>;
-  if (c?.imovel) ctx.imovel = c.imovel as Record<string, string>;
-  if (c?.empresa_mei) ctx.empresa_mei = c.empresa_mei as Record<string, string>;
+  if (contextual?.representante_legal) ctx.representante = contextual.representante_legal as Record<string, string>;
+  if (contextual?.conjuge) ctx.conjuge = contextual.conjuge as Record<string, string>;
+  if (contextual?.filho_dependente) ctx.filho_dependente = contextual.filho_dependente as Record<string, string>;
+  if (contextual?.imovel) ctx.imovel = contextual.imovel as Record<string, string>;
+  if (contextual?.empresa_mei) ctx.empresa_mei = contextual.empresa_mei as Record<string, string>;
 
   return ctx;
 }

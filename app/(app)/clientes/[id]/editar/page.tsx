@@ -1,7 +1,5 @@
 import { getCurrentUser } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
-import { clients } from '@/lib/db/schema';
-import { eq, and, isNull } from 'drizzle-orm';
 import { notFound } from 'next/navigation';
 import { ClientForm } from '@/components/client-form';
 import type { ClientInput } from '@/lib/validators/schemas';
@@ -10,12 +8,15 @@ export default async function EditarClientePage({ params }: { params: Promise<{ 
   const user = await getCurrentUser();
   const { id } = await params;
 
-  const [client] = await db
-    .select()
-    .from(clients)
-    .where(and(eq(clients.id, id), eq(clients.tenant_id, user.tenantId), isNull(clients.deletado_em)))
+  const { data: rows } = await db
+    .from('clients')
+    .select('*')
+    .eq('id', id)
+    .eq('tenant_id', user.tenantId)
+    .is('deletado_em', null)
     .limit(1);
 
+  const client = rows?.[0];
   if (!client) notFound();
 
   return (

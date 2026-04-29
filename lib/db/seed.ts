@@ -1,6 +1,5 @@
 import 'dotenv/config';
-import { db } from './index';
-import { tenants, users, office_settings, document_templates } from './schema';
+import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 
 const TEMPLATES = [
@@ -19,28 +18,32 @@ const TEMPLATES = [
   { codigo: '13', nome: 'Declaração de Separação de Fato (INSS)', familia: 'declaracao', formato: 'pdf', caminho_arquivo: 'templates/13_declaracao_separacao_fato_inss.pdf', campos_contextuais_necessarios: ['conjuge'] },
   { codigo: '14', nome: 'Termo de Representação (INSS)',       familia: 'termo',      formato: 'pdf', caminho_arquivo: 'templates/14_termo_representacao_inss.pdf',           campos_contextuais_necessarios: [] },
   { codigo: '15', nome: 'Termo de Responsabilidade (INSS)',    familia: 'termo',      formato: 'pdf', caminho_arquivo: 'templates/15_termo_responsabilidade_inss.pdf',        campos_contextuais_necessarios: [] },
-] as const;
+];
 
 async function main() {
+  const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_KEY!);
   console.log('Iniciando seed...');
 
-  const [tenant] = await db.insert(tenants).values({ nome: 'Escritório Lidiane & Alcione' }).returning();
+  const { data: tenant, error: tenantErr } = await supabase
+    .from('tenants')
+    .insert({ nome: 'Escritório Lidiane & Alcione' })
+    .select('id')
+    .single();
+
+  if (tenantErr || !tenant) throw new Error(`Erro ao criar tenant: ${tenantErr?.message}`);
 
   const senhaHash = await bcrypt.hash('admin123', 12);
-  await db.insert(users).values({
+  await supabase.from('users').insert({
     tenant_id: tenant.id,
     email: 'lidiane@escritorio.com',
     senha_hash: senhaHash,
     nome: 'Lidiane Rocha Abreu',
   });
 
-  await db.insert(office_settings).values({ tenant_id: tenant.id });
+  await supabase.from('office_settings').insert({ tenant_id: tenant.id });
 
-  await db.insert(document_templates).values(
-    TEMPLATES.map((t) => ({
-      ...t,
-      campos_contextuais_necessarios: t.campos_contextuais_necessarios,
-    }))
+  await supabase.from('document_templates').insert(
+    TEMPLATES.map((t) => ({ ...t, campos_contextuais_necessarios: t.campos_contextuais_necessarios }))
   );
 
   console.log('Seed concluído. 1 tenant, 1 usuário, 15 templates inseridos.');

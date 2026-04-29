@@ -1,7 +1,5 @@
 import { getCurrentUser } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
-import { clients, client_contextual_data } from '@/lib/db/schema';
-import { eq, and, isNull } from 'drizzle-orm';
 import { notFound, redirect } from 'next/navigation';
 import { getRequiredContextualGroups } from '@/lib/document-generation/contextual-fields-resolver';
 import { ContextualFieldsForm } from '@/components/contextual-fields-form';
@@ -16,20 +14,24 @@ export default async function CamposPage({ params, searchParams }: Props) {
 
   if (templateCodes.length === 0) redirect(`/clientes/${id}/gerar`);
 
-  const [client] = await db
-    .select()
-    .from(clients)
-    .where(and(eq(clients.id, id), eq(clients.tenant_id, user.tenantId), isNull(clients.deletado_em)))
+  const { data: clientRows } = await db
+    .from('clients')
+    .select('*')
+    .eq('id', id)
+    .eq('tenant_id', user.tenantId)
+    .is('deletado_em', null)
     .limit(1);
 
+  const client = clientRows?.[0];
   if (!client) notFound();
 
-  const [contextual] = await db
-    .select()
-    .from(client_contextual_data)
-    .where(eq(client_contextual_data.client_id, id))
+  const { data: contextualRows } = await db
+    .from('client_contextual_data')
+    .select('*')
+    .eq('client_id', id)
     .limit(1);
 
+  const contextual = contextualRows?.[0] ?? null;
   const required = await getRequiredContextualGroups(templateCodes);
 
   const missing = required.filter((group) => {

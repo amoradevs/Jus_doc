@@ -1,7 +1,5 @@
 import { getCurrentUser } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
-import { clients } from '@/lib/db/schema';
-import { eq, and, isNull, desc } from 'drizzle-orm';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { maskCPF } from '@/lib/validators/cpf';
@@ -9,12 +7,15 @@ import { maskCPF } from '@/lib/validators/cpf';
 export default async function DashboardPage() {
   const user = await getCurrentUser();
 
-  const recentes = await db
-    .select()
-    .from(clients)
-    .where(and(eq(clients.tenant_id, user.tenantId), isNull(clients.deletado_em)))
-    .orderBy(desc(clients.atualizado_em))
+  const { data: recentes } = await db
+    .from('clients')
+    .select('*')
+    .eq('tenant_id', user.tenantId)
+    .is('deletado_em', null)
+    .order('atualizado_em', { ascending: false })
     .limit(10);
+
+  const lista = recentes ?? [];
 
   return (
     <div>
@@ -23,14 +24,14 @@ export default async function DashboardPage() {
         <Button asChild><Link href="/clientes/novo">+ Novo cliente</Link></Button>
       </div>
 
-      {recentes.length === 0 ? (
+      {lista.length === 0 ? (
         <div className="text-center py-16 text-slate-400">
           <p className="mb-3">Nenhum cliente cadastrado ainda.</p>
           <Button asChild variant="outline"><Link href="/clientes/novo">Cadastrar primeiro cliente</Link></Button>
         </div>
       ) : (
         <div className="space-y-2">
-          {recentes.map((c) => (
+          {lista.map((c: { id: string; nome_completo: string; cpf: string }) => (
             <div key={c.id} className="bg-white border rounded-lg px-4 py-3 flex items-center justify-between hover:shadow-sm transition-shadow">
               <div>
                 <p className="font-medium text-slate-800">{c.nome_completo}</p>
@@ -42,7 +43,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {recentes.length > 0 && (
+      {lista.length > 0 && (
         <Link href="/clientes" className="block text-center text-sm text-slate-500 hover:underline mt-6">
           Ver todos os clientes →
         </Link>

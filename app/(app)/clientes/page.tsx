@@ -1,7 +1,5 @@
 import { getCurrentUser } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
-import { clients } from '@/lib/db/schema';
-import { eq, and, or, ilike, isNull } from 'drizzle-orm';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { maskCPF, unmaskCPF } from '@/lib/validators/cpf';
@@ -15,17 +13,21 @@ export default async function ClientesPage({ searchParams }: Props) {
   const limit = 20;
   const offset = (pageNum - 1) * limit;
 
-  const searchFilter = search
-    ? or(ilike(clients.nome_completo, `%${search}%`), ilike(clients.cpf, `%${unmaskCPF(search)}%`))
-    : undefined;
+  let query = db
+    .from('clients')
+    .select('*')
+    .eq('tenant_id', user.tenantId)
+    .is('deletado_em', null)
+    .order('atualizado_em', { ascending: true })
+    .range(offset, offset + limit - 1);
 
-  const rows = await db
-    .select()
-    .from(clients)
-    .where(and(eq(clients.tenant_id, user.tenantId), isNull(clients.deletado_em), searchFilter))
-    .orderBy(clients.atualizado_em)
-    .limit(limit)
-    .offset(offset);
+  if (search) {
+    const term = unmaskCPF(search);
+    query = query.or(`nome_completo.ilike.%${search}%,cpf.ilike.%${term}%`);
+  }
+
+  const { data: rows } = await query;
+  const lista = rows ?? [];
 
   return (
     <div>
@@ -43,7 +45,7 @@ export default async function ClientesPage({ searchParams }: Props) {
         />
       </form>
 
-      {rows.length === 0 ? (
+      {lista.length === 0 ? (
         <p className="text-slate-500 text-sm">Nenhum cliente encontrado.</p>
       ) : (
         <div className="overflow-x-auto">
@@ -57,7 +59,7 @@ export default async function ClientesPage({ searchParams }: Props) {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {rows.map((c) => (
+              {lista.map((c: { id: string; nome_completo: string; cpf: string; criado_em: string }) => (
                 <tr key={c.id} className="hover:bg-slate-50">
                   <td className="py-3">{c.nome_completo}</td>
                   <td className="py-3 text-slate-600">{maskCPF(c.cpf)}</td>
@@ -77,7 +79,7 @@ export default async function ClientesPage({ searchParams }: Props) {
         {pageNum > 1 && (
           <Link href={`/clientes?search=${search}&page=${pageNum - 1}`} className="text-sm text-slate-600 hover:underline">← Anterior</Link>
         )}
-        {rows.length === limit && (
+        {lista.length === limit && (
           <Link href={`/clientes?search=${search}&page=${pageNum + 1}`} className="text-sm text-slate-600 hover:underline ml-auto">Próxima →</Link>
         )}
       </div>

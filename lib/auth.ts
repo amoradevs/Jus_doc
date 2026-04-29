@@ -1,9 +1,6 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import { db } from '@/lib/db';
-import { users } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 
@@ -13,7 +10,6 @@ const loginSchema = z.object({
 });
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter: DrizzleAdapter(db),
   session: { strategy: 'jwt' },
   pages: { signIn: '/login' },
   providers: [
@@ -22,13 +18,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) return null;
 
-        const [user] = await db
-          .select()
-          .from(users)
-          .where(eq(users.email, parsed.data.email))
+        const { data: rows, error } = await db
+          .from('users')
+          .select('*')
+          .eq('email', parsed.data.email)
           .limit(1);
 
-        if (!user) return null;
+        if (error || !rows || rows.length === 0) return null;
+        const user = rows[0];
 
         const ok = await bcrypt.compare(parsed.data.password, user.senha_hash);
         if (!ok) return null;
