@@ -44,7 +44,11 @@ export async function PUT(req: Request, { params }: Params) {
     return NextResponse.json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.issues[0].message } }, { status: 400 });
   }
 
-  await db.from('clients').update({ ...parsed.data, atualizado_em: new Date().toISOString() }).eq('id', id);
+  const updatePayload = Object.fromEntries(
+    Object.entries({ ...parsed.data, atualizado_em: new Date().toISOString() })
+      .filter(([, v]) => v !== undefined)
+  );
+  await db.from('clients').update(updatePayload).eq('id', id);
 
   if (body.contextual) {
     const { data: existing } = await db

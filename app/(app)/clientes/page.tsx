@@ -58,7 +58,7 @@ export default async function ClientesPage({ searchParams }: Props) {
 
   let query = db
     .from('clients')
-    .select('id, nome_completo, cpf, criado_em, endereco_cidade, endereco_uf, status_pedido, data_entrada_pedido')
+    .select('*')
     .eq('tenant_id', user.tenantId)
     .is('deletado_em', null)
     .range(offset, offset + limit - 1);
