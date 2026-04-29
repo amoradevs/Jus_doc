@@ -240,62 +240,77 @@ function ClientKanbanCard({
     <div
       draggable
       onDragStart={onDragStart}
-      className={`bg-card rounded-xl border border-border p-3 cursor-grab active:cursor-grabbing transition-all duration-150 hover:shadow-md hover:border-primary/30 group ${
+      className={`bg-card rounded-xl border border-border p-3 cursor-grab active:cursor-grabbing transition-all duration-150 hover:shadow-md hover:border-primary/30 group select-none ${
         isDragging ? 'opacity-40 scale-95 rotate-1' : 'opacity-100'
       }`}
     >
-      <Link href={`/clientes/${client.id}`} className="block" onClick={(e) => e.stopPropagation()}>
-        {/* Nome */}
-        <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
-          {client.nome_completo}
-        </p>
-
-        {/* Tipo de pedido */}
-        <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-          {client.tipo_pedido ? labelTipoPedido(client.tipo_pedido) : 'Sem benefício definido'}
-        </p>
-
-        {/* Barra de progresso dos documentos */}
-        {docsProgress >= 0 && (
-          <div className="mt-2.5">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] text-muted-foreground">
-                Docs: {client.docs_recebidos}/{client.docs_total}
-              </span>
-              <span className="text-[10px] font-medium text-muted-foreground">
-                {docsProgress}%
-              </span>
-            </div>
-            <div className="h-1 bg-border rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${
-                  docsProgress === 100
-                    ? 'bg-emerald-500'
-                    : docsProgress >= 50
-                    ? 'bg-amber-500'
-                    : 'bg-primary'
-                }`}
-                style={{ width: `${docsProgress}%` }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Observação */}
-        {client.observacao_pipeline && (
-          <p className="text-[10px] text-muted-foreground/80 mt-2 italic line-clamp-2 border-l-2 border-primary/20 pl-2">
-            {client.observacao_pipeline}
+      {/* Drag handle + nome (o Link só está no nome, não no card inteiro) */}
+      <div className="flex items-start gap-2">
+        <svg width="10" height="14" viewBox="0 0 10 16" fill="currentColor" className="text-muted-foreground/30 mt-0.5 shrink-0">
+          <circle cx="3" cy="2" r="1.5"/><circle cx="7" cy="2" r="1.5"/>
+          <circle cx="3" cy="8" r="1.5"/><circle cx="7" cy="8" r="1.5"/>
+          <circle cx="3" cy="14" r="1.5"/><circle cx="7" cy="14" r="1.5"/>
+        </svg>
+        <div className="flex-1 min-w-0">
+          <Link
+            href={`/clientes/${client.id}`}
+            draggable={false}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="text-sm font-medium text-foreground truncate block group-hover:text-primary transition-colors"
+          >
+            {client.nome_completo}
+          </Link>
+          <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+            {client.tipo_pedido ? labelTipoPedido(client.tipo_pedido) : 'Sem benefício definido'}
           </p>
-        )}
-
-        {/* Footer */}
-        <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-border/50">
-          <span className="text-[10px] text-muted-foreground">{updatedAt}</span>
-          <span className="text-[10px] text-primary opacity-0 group-hover:opacity-100 transition-opacity font-medium">
-            Abrir →
-          </span>
         </div>
-      </Link>
+      </div>
+
+      {/* Barra de progresso dos documentos */}
+      {docsProgress >= 0 && (
+        <div className="mt-2.5">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] text-muted-foreground">
+              Docs: {client.docs_recebidos}/{client.docs_total}
+            </span>
+            <span className="text-[10px] font-medium text-muted-foreground">
+              {docsProgress}%
+            </span>
+          </div>
+          <div className="h-1 bg-border rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                docsProgress === 100
+                  ? 'bg-emerald-500'
+                  : docsProgress >= 50
+                  ? 'bg-amber-500'
+                  : 'bg-primary'
+              }`}
+              style={{ width: `${docsProgress}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Observação */}
+      {client.observacao_pipeline && (
+        <p className="text-[10px] text-muted-foreground/80 mt-2 italic line-clamp-2 border-l-2 border-primary/20 pl-2">
+          {client.observacao_pipeline}
+        </p>
+      )}
+
+      {/* Footer */}
+      <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-border/50">
+        <span className="text-[10px] text-muted-foreground">{updatedAt}</span>
+        <Link
+          href={`/clientes/${client.id}`}
+          draggable={false}
+          onMouseDown={(e) => e.stopPropagation()}
+          className="text-[10px] text-primary opacity-0 group-hover:opacity-100 transition-opacity font-medium"
+        >
+          Abrir →
+        </Link>
+      </div>
     </div>
   );
 }
