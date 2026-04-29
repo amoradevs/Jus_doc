@@ -18,6 +18,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!email || !password) return null;
 
+        console.log('[auth] url:', process.env.SUPABASE_URL);
         console.log('[auth] env:', !!process.env.SUPABASE_URL, !!process.env.SUPABASE_SERVICE_KEY);
 
         const supabase = createClient(
