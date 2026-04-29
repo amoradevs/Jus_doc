@@ -71,7 +71,7 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
       </div>
 
       {/* Card Processo */}
-      <div className="bg-white rounded-2xl border border-border p-5 mb-4">
+      <div className="bg-card rounded-2xl border border-border p-5 mb-4">
         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
           Processo
         </h2>
@@ -97,7 +97,7 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
 
       {/* Dados em grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
-        <div className="bg-white rounded-2xl border border-border p-5">
+        <div className="bg-card rounded-2xl border border-border p-5">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
             Dados pessoais
           </h2>
@@ -111,7 +111,7 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-border p-5">
+        <div className="bg-card rounded-2xl border border-border p-5">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
             Endereço
           </h2>
@@ -134,11 +134,11 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
         </h2>
 
         {!packages || packages.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-border p-10 text-center">
+          <div className="bg-card rounded-2xl border border-border p-10 text-center">
             <p className="text-muted-foreground text-sm">Nenhum pacote gerado ainda.</p>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-border overflow-hidden">
+          <div className="bg-card rounded-2xl border border-border overflow-hidden">
             {packages.map((pkg: { id: string; criado_em: string; expira_em: string; templates_usados: string[] }, i: number) => {
               const expirado = new Date(pkg.expira_em) < agora;
               return (

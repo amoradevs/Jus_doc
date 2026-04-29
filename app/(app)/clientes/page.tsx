@@ -117,11 +117,11 @@ export default async function ClientesPage({ searchParams }: Props) {
       </Suspense>
 
       {lista.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-border p-14 text-center">
+        <div className="bg-card rounded-2xl border border-border p-14 text-center">
           <p className="text-muted-foreground text-sm">Nenhum cliente encontrado.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-border overflow-hidden">
+        <div className="bg-card rounded-2xl border border-border overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-secondary/30">

@@ -17,7 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="bg-white/96 dark:bg-card/95 backdrop-blur-md border-b border-border/50 sticky top-0 z-40 shadow-[0_1px_12px_rgba(43,29,42,0.07)]">
-        <div className="max-w-5xl mx-auto px-6 h-[100px] flex items-center gap-5">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-[72px] sm:h-[100px] flex items-center gap-3 sm:gap-5">
 
           {/* Logo — light / dark */}
           <Link href="/" className="shrink-0 flex items-center">
@@ -26,7 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               alt="Lidiane Abreu Advogada"
               width={500}
               height={500}
-              className="h-[88px] w-auto dark:hidden"
+              className="h-[56px] sm:h-[88px] w-auto dark:hidden"
               priority
             />
             <Image
@@ -34,13 +34,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               alt="Lidiane Abreu Advogada"
               width={500}
               height={500}
-              className="h-[88px] w-auto hidden dark:block"
+              className="h-[56px] sm:h-[88px] w-auto hidden dark:block"
               priority
             />
           </Link>
 
-          {/* Separador */}
-          <div className="w-px h-6 bg-border/60 shrink-0" />
+          {/* Separador — oculto em mobile */}
+          <div className="hidden sm:block w-px h-6 bg-border/60 shrink-0" />
 
           {/* Nav links */}
           <NavLinks />
@@ -48,15 +48,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           {/* Espaçador */}
           <div className="flex-1" />
 
-          {/* Controles */}
+          {/* Controles — font size oculto em mobile */}
           <div className="flex items-center gap-1">
-            <FontSizeControl />
+            <div className="hidden sm:flex">
+              <FontSizeControl />
+            </div>
             <ThemeToggle />
           </div>
 
-          <div className="w-px h-5 bg-border/60 shrink-0" />
+          <div className="hidden sm:block w-px h-5 bg-border/60 shrink-0" />
 
-          {/* Círculo do usuário com dropdown */}
+          {/* Usuário */}
           <UserMenu initials={initials}>
             <SignOutForm />
           </UserMenu>
@@ -64,7 +66,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </header>
 
-      <main className="flex-1 max-w-5xl mx-auto w-full px-6 py-8">
+      <main className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8">
         {children}
       </main>
 
