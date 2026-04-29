@@ -5,7 +5,8 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
-const GREETING = 'Olá, Dra. Lidiane! Sou o Consultor JusDoc, especializado em BPC/LOAS e Direito Previdenciário. Pode me perguntar sobre requisitos, jurisprudência, prazos ou procedimentos. Como posso ajudar?';
+const GREETING =
+  'Olá, Dra. Lidiane! Sou o Consultor JusDoc, especializado em BPC/LOAS e Direito Previdenciário. Pode me perguntar sobre requisitos, jurisprudência, prazos ou procedimentos. Como posso ajudar?';
 
 export function BecaAgent() {
   const [open, setOpen] = useState(false);
@@ -44,24 +45,28 @@ export function BecaAgent() {
       const json = await res.json();
       setMessages((prev) => [...prev, { role: 'assistant', content: json.content }]);
     } catch {
-      setMessages((prev) => [...prev, { role: 'assistant', content: 'Desculpe, ocorreu um erro. Tente novamente.' }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: 'Desculpe, ocorreu um erro. Tente novamente.' },
+      ]);
     } finally {
       setLoading(false);
     }
   }, [input, loading, messages]);
 
   return (
-    <>
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4">
+
       {/* Chat panel */}
       <div
-        className={`fixed bottom-24 right-6 z-50 w-80 flex flex-col rounded-2xl border border-border bg-white shadow-2xl shadow-black/10 overflow-hidden transition-all duration-200 origin-bottom-right ${
+        className={`w-[340px] flex flex-col rounded-2xl border border-border bg-card shadow-2xl shadow-black/15 overflow-hidden transition-all duration-200 origin-bottom-right ${
           open ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'
         }`}
         style={{ height: '460px' }}
       >
-        {/* Header */}
+        {/* Header do chat */}
         <div className="flex items-center gap-3 px-4 py-3 bg-[#2B1D2A]">
-          <div className="relative w-9 h-9 rounded-full overflow-hidden border-2 border-white/20 shrink-0">
+          <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-white/20 shrink-0">
             <Image
               src="/Figurinha_Lidi.png"
               alt="Beca"
@@ -84,7 +89,7 @@ export function BecaAgent() {
           </button>
         </div>
 
-        {/* Messages */}
+        {/* Mensagens */}
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
           {messages.map((m, i) => (
             <div key={i} className={`flex items-end gap-2 ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -102,7 +107,7 @@ export function BecaAgent() {
               <div
                 className={`max-w-[78%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed ${
                   m.role === 'user'
-                    ? 'bg-primary text-white rounded-br-sm'
+                    ? 'bg-primary text-primary-foreground rounded-br-sm'
                     : 'bg-secondary text-foreground rounded-bl-sm'
                 }`}
               >
@@ -114,7 +119,13 @@ export function BecaAgent() {
           {loading && (
             <div className="flex items-end gap-2">
               <div className="relative w-6 h-6 rounded-full overflow-hidden shrink-0 mb-0.5 border border-border">
-                <Image src="/Figurinha_Lidi.png" alt="" fill className="object-cover" style={{ objectPosition: '50% 8%' }} />
+                <Image
+                  src="/Figurinha_Lidi.png"
+                  alt=""
+                  fill
+                  className="object-cover"
+                  style={{ objectPosition: '50% 8%' }}
+                />
               </div>
               <div className="bg-secondary rounded-2xl rounded-bl-sm px-3.5 py-3">
                 <div className="flex gap-1 items-center">
@@ -141,14 +152,14 @@ export function BecaAgent() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && send()}
               placeholder="Escreva sua dúvida jurídica…"
-              className="flex-1 text-xs bg-transparent focus:outline-none placeholder:text-muted-foreground/70 text-foreground"
+              className="flex-1 text-xs bg-transparent focus:outline-none placeholder:text-muted-foreground/60 text-foreground"
             />
             <button
               onClick={send}
               disabled={!input.trim() || loading}
               className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shrink-0 disabled:opacity-30 hover:bg-primary/85 transition-colors"
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-primary-foreground">
                 <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
@@ -156,26 +167,47 @@ export function BecaAgent() {
         </div>
       </div>
 
-      {/* Floating button */}
-      <button
-        onClick={() => setOpen((o) => !o)}
-        aria-label="Abrir assistente Beca"
-        className={`fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full overflow-hidden border-[3px] shadow-xl shadow-black/15 transition-all duration-200 hover:scale-[1.28] ${
-          open
-            ? 'border-primary ring-2 ring-primary/30 scale-[1.08]'
-            : 'border-white ring-2 ring-primary/15 hover:ring-primary/35'
-        }`}
-      >
-        <div className="relative w-full h-full">
-          <Image
-            src="/Figurinha_Lidi.png"
-            alt="Beca"
-            fill
-            className="object-cover"
-            style={{ objectPosition: '50% 8%' }}
-          />
-        </div>
-      </button>
-    </>
+      {/* CTA + botão flutuante */}
+      <div className="flex items-center gap-3">
+
+        {/* CTA pill */}
+        <button
+          onClick={() => setOpen(true)}
+          className={`bg-card border border-border rounded-full pl-4 pr-3 py-2.5 shadow-lg flex items-center gap-2.5 text-sm font-medium text-foreground hover:bg-secondary transition-all duration-200 whitespace-nowrap ${
+            open
+              ? 'opacity-0 translate-x-3 pointer-events-none'
+              : 'opacity-100 translate-x-0'
+          }`}
+        >
+          Fale com a Beca
+          <span className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shrink-0">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-primary-foreground">
+              <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
+        </button>
+
+        {/* Avatar */}
+        <button
+          onClick={() => setOpen((o) => !o)}
+          aria-label="Abrir assistente Beca"
+          className={`w-24 h-24 rounded-full overflow-hidden border-[3px] shadow-2xl shadow-black/20 transition-all duration-200 hover:scale-110 ${
+            open
+              ? 'border-primary ring-4 ring-primary/25 scale-[1.06]'
+              : 'border-white ring-2 ring-primary/20 hover:ring-primary/40'
+          }`}
+        >
+          <div className="relative w-full h-full">
+            <Image
+              src="/Figurinha_Lidi.png"
+              alt="Beca"
+              fill
+              className="object-cover"
+              style={{ objectPosition: '50% 8%' }}
+            />
+          </div>
+        </button>
+      </div>
+    </div>
   );
 }

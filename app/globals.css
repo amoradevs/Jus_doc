@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Modo escuro — converte bg-white existente para a superfície do card */
+.dark .bg-white {
+  background-color: var(--card) !important;
+}
+
 :root {
   /* Cores base */
   --background: #FAF8F9;
@@ -37,6 +42,28 @@
   --border: #E7DCE4;
   --input: #E7DCE4;
   --ring: #A6668A;
+}
+
+.dark {
+  --background: #1A1018;
+  --foreground: #F0E5ED;
+  --card: #231520;
+  --card-foreground: #F0E5ED;
+  --popover: #231520;
+  --popover-foreground: #F0E5ED;
+  --primary: #C490A8;
+  --primary-foreground: #1A1018;
+  --secondary: #2E1A29;
+  --secondary-foreground: #D4A8BF;
+  --muted: #281624;
+  --muted-foreground: #A89098;
+  --accent: #2E1A29;
+  --accent-foreground: #D4A8BF;
+  --destructive: #E07B80;
+  --destructive-foreground: #1A1018;
+  --border: #3D2438;
+  --input: #3D2438;
+  --ring: #C490A8;
 }
 
 @theme inline {

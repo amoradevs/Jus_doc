@@ -6,6 +6,8 @@ import { NavLinks } from '@/components/nav-links';
 import { BecaAgent } from '@/components/beca-agent';
 import { UserMenu } from '@/components/user-menu';
 import { SignOutForm } from '@/components/sign-out-form';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { FontSizeControl } from '@/components/font-size-control';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
@@ -14,17 +16,25 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <header className="bg-white/96 backdrop-blur-md border-b border-border/50 sticky top-0 z-40 shadow-[0_1px_12px_rgba(43,29,42,0.07)]">
-        <div className="max-w-5xl mx-auto px-6 h-[88px] flex items-center gap-5">
+      <header className="bg-white/96 dark:bg-card/95 backdrop-blur-md border-b border-border/50 sticky top-0 z-40 shadow-[0_1px_12px_rgba(43,29,42,0.07)]">
+        <div className="max-w-5xl mx-auto px-6 h-[100px] flex items-center gap-5">
 
-          {/* Logo */}
+          {/* Logo — light / dark */}
           <Link href="/" className="shrink-0 flex items-center">
             <Image
               src="/Claro.png"
               alt="Lidiane Abreu Advogada"
               width={500}
               height={500}
-              className="h-[72px] w-auto"
+              className="h-[88px] w-auto dark:hidden"
+              priority
+            />
+            <Image
+              src="/Escuro.png"
+              alt="Lidiane Abreu Advogada"
+              width={500}
+              height={500}
+              className="h-[88px] w-auto hidden dark:block"
               priority
             />
           </Link>
@@ -37,6 +47,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
           {/* Espaçador */}
           <div className="flex-1" />
+
+          {/* Controles */}
+          <div className="flex items-center gap-1">
+            <FontSizeControl />
+            <ThemeToggle />
+          </div>
+
+          <div className="w-px h-5 bg-border/60 shrink-0" />
 
           {/* Círculo do usuário com dropdown */}
           <UserMenu initials={initials}>
