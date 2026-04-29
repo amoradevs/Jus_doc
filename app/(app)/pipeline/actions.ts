@@ -70,7 +70,7 @@ export async function inicializarChecklist(clientId: string, tipoPedido: string 
   revalidatePath(`/clientes/${clientId}`);
 }
 
-export async function toggleDocumento(docId: string, recebido: boolean) {
+export async function toggleDocumento(docId: string, recebido: boolean, clientId: string) {
   const user = await getCurrentUser();
 
   await db
@@ -83,6 +83,7 @@ export async function toggleDocumento(docId: string, recebido: boolean) {
     .eq('tenant_id', user.tenantId);
 
   revalidatePath('/pipeline');
+  revalidatePath(`/clientes/${clientId}`);
 }
 
 export async function adicionarDocumento(
@@ -105,7 +106,7 @@ export async function adicionarDocumento(
   revalidatePath(`/clientes/${clientId}`);
 }
 
-export async function removerDocumento(docId: string) {
+export async function removerDocumento(docId: string, clientId: string) {
   const user = await getCurrentUser();
 
   await db
@@ -113,4 +114,7 @@ export async function removerDocumento(docId: string) {
     .delete()
     .eq('id', docId)
     .eq('tenant_id', user.tenantId);
+
+  revalidatePath('/pipeline');
+  revalidatePath(`/clientes/${clientId}`);
 }
