@@ -55,6 +55,8 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
             <span className="text-sm text-muted-foreground">{idade} anos</span>
             <span className="text-muted-foreground/40">·</span>
             <span className="text-sm text-muted-foreground">{client.estado_civil}</span>
+            <span className="text-muted-foreground/40">·</span>
+            <StatusBadge status={client.status_pedido} />
           </div>
         </div>
         <div className="flex gap-2 shrink-0 ml-4">
@@ -64,6 +66,27 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
           <Button asChild size="sm" className="rounded-lg">
             <Link href={`/clientes/${id}/gerar`}>Gerar documentos</Link>
           </Button>
+        </div>
+      </div>
+
+      {/* Card Pedido BPC */}
+      <div className="bg-white rounded-2xl border border-border p-5 mb-4">
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
+          Pedido BPC
+        </h2>
+        <div className="flex flex-wrap gap-x-10 gap-y-3">
+          <div className="flex gap-3 text-sm">
+            <span className="text-muted-foreground text-xs pt-0.5 w-28 shrink-0">Data de entrada</span>
+            <span className="text-foreground">
+              {client.data_entrada_pedido
+                ? new Date(client.data_entrada_pedido + 'T12:00:00').toLocaleDateString('pt-BR')
+                : <span className="text-muted-foreground">—</span>}
+            </span>
+          </div>
+          <div className="flex gap-3 text-sm items-center">
+            <span className="text-muted-foreground text-xs w-28 shrink-0">Situação</span>
+            <StatusBadge status={client.status_pedido} />
+          </div>
         </div>
       </div>
 
@@ -142,6 +165,31 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
         )}
       </div>
     </div>
+  );
+}
+
+function StatusBadge({ status }: { status: string | null }) {
+  if (status === 'deferido') {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+        Deferido
+      </span>
+    );
+  }
+  if (status === 'indeferido') {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive bg-destructive/5 border border-destructive/20 rounded-full px-2 py-0.5">
+        <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" />
+        Indeferido
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground bg-muted border border-border rounded-full px-2 py-0.5">
+      <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
+      Em andamento
+    </span>
   );
 }
 

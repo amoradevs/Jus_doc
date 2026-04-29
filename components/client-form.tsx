@@ -36,7 +36,12 @@ export function ClientForm({ mode, clientId, defaultValues }: Props) {
   const onSubmit = async (data: ClientInput) => {
     const url = mode === 'create' ? '/api/clientes' : `/api/clientes/${clientId}`;
     const method = mode === 'create' ? 'POST' : 'PUT';
-    const payload = { ...data, cpf: unmaskCPF(data.cpf) };
+    const payload = {
+      ...data,
+      cpf: unmaskCPF(data.cpf),
+      data_entrada_pedido: data.data_entrada_pedido || null,
+      status_pedido: data.status_pedido || null,
+    };
 
     const res = await fetch(url, {
       method,
@@ -75,8 +80,30 @@ export function ClientForm({ mode, clientId, defaultValues }: Props) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+
       <section>
-        <h2 className="font-semibold text-slate-800 mb-4">Identificação</h2>
+        <h2 className="font-semibold text-foreground mb-4">Pedido BPC</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {field('data_entrada_pedido', 'Data de entrada do pedido', 'date')}
+          <div className="space-y-1">
+            <Label htmlFor="status_pedido">Situação</Label>
+            <Select
+              onValueChange={(v) => setValue('status_pedido', v as 'deferido' | 'indeferido' | '')}
+              defaultValue={defaultValues?.status_pedido ?? ''}
+            >
+              <SelectTrigger id="status_pedido"><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Em andamento (sem resposta)</SelectItem>
+                <SelectItem value="deferido">Deferido</SelectItem>
+                <SelectItem value="indeferido">Indeferido</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 className="font-semibold text-foreground mb-4">Identificação</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2">{field('nome_completo', 'Nome completo')}</div>
           <div className="space-y-1">
@@ -126,7 +153,7 @@ export function ClientForm({ mode, clientId, defaultValues }: Props) {
       </section>
 
       <section>
-        <h2 className="font-semibold text-slate-800 mb-4">Endereço de residência</h2>
+        <h2 className="font-semibold text-foreground mb-4">Endereço de residência</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-1">
             <Label htmlFor="endereco_cep">CEP</Label>

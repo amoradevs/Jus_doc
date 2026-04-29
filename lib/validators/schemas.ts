@@ -23,6 +23,8 @@ export const officeSettingsSchema = z.object({
 export type OfficeSettingsInput = z.infer<typeof officeSettingsSchema>;
 
 export const clientSchema = z.object({
+  data_entrada_pedido: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal(''), z.null()]).optional(),
+  status_pedido: z.union([z.enum(['deferido', 'indeferido']), z.literal(''), z.null()]).optional(),
   nome_completo: z.string().min(3, 'Nome obrigatório'),
   nacionalidade: z.string().min(2, 'Nacionalidade obrigatória'),
   genero: z.enum(['M', 'F'], { message: 'Selecione o gênero' }),
