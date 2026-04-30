@@ -26,6 +26,8 @@ export type ResultadoRegra = {
   observacao: string;
 };
 
+export type MelhorOpcao = 'art15' | 'art16' | 'art17' | 'art18' | 'art20' | null;
+
 export type ResultadoCalculo = {
   totalContributivoDias: number;
   totalContributivoFormatado: string;
@@ -34,8 +36,13 @@ export type ResultadoCalculo = {
   art17Pedagio50: ResultadoRegra;
   art18AposIdade: ResultadoRegra;
   art20Pedagio100: ResultadoRegra;
+  // Regra que dá a aposentadoria mais próxima
+  melhorOpcao: MelhorOpcao;
+  dataMaisProxima: string | null;
+  // Benefício calculado com coeficiente na data da aposentadoria projetada (mais preciso)
   salarioBeneficio: number;
-  coeficienteEC103: number;
-  beneficioMensal: number;
+  coeficienteEC103: number;      // na DER (tempo atual)
+  coeficienteNaAposentadoria: number; // na data da melhor opção (mais realista)
+  beneficioMensal: number;       // usando coeficienteNaAposentadoria
   tetoINSS: number;
 };

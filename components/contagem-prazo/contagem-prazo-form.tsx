@@ -352,19 +352,32 @@ function CardRegra({
   titulo,
   artigo,
   resultado,
+  melhor,
   extras,
 }: {
   titulo: string;
   artigo: string;
   resultado: { elegivel: boolean; dataCumprimento: string | null; observacao: string };
+  melhor?: boolean;
   extras?: React.ReactNode;
 }) {
   return (
-    <div className="bg-card border border-border rounded-2xl p-5">
+    <div className={`rounded-2xl p-5 border transition-colors ${
+      melhor
+        ? 'bg-emerald-50 border-emerald-300 dark:bg-emerald-950/30 dark:border-emerald-700 ring-1 ring-emerald-300 dark:ring-emerald-700'
+        : 'bg-card border-border'
+    }`}>
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-0.5">{artigo}</p>
-          <h3 className="font-semibold text-foreground leading-tight">{titulo}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-foreground leading-tight">{titulo}</h3>
+            {melhor && (
+              <span className="text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full bg-emerald-600 text-white">
+                Melhor opção
+              </span>
+            )}
+          </div>
         </div>
         <BadgeElegivel ok={resultado.elegivel} />
       </div>
@@ -430,6 +443,8 @@ function Etapa4({
     }
   }
 
+  const m = resultado.melhorOpcao;
+
   return (
     <div className="space-y-6">
       {/* Resumo do segurado */}
@@ -443,10 +458,20 @@ function Etapa4({
         </div>
       </div>
 
-      {/* Tempo contributivo total */}
-      <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 text-center">
-        <p className="text-xs font-semibold uppercase tracking-widest text-primary/70 mb-1">Tempo contributivo total</p>
-        <p className="text-2xl font-bold text-foreground">{resultado.totalContributivoFormatado}</p>
+      {/* Tempo contributivo + destaque melhor opção */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 text-center flex flex-col justify-center">
+          <p className="text-xs font-semibold uppercase tracking-widest text-primary/70 mb-1">Tempo contributivo total</p>
+          <p className="text-2xl font-bold text-foreground">{resultado.totalContributivoFormatado}</p>
+          <p className="text-[10px] text-muted-foreground mt-1">Projeção assume contribuição contínua a partir da DER.</p>
+        </div>
+        {resultado.dataMaisProxima && (
+          <div className="bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-700 rounded-2xl p-5 text-center flex flex-col justify-center">
+            <p className="text-xs font-semibold uppercase tracking-widest text-emerald-700 dark:text-emerald-400 mb-1">Aposentadoria mais próxima</p>
+            <p className="text-2xl font-bold text-foreground">{formatarData(resultado.dataMaisProxima)}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Pela melhor regra disponível.</p>
+          </div>
+        )}
       </div>
 
       {/* Cards das regras */}
@@ -455,6 +480,7 @@ function Etapa4({
           artigo="EC 103/2019 — Art. 15"
           titulo="Sistema de Pontos"
           resultado={resultado.art15Pontos}
+          melhor={m === 'art15'}
           extras={resultado.art15Pontos.elegivel && (
             <div className="flex gap-4 text-xs text-muted-foreground mb-1">
               <span>Pontos na DER: <strong className="text-foreground">{resultado.art15Pontos.pontosNaDer ?? '—'}</strong></span>
@@ -467,6 +493,7 @@ function Etapa4({
           artigo="EC 103/2019 — Art. 16"
           titulo="Idade Progressiva"
           resultado={resultado.art16IdadeProgressiva}
+          melhor={m === 'art16'}
           extras={resultado.art16IdadeProgressiva.idadeNecessaria && (
             <p className="text-xs text-muted-foreground mb-1">
               Idade mínima: <strong className="text-foreground">{resultado.art16IdadeProgressiva.idadeNecessaria}</strong>
@@ -478,18 +505,21 @@ function Etapa4({
           artigo="EC 103/2019 — Art. 17"
           titulo="Pedágio 50%"
           resultado={resultado.art17Pedagio50}
+          melhor={m === 'art17'}
         />
 
         <CardRegra
           artigo="EC 103/2019 — Art. 18"
           titulo="Aposentadoria por Idade"
           resultado={resultado.art18AposIdade}
+          melhor={m === 'art18'}
         />
 
         <CardRegra
           artigo="EC 103/2019 — Art. 20"
           titulo="Pedágio 100%"
           resultado={resultado.art20Pedagio100}
+          melhor={m === 'art20'}
         />
 
         {/* Benefício */}
@@ -502,9 +532,15 @@ function Etapa4({
                 <span className="font-mono">{formatarMoeda(resultado.salarioBeneficio)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Coeficiente EC 103</span>
-                <span className="font-mono">{(resultado.coeficienteEC103 * 100).toFixed(2)}%</span>
+                <span className="text-muted-foreground">Coeficiente na aposentadoria</span>
+                <span className="font-mono">{(resultado.coeficienteNaAposentadoria * 100).toFixed(2)}%</span>
               </div>
+              {resultado.coeficienteNaAposentadoria !== resultado.coeficienteEC103 && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Coeficiente atual (DER)</span>
+                  <span className="font-mono text-muted-foreground">{(resultado.coeficienteEC103 * 100).toFixed(2)}%</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Teto INSS</span>
                 <span className="font-mono">{formatarMoeda(resultado.tetoINSS)}</span>
@@ -514,7 +550,9 @@ function Etapa4({
                 <span className="font-semibold text-foreground">Benefício mensal</span>
                 <span className="font-bold font-mono text-primary text-lg">{formatarMoeda(resultado.beneficioMensal)}</span>
               </div>
-              <p className="text-[10px] text-muted-foreground">Estimativa — valores atualizados pela portaria INSS vigente.</p>
+              <p className="text-[10px] text-muted-foreground">
+                Estimativa projetada para a data da melhor aposentadoria. Valores sujeitos à portaria INSS vigente.
+              </p>
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">Salários não informados — benefício não calculado.</p>
