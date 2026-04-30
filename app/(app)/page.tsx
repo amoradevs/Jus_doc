@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import Link from 'next/link';
 import { labelTipoPedido } from '@/lib/processo';
 import { FiltroPeriodo } from '@/components/dashboard/filtro-periodo';
+import { CalendarioSemanal } from '@/components/dashboard/calendario-semanal';
 
 type RecentClient = {
   id: string;
@@ -209,6 +210,13 @@ export default async function DashboardPage({
           ))}
         </div>
       )}
+      {/* Calendário semanal */}
+      <div className="mt-10">
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
+          Agenda da semana
+        </h2>
+        <CalendarioSemanal />
+      </div>
     </div>
   );
 }

@@ -15,6 +15,9 @@ type ClientCard = {
   docs_total: number;
   docs_recebidos: number;
   atualizado_em: string;
+  data_proxima_audiencia?: string | null;
+  data_prazo?: string | null;
+  tipo_evento?: string | null;
 };
 
 interface KanbanBoardProps {
@@ -110,6 +113,126 @@ function EtapaIcon({ name }: { name: string }) {
     ),
   };
   return <>{icons[name] ?? null}</>;
+}
+
+const TIPO_EVENTO_LABEL: Record<string, string> = {
+  audiencia: 'Audiência',
+  pericia: 'Perícia',
+  consulta: 'Consulta',
+  prazo: 'Prazo',
+  outro: 'Evento',
+};
+
+function AgendarDialog({
+  clientId,
+  dataAudienciaInicial,
+  dataPrazoInicial,
+  tipoEventoInicial,
+  onClose,
+  onSaved,
+}: {
+  clientId: string;
+  dataAudienciaInicial: string | null | undefined;
+  dataPrazoInicial: string | null | undefined;
+  tipoEventoInicial: string | null | undefined;
+  onClose: () => void;
+  onSaved: (a: string | null, p: string | null, t: string | null) => void;
+}) {
+  const [dataAud, setDataAud] = useState(dataAudienciaInicial ?? '');
+  const [dataPraz, setDataPraz] = useState(dataPrazoInicial ?? '');
+  const [tipo, setTipo] = useState(tipoEventoInicial ?? 'audiencia');
+  const [saving, setSaving] = useState(false);
+
+  async function salvar() {
+    setSaving(true);
+    try {
+      await fetch(`/api/clientes/${clientId}/agenda`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          data_proxima_audiencia: dataAud || null,
+          data_prazo: dataPraz || null,
+          tipo_evento: tipo || null,
+        }),
+      });
+      onSaved(dataAud || null, dataPraz || null, tipo || null);
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="bg-card border border-border rounded-2xl shadow-xl p-5 w-[300px] space-y-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-foreground">Agendar compromisso</h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6 6 18M6 6l12 12" strokeLinecap="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground font-medium">Tipo</label>
+            <select
+              value={tipo}
+              onChange={(e) => setTipo(e.target.value)}
+              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
+              <option value="audiencia">Audiência</option>
+              <option value="pericia">Perícia</option>
+              <option value="consulta">Consulta</option>
+              <option value="prazo">Prazo</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground font-medium">Data do evento</label>
+            <input
+              type="date"
+              value={dataAud}
+              onChange={(e) => setDataAud(e.target.value)}
+              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground font-medium">Prazo final (opcional)</label>
+            <input
+              type="date"
+              value={dataPraz}
+              onChange={(e) => setDataPraz(e.target.value)}
+              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-2 pt-1">
+          <button
+            onClick={onClose}
+            className="flex-1 h-8 rounded-lg border border-input text-xs text-muted-foreground hover:bg-secondary transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={salvar}
+            disabled={saving}
+            className="flex-1 h-8 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-60"
+          >
+            {saving ? 'Salvando…' : 'Salvar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function KanbanBoard({ clients }: KanbanBoardProps) {
@@ -227,6 +350,11 @@ function ClientKanbanCard({
   isDragging: boolean;
   onDragStart: (e: React.DragEvent) => void;
 }) {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dataAud, setDataAud] = useState(client.data_proxima_audiencia ?? null);
+  const [dataPraz, setDataPraz] = useState(client.data_prazo ?? null);
+  const [tipoEv, setTipoEv] = useState(client.tipo_evento ?? null);
+
   const docsProgress = client.docs_total > 0
     ? Math.round((client.docs_recebidos / client.docs_total) * 100)
     : -1;
@@ -236,81 +364,124 @@ function ClientKanbanCard({
     month: 'short',
   });
 
+  function fmtData(iso: string) {
+    const [, m, d] = iso.split('-');
+    const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+    return `${parseInt(d)} ${meses[parseInt(m) - 1]}`;
+  }
+
   return (
-    <div
-      draggable
-      onDragStart={onDragStart}
-      className={`bg-card rounded-xl border border-border p-3 cursor-grab active:cursor-grabbing transition-all duration-150 hover:shadow-md hover:border-primary/30 group select-none ${
-        isDragging ? 'opacity-40 scale-95 rotate-1' : 'opacity-100'
-      }`}
-    >
-      {/* Drag handle + nome (o Link só está no nome, não no card inteiro) */}
-      <div className="flex items-start gap-2">
-        <svg width="10" height="14" viewBox="0 0 10 16" fill="currentColor" className="text-muted-foreground/30 mt-0.5 shrink-0">
-          <circle cx="3" cy="2" r="1.5"/><circle cx="7" cy="2" r="1.5"/>
-          <circle cx="3" cy="8" r="1.5"/><circle cx="7" cy="8" r="1.5"/>
-          <circle cx="3" cy="14" r="1.5"/><circle cx="7" cy="14" r="1.5"/>
-        </svg>
-        <div className="flex-1 min-w-0">
-          <Link
-            href={`/clientes/${client.id}`}
-            draggable={false}
-            onMouseDown={(e) => e.stopPropagation()}
-            className="text-sm font-medium text-foreground truncate block group-hover:text-primary transition-colors"
-          >
-            {client.nome_completo}
-          </Link>
-          <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-            {client.tipo_pedido ? labelTipoPedido(client.tipo_pedido) : 'Sem benefício definido'}
+    <>
+      <div
+        draggable
+        onDragStart={onDragStart}
+        className={`bg-card rounded-xl border border-border p-3 cursor-grab active:cursor-grabbing transition-all duration-150 hover:shadow-md hover:border-primary/30 group select-none ${
+          isDragging ? 'opacity-40 scale-95 rotate-1' : 'opacity-100'
+        }`}
+      >
+        {/* Drag handle + nome */}
+        <div className="flex items-start gap-2">
+          <svg width="10" height="14" viewBox="0 0 10 16" fill="currentColor" className="text-muted-foreground/30 mt-0.5 shrink-0">
+            <circle cx="3" cy="2" r="1.5"/><circle cx="7" cy="2" r="1.5"/>
+            <circle cx="3" cy="8" r="1.5"/><circle cx="7" cy="8" r="1.5"/>
+            <circle cx="3" cy="14" r="1.5"/><circle cx="7" cy="14" r="1.5"/>
+          </svg>
+          <div className="flex-1 min-w-0">
+            <Link
+              href={`/clientes/${client.id}`}
+              draggable={false}
+              onMouseDown={(e) => e.stopPropagation()}
+              className="text-sm font-medium text-foreground truncate block group-hover:text-primary transition-colors"
+            >
+              {client.nome_completo}
+            </Link>
+            <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+              {client.tipo_pedido ? labelTipoPedido(client.tipo_pedido) : 'Sem benefício definido'}
+            </p>
+          </div>
+        </div>
+
+        {/* Badge de evento agendado */}
+        {dataAud && (
+          <div className="mt-2 flex items-center gap-1 text-[10px] text-primary font-medium">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            {tipoEv ? TIPO_EVENTO_LABEL[tipoEv] ?? 'Evento' : 'Evento'} · {fmtData(dataAud)}
+            {dataPraz && dataPraz !== dataAud && (
+              <span className="text-muted-foreground ml-1">· prazo {fmtData(dataPraz)}</span>
+            )}
+          </div>
+        )}
+
+        {/* Barra de progresso dos documentos */}
+        {docsProgress >= 0 && (
+          <div className="mt-2.5">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] text-muted-foreground">
+                Docs: {client.docs_recebidos}/{client.docs_total}
+              </span>
+              <span className="text-[10px] font-medium text-muted-foreground">
+                {docsProgress}%
+              </span>
+            </div>
+            <div className="h-1 bg-border rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  docsProgress === 100
+                    ? 'bg-emerald-500'
+                    : docsProgress >= 50
+                    ? 'bg-amber-500'
+                    : 'bg-primary'
+                }`}
+                style={{ width: `${docsProgress}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Observação */}
+        {client.observacao_pipeline && (
+          <p className="text-[10px] text-muted-foreground/80 mt-2 italic line-clamp-2 border-l-2 border-primary/20 pl-2">
+            {client.observacao_pipeline}
           </p>
+        )}
+
+        {/* Footer */}
+        <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-border/50">
+          <span className="text-[10px] text-muted-foreground">{updatedAt}</span>
+          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              type="button"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); setDialogOpen(true); }}
+              className="text-[10px] text-muted-foreground hover:text-primary transition-colors font-medium"
+            >
+              Agendar
+            </button>
+            <Link
+              href={`/clientes/${client.id}`}
+              draggable={false}
+              onMouseDown={(e) => e.stopPropagation()}
+              className="text-[10px] text-primary font-medium"
+            >
+              Abrir →
+            </Link>
+          </div>
         </div>
       </div>
 
-      {/* Barra de progresso dos documentos */}
-      {docsProgress >= 0 && (
-        <div className="mt-2.5">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-muted-foreground">
-              Docs: {client.docs_recebidos}/{client.docs_total}
-            </span>
-            <span className="text-[10px] font-medium text-muted-foreground">
-              {docsProgress}%
-            </span>
-          </div>
-          <div className="h-1 bg-border rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                docsProgress === 100
-                  ? 'bg-emerald-500'
-                  : docsProgress >= 50
-                  ? 'bg-amber-500'
-                  : 'bg-primary'
-              }`}
-              style={{ width: `${docsProgress}%` }}
-            />
-          </div>
-        </div>
+      {dialogOpen && (
+        <AgendarDialog
+          clientId={client.id}
+          dataAudienciaInicial={dataAud}
+          dataPrazoInicial={dataPraz}
+          tipoEventoInicial={tipoEv}
+          onClose={() => setDialogOpen(false)}
+          onSaved={(a, p, t) => { setDataAud(a); setDataPraz(p); setTipoEv(t); }}
+        />
       )}
-
-      {/* Observação */}
-      {client.observacao_pipeline && (
-        <p className="text-[10px] text-muted-foreground/80 mt-2 italic line-clamp-2 border-l-2 border-primary/20 pl-2">
-          {client.observacao_pipeline}
-        </p>
-      )}
-
-      {/* Footer */}
-      <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-border/50">
-        <span className="text-[10px] text-muted-foreground">{updatedAt}</span>
-        <Link
-          href={`/clientes/${client.id}`}
-          draggable={false}
-          onMouseDown={(e) => e.stopPropagation()}
-          className="text-[10px] text-primary opacity-0 group-hover:opacity-100 transition-opacity font-medium"
-        >
-          Abrir →
-        </Link>
-      </div>
-    </div>
+    </>
   );
 }
