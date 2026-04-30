@@ -45,25 +45,6 @@ type Etapa1 = z.infer<typeof etapa1Schema>;
 type Etapa2 = z.infer<typeof etapa2Schema>;
 type Etapa3 = z.infer<typeof etapa3Schema>;
 
-// ─── Storage ──────────────────────────────────────────────────────────────────
-
-const STORAGE_KEY = 'contagem-prazo-form';
-
-function salvarStorage(dados: Partial<{ etapa1: Etapa1; etapa2: Etapa2; etapa3: Etapa3 }>) {
-  try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
-  } catch {}
-}
-
-function carregarStorage(): Partial<{ etapa1: Etapa1; etapa2: Etapa2; etapa3: Etapa3 }> {
-  try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
 // ─── Helpers visuais ──────────────────────────────────────────────────────────
 
 function formatarData(iso: string) {
@@ -95,10 +76,9 @@ function BadgeElegivel({ ok }: { ok: boolean }) {
 // ─── Etapa 1 ──────────────────────────────────────────────────────────────────
 
 function Etapa1({ onNext }: { onNext: (d: Etapa1) => void }) {
-  const saved = carregarStorage().etapa1;
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<Etapa1>({
     resolver: zodResolver(etapa1Schema),
-    defaultValues: saved ?? { filiadoAntesDaReforma: true },
+    defaultValues: { filiadoAntesDaReforma: true },
   });
 
   return (
@@ -118,7 +98,7 @@ function Etapa1({ onNext }: { onNext: (d: Etapa1) => void }) {
 
         <div className="space-y-1.5">
           <Label>Sexo</Label>
-          <Select onValueChange={(v) => setValue('sexo', v as 'M' | 'F')} defaultValue={saved?.sexo}>
+          <Select onValueChange={(v) => setValue('sexo', v as 'M' | 'F')}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
@@ -178,10 +158,9 @@ function Etapa1({ onNext }: { onNext: (d: Etapa1) => void }) {
 // ─── Etapa 2 ──────────────────────────────────────────────────────────────────
 
 function Etapa2({ onNext, onBack }: { onNext: (d: Etapa2) => void; onBack: () => void }) {
-  const saved = carregarStorage().etapa2;
   const { register, handleSubmit, control, formState: { errors } } = useForm<Etapa2>({
     resolver: zodResolver(etapa2Schema),
-    defaultValues: saved ?? { periodos: [{ inicio: '', fim: '', origem: 'RGPS' }] },
+    defaultValues: { periodos: [{ inicio: '', fim: '', origem: 'RGPS' }] },
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: 'periodos' });
@@ -267,11 +246,10 @@ function Etapa2({ onNext, onBack }: { onNext: (d: Etapa2) => void; onBack: () =>
 // ─── Etapa 3 ──────────────────────────────────────────────────────────────────
 
 function Etapa3({ onNext, onBack }: { onNext: (d: Etapa3) => void; onBack: () => void }) {
-  const saved = carregarStorage().etapa3;
-  const [pular, setPular] = useState(saved?.pularSalarios ?? false);
+  const [pular, setPular] = useState(false);
   const { register, handleSubmit, control, formState: { errors } } = useForm<Etapa3>({
     resolver: zodResolver(etapa3Schema),
-    defaultValues: saved ?? { salarios: [], pularSalarios: false },
+    defaultValues: { salarios: [], pularSalarios: false },
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: 'salarios' });
@@ -610,18 +588,15 @@ export function ContagemPrazoForm() {
 
   const handleEtapa1 = (d: Etapa1) => {
     setEtapa1(d);
-    salvarStorage({ ...carregarStorage(), etapa1: d });
     setEtapa(1);
   };
 
   const handleEtapa2 = (d: Etapa2) => {
     setEtapa2(d);
-    salvarStorage({ ...carregarStorage(), etapa2: d });
     setEtapa(2);
   };
 
   const handleEtapa3 = useCallback(async (d: Etapa3) => {
-    salvarStorage({ ...carregarStorage(), etapa3: d });
     setCalculando(true);
     setErroCalculo('');
 
@@ -659,7 +634,6 @@ export function ContagemPrazoForm() {
   }, [etapa1, etapa2]);
 
   const novoCalculo = () => {
-    try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
     setEtapa(0);
     setEtapa1(null);
     setEtapa2(null);
