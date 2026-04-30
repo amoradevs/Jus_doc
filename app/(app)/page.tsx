@@ -67,9 +67,12 @@ export default async function DashboardPage({
     ? db.from('clients').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).is('deletado_em', null).eq('status_pedido', 'indeferido').gte('criado_em', dateStart!).lte('criado_em', dateEnd!)
     : db.from('clients').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).is('deletado_em', null).eq('status_pedido', 'indeferido');
 
-  const qRecentes = filtrado
-    ? db.from('clients').select('id,nome_completo,cpf,status_pedido,tipo_pedido,endereco_cidade,endereco_uf').eq('tenant_id', user.tenantId).is('deletado_em', null).gte('criado_em', dateStart!).lte('criado_em', dateEnd!).order('criado_em', { ascending: false }).limit(5)
-    : db.from('clients').select('id,nome_completo,cpf,status_pedido,tipo_pedido,endereco_cidade,endereco_uf').eq('tenant_id', user.tenantId).is('deletado_em', null).order('atualizado_em', { ascending: false }).limit(5);
+  const qRecentes = db.from('clients')
+    .select('id,nome_completo,cpf,status_pedido,tipo_pedido,endereco_cidade,endereco_uf')
+    .eq('tenant_id', user.tenantId)
+    .is('deletado_em', null)
+    .order('criado_em', { ascending: false })
+    .limit(3);
 
   const [
     { count: total },
@@ -162,9 +165,9 @@ export default async function DashboardPage({
         />
       </div>
 
-      {/* Lista de clientes */}
+      {/* Lista de clientes recentes — sempre os 3 últimos, sem filtro */}
       <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
-        {filtrado ? `Clientes — ${labelPeriodo}` : 'Clientes recentes'}
+        Clientes recentes
       </h2>
 
       {lista.length === 0 ? (
@@ -176,9 +179,7 @@ export default async function DashboardPage({
               <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
             </svg>
           </div>
-          <p className="text-muted-foreground text-sm">
-            {filtrado ? 'Nenhum cliente neste período.' : 'Nenhum cliente cadastrado ainda.'}
-          </p>
+          <p className="text-muted-foreground text-sm">Nenhum cliente cadastrado ainda.</p>
         </div>
       ) : (
         <div className="bg-card rounded-2xl border border-border overflow-hidden">
