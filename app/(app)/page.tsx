@@ -1,8 +1,8 @@
 import { getCurrentUser } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { labelTipoPedido } from '@/lib/processo';
+import { FiltroPeriodo } from '@/components/dashboard/filtro-periodo';
 
 type RecentClient = {
   id: string;
@@ -14,52 +14,108 @@ type RecentClient = {
   endereco_uf: string;
 };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mes?: string; ano?: string }>;
+}) {
+  const { mes, ano } = await searchParams;
   const user = await getCurrentUser();
   const firstName = user.name?.split(' ')[0] ?? 'Advogada';
   const today = new Date().toLocaleDateString('pt-BR', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
+    timeZone: 'America/Sao_Paulo',
   });
+
+  const anoAtual = new Date().getFullYear();
+  const mesParam = mes ? parseInt(mes) : null;
+  const anoParam = ano ? parseInt(ano) : null;
+
+  // Calcula intervalo de datas para o filtro
+  let dateStart: string | null = null;
+  let dateEnd: string | null = null;
+
+  if (anoParam) {
+    const m = mesParam;
+    if (m && m >= 1 && m <= 12) {
+      dateStart = new Date(anoParam, m - 1, 1).toISOString();
+      dateEnd = new Date(anoParam, m, 0, 23, 59, 59, 999).toISOString();
+    } else {
+      dateStart = new Date(anoParam, 0, 1).toISOString();
+      dateEnd = new Date(anoParam, 11, 31, 23, 59, 59, 999).toISOString();
+    }
+  } else if (mesParam && mesParam >= 1 && mesParam <= 12) {
+    dateStart = new Date(anoAtual, mesParam - 1, 1).toISOString();
+    dateEnd = new Date(anoAtual, mesParam, 0, 23, 59, 59, 999).toISOString();
+  }
+
+  const filtrado = !!(dateStart && dateEnd);
+
+  const t = db.from('clients');
+
+  const qTotal = filtrado
+    ? t.select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).is('deletado_em', null).gte('criado_em', dateStart!).lte('criado_em', dateEnd!)
+    : t.select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).is('deletado_em', null);
+
+  const qDeferidos = filtrado
+    ? db.from('clients').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).is('deletado_em', null).eq('status_pedido', 'deferido').gte('criado_em', dateStart!).lte('criado_em', dateEnd!)
+    : db.from('clients').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).is('deletado_em', null).eq('status_pedido', 'deferido');
+
+  const qIndeferidos = filtrado
+    ? db.from('clients').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).is('deletado_em', null).eq('status_pedido', 'indeferido').gte('criado_em', dateStart!).lte('criado_em', dateEnd!)
+    : db.from('clients').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).is('deletado_em', null).eq('status_pedido', 'indeferido');
+
+  const qRecentes = filtrado
+    ? db.from('clients').select('id,nome_completo,cpf,status_pedido,tipo_pedido,endereco_cidade,endereco_uf').eq('tenant_id', user.tenantId).is('deletado_em', null).gte('criado_em', dateStart!).lte('criado_em', dateEnd!).order('criado_em', { ascending: false }).limit(5)
+    : db.from('clients').select('id,nome_completo,cpf,status_pedido,tipo_pedido,endereco_cidade,endereco_uf').eq('tenant_id', user.tenantId).is('deletado_em', null).order('atualizado_em', { ascending: false }).limit(5);
 
   const [
     { count: total },
     { count: deferidos },
     { count: indeferidos },
     { data: recentes },
-  ] = await Promise.all([
-    db.from('clients').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).is('deletado_em', null),
-    db.from('clients').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).is('deletado_em', null).eq('status_pedido', 'deferido'),
-    db.from('clients').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).is('deletado_em', null).eq('status_pedido', 'indeferido'),
-    db.from('clients')
-      .select('id,nome_completo,cpf,status_pedido,tipo_pedido,endereco_cidade,endereco_uf')
-      .eq('tenant_id', user.tenantId)
-      .is('deletado_em', null)
-      .order('atualizado_em', { ascending: false })
-      .limit(5),
-  ]);
+  ] = await Promise.all([qTotal, qDeferidos, qIndeferidos, qRecentes]);
 
   const lista = (recentes ?? []) as RecentClient[];
   const emAndamento = (total ?? 0) - (deferidos ?? 0) - (indeferidos ?? 0);
 
+  const labelPeriodo = filtrado
+    ? mesParam && anoParam
+      ? `${['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][(mesParam ?? 1) - 1]} de ${anoParam}`
+      : mesParam
+      ? `${['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][(mesParam ?? 1) - 1]} de ${anoAtual}`
+      : `${anoParam}`
+    : null;
+
   return (
     <div>
       {/* Boas-vindas */}
-      <div className="flex items-start justify-between mb-8">
+      <div className="mb-8">
+        <p className="text-xs text-muted-foreground mb-0.5 capitalize">{today}</p>
+        <h1 className="text-2xl font-bold text-foreground">Olá, {firstName}</h1>
+      </div>
+
+      {/* Cabeçalho métricas + filtro */}
+      <div className="flex items-center justify-between mb-5">
         <div>
-          <p className="text-xs text-muted-foreground mb-0.5 capitalize">{today}</p>
-          <h1 className="text-2xl font-bold text-foreground">Olá, {firstName}</h1>
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+            {filtrado ? `Métricas — ${labelPeriodo}` : 'Visão geral'}
+          </h2>
+          {filtrado && (
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              Clientes cadastrados neste período
+            </p>
+          )}
         </div>
-        <Button asChild className="rounded-xl">
-          <Link href="/clientes/novo">+ Novo cliente</Link>
-        </Button>
+        <FiltroPeriodo mesAtivo={mesParam} anoAtivo={anoParam} anoAtual={anoAtual} />
       </div>
 
       {/* Métricas */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10">
         <MetricCard
-          label="Total de clientes"
+          label={filtrado ? 'Novos clientes' : 'Total de clientes'}
           value={total ?? 0}
           numClass="text-foreground"
           icon={
@@ -106,17 +162,10 @@ export default async function DashboardPage() {
         />
       </div>
 
-      {/* Atividade recente */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-          Atividade recente
-        </h2>
-        {(total ?? 0) > 0 && (
-          <Link href="/clientes" className="text-xs text-primary hover:underline font-medium">
-            Ver todos →
-          </Link>
-        )}
-      </div>
+      {/* Lista de clientes */}
+      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
+        {filtrado ? `Clientes — ${labelPeriodo}` : 'Clientes recentes'}
+      </h2>
 
       {lista.length === 0 ? (
         <div className="bg-card rounded-2xl border border-border p-14 flex flex-col items-center text-center">
@@ -127,10 +176,9 @@ export default async function DashboardPage() {
               <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
             </svg>
           </div>
-          <p className="text-muted-foreground text-sm mb-4">Nenhum cliente cadastrado ainda.</p>
-          <Button asChild variant="outline" size="sm" className="rounded-lg">
-            <Link href="/clientes/novo">Cadastrar primeiro cliente</Link>
-          </Button>
+          <p className="text-muted-foreground text-sm">
+            {filtrado ? 'Nenhum cliente neste período.' : 'Nenhum cliente cadastrado ainda.'}
+          </p>
         </div>
       ) : (
         <div className="bg-card rounded-2xl border border-border overflow-hidden">
