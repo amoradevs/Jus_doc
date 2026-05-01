@@ -166,6 +166,7 @@ export function ClientForm({ mode, clientId, defaultValues }: Props) {
           {field('nacionalidade', 'Nacionalidade')}
           {field('nome_mae', 'Nome da mãe')}
           {field('nome_pai', 'Nome do pai (opcional)')}
+          {field('telefone', 'WhatsApp / telefone', 'tel')}
         </div>
       </section>
 

@@ -7,8 +7,8 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "JusDoc — Automação de Documentos",
-  description: "Sistema de automação de documentos para advocacia previdenciária",
+  title: "Lidiane Abreu — Sistema de Gestão",
+  description: "Sistema de gestão para advocacia previdenciária — Lidiane Rocha Abreu",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

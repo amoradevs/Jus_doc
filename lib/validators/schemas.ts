@@ -36,6 +36,7 @@ export const clientSchema = z.object({
   rg_orgao_emissor: z.string().min(2, 'Órgão emissor obrigatório'),
   nome_mae: z.string().min(3, 'Nome da mãe obrigatório'),
   nome_pai: z.string().optional(),
+  telefone: z.string().optional(),
   endereco_logradouro: z.string().min(3, 'Logradouro obrigatório'),
   endereco_numero: z.string().min(1, 'Número obrigatório'),
   endereco_complemento: z.string().optional(),
