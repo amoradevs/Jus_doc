@@ -141,6 +141,7 @@ function AgendarDialog({
   const [dataAud, setDataAud] = useState(dataAudienciaInicial ?? '');
   const [dataPraz, setDataPraz] = useState(dataPrazoInicial ?? '');
   const [tipo, setTipo] = useState(tipoEventoInicial ?? 'audiencia');
+  const [descricao, setDescricao] = useState('');
   const [saving, setSaving] = useState(false);
 
   async function salvar() {
@@ -153,6 +154,7 @@ function AgendarDialog({
           data_proxima_audiencia: dataAud || null,
           data_prazo: dataPraz || null,
           tipo_evento: tipo || null,
+          descricao_evento: tipo === 'outro' ? (descricao || null) : null,
         }),
       });
       onSaved(dataAud || null, dataPraz || null, tipo || null);
@@ -195,6 +197,19 @@ function AgendarDialog({
               <option value="outro">Outro</option>
             </select>
           </div>
+          {tipo === 'outro' && (
+            <div className="space-y-1.5">
+              <label className="text-xs text-muted-foreground font-medium">O que precisa ser feito?</label>
+              <textarea
+                value={descricao}
+                onChange={(e) => setDescricao(e.target.value)}
+                placeholder="Ex: Reunião com assistente social, protocolar recurso..."
+                rows={2}
+                className="w-full rounded-lg border border-input bg-transparent px-2.5 py-1.5 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50 resize-none"
+              />
+            </div>
+          )}
+
           <div className="space-y-1.5">
             <label className="text-xs text-muted-foreground font-medium">Data do evento</label>
             <input

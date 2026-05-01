@@ -14,7 +14,7 @@ export async function GET(req: Request) {
 
   const { data, error } = await db
     .from('clients')
-    .select('id,nome_completo,etapa_pipeline,tipo_pedido,data_proxima_audiencia,data_prazo,tipo_evento')
+    .select('id,nome_completo,etapa_pipeline,tipo_pedido,data_proxima_audiencia,data_prazo,tipo_evento,descricao_evento')
     .eq('tenant_id', user.tenantId)
     .is('deletado_em', null)
     .or(`data_proxima_audiencia.gte.${start},data_prazo.gte.${start}`)

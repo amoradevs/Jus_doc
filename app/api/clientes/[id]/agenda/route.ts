@@ -7,6 +7,7 @@ const agendaSchema = z.object({
   data_proxima_audiencia: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   data_prazo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   tipo_evento: z.enum(['audiencia', 'pericia', 'consulta', 'prazo', 'outro']).nullable().optional(),
+  descricao_evento: z.string().max(200).nullable().optional(),
 });
 
 export async function PATCH(
@@ -32,6 +33,7 @@ export async function PATCH(
   if ('data_proxima_audiencia' in parsed.data) updates.data_proxima_audiencia = parsed.data.data_proxima_audiencia ?? null;
   if ('data_prazo' in parsed.data) updates.data_prazo = parsed.data.data_prazo ?? null;
   if ('tipo_evento' in parsed.data) updates.tipo_evento = parsed.data.tipo_evento ?? null;
+  if ('descricao_evento' in parsed.data) updates.descricao_evento = parsed.data.descricao_evento ?? null;
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ ok: true });
