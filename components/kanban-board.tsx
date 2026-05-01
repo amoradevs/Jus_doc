@@ -536,8 +536,8 @@ function ClientKanbanCard({
 
         {/* Footer */}
         <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-border/50">
-          <span className="text-[10px] text-muted-foreground">{updatedAt}</span>
-          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="text-[10px] text-muted-foreground shrink-0">{updatedAt}</span>
+          <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
             <button
               type="button"
               onMouseDown={(e) => e.stopPropagation()}
@@ -546,6 +546,7 @@ function ClientKanbanCard({
             >
               Agendar
             </button>
+            <span className="text-[10px] text-border select-none">·</span>
             <select
               value=""
               onMouseDown={(e) => e.stopPropagation()}
@@ -553,18 +554,19 @@ function ClientKanbanCard({
               className="text-[10px] text-muted-foreground hover:text-primary transition-colors font-medium bg-transparent border-none outline-none cursor-pointer appearance-none"
               title="Mover para outra etapa"
             >
-              <option value="" disabled>Mover →</option>
+              <option value="" disabled>Mover</option>
               {ETAPAS_PIPELINE.filter((e) => e.value !== client.etapa_pipeline).map((etapa) => (
                 <option key={etapa.value} value={etapa.value}>{etapa.label}</option>
               ))}
             </select>
+            <span className="text-[10px] text-border select-none">·</span>
             <Link
               href={`/clientes/${client.id}`}
               draggable={false}
               onMouseDown={(e) => e.stopPropagation()}
               className="text-[10px] text-primary font-medium"
             >
-              Abrir →
+              Abrir
             </Link>
           </div>
         </div>
