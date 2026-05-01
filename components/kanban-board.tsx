@@ -143,11 +143,13 @@ function AgendarDialog({
   const [tipo, setTipo] = useState(tipoEventoInicial ?? 'audiencia');
   const [descricao, setDescricao] = useState('');
   const [saving, setSaving] = useState(false);
+  const [erro, setErro] = useState('');
 
   async function salvar() {
     setSaving(true);
+    setErro('');
     try {
-      await fetch(`/api/clientes/${clientId}/agenda`, {
+      const res = await fetch(`/api/clientes/${clientId}/agenda`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -157,8 +159,15 @@ function AgendarDialog({
           descricao_evento: tipo === 'outro' ? (descricao || null) : null,
         }),
       });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setErro(body?.error ?? 'Erro ao salvar. Verifique se a migration 006 foi executada no Supabase.');
+        return;
+      }
       onSaved(dataAud || null, dataPraz || null, tipo || null);
       onClose();
+    } catch {
+      setErro('Erro de conexão. Tente novamente.');
     } finally {
       setSaving(false);
     }
@@ -229,6 +238,12 @@ function AgendarDialog({
             />
           </div>
         </div>
+
+        {erro && (
+          <p className="text-[11px] text-destructive bg-destructive/10 rounded-lg px-3 py-2 leading-snug">
+            {erro}
+          </p>
+        )}
 
         <div className="flex gap-2 pt-1">
           <button
