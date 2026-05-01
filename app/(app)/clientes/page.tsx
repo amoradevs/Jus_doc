@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { maskCPF, unmaskCPF } from '@/lib/validators/cpf';
 import { ClientFilters } from '@/components/client-filters';
 import { labelTipoPedido } from '@/lib/processo';
+import { ExportarClientes } from '@/components/exportar-clientes';
 import { Suspense } from 'react';
 
 type Props = {
@@ -92,9 +93,12 @@ export default async function ClientesPage({ searchParams }: Props) {
     <div>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold text-foreground">Clientes</h1>
-        <Button asChild className="rounded-xl">
-          <Link href="/clientes/novo">+ Novo cliente</Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <ExportarClientes />
+          <Button asChild className="rounded-xl">
+            <Link href="/clientes/novo">+ Novo cliente</Link>
+          </Button>
+        </div>
       </div>
 
       {/* Busca por nome/CPF */}
