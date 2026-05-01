@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useRef } from 'react';
 import Link from 'next/link';
 import { ETAPAS_PIPELINE, etapaInfo } from '@/lib/pipeline';
 import { labelTipoPedido } from '@/lib/processo';
@@ -270,27 +270,65 @@ export function KanbanBoard({ clients }: KanbanBoardProps) {
   const [dragOverEtapa, setDragOverEtapa] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const mouseXRef = useRef(0);
+  const isScrollingRef = useRef(false);
+
   const clientsByEtapa = (etapa: string) =>
     clients.filter((c) => (c.etapa_pipeline || 'triagem') === etapa);
+
+  function startAutoScroll() {
+    if (isScrollingRef.current) return;
+    isScrollingRef.current = true;
+    function tick() {
+      if (!isScrollingRef.current || !scrollRef.current) return;
+      const container = scrollRef.current;
+      const rect = container.getBoundingClientRect();
+      const x = mouseXRef.current;
+      const zone = 120;
+      if (x < rect.left + zone && x > rect.left) {
+        const intensity = 1 - (x - rect.left) / zone;
+        container.scrollLeft -= Math.ceil(intensity * 16);
+      } else if (x > rect.right - zone && x < rect.right) {
+        const intensity = 1 - (rect.right - x) / zone;
+        container.scrollLeft += Math.ceil(intensity * 16);
+      }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function stopAutoScroll() {
+    isScrollingRef.current = false;
+  }
 
   function handleDragStart(e: React.DragEvent, clientId: string) {
     setDraggedId(clientId);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', clientId);
+    startAutoScroll();
   }
 
   function handleDragOver(e: React.DragEvent, etapa: string) {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     setDragOverEtapa(etapa);
+    mouseXRef.current = e.clientX;
   }
 
   function handleDragLeave() {
     setDragOverEtapa(null);
   }
 
+  function handleDragEnd() {
+    stopAutoScroll();
+    setDraggedId(null);
+    setDragOverEtapa(null);
+  }
+
   function handleDrop(e: React.DragEvent, etapa: string) {
     e.preventDefault();
+    stopAutoScroll();
     const clientId = e.dataTransfer.getData('text/plain');
     setDragOverEtapa(null);
     setDraggedId(null);
@@ -305,8 +343,19 @@ export function KanbanBoard({ clients }: KanbanBoardProps) {
     });
   }
 
+  function handleMove(clientId: string, etapa: string) {
+    const client = clients.find((c) => c.id === clientId);
+    if (!client || (client.etapa_pipeline || 'triagem') === etapa) return;
+    startTransition(() => {
+      moverEtapa(clientId, etapa);
+    });
+  }
+
   return (
-    <div className="flex gap-3 overflow-x-auto pb-4 min-h-[calc(100vh-220px)]">
+    <div
+      ref={scrollRef}
+      className="flex gap-3 overflow-x-auto pb-4 min-h-[calc(100vh-220px)]"
+    >
       {ETAPAS_PIPELINE.map((etapa) => {
         const cards = clientsByEtapa(etapa.value);
         const isOver = dragOverEtapa === etapa.value;
@@ -354,6 +403,8 @@ export function KanbanBoard({ clients }: KanbanBoardProps) {
                   client={client}
                   isDragging={draggedId === client.id}
                   onDragStart={(e) => handleDragStart(e, client.id)}
+                  onDragEnd={handleDragEnd}
+                  onMove={(etapa) => handleMove(client.id, etapa)}
                 />
               ))}
             </div>
@@ -375,10 +426,14 @@ function ClientKanbanCard({
   client,
   isDragging,
   onDragStart,
+  onDragEnd,
+  onMove,
 }: {
   client: ClientCard;
   isDragging: boolean;
   onDragStart: (e: React.DragEvent) => void;
+  onDragEnd: () => void;
+  onMove: (etapa: string) => void;
 }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dataAud, setDataAud] = useState(client.data_proxima_audiencia ?? null);
@@ -405,6 +460,7 @@ function ClientKanbanCard({
       <div
         draggable
         onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
         className={`bg-card rounded-xl border border-border p-3 cursor-grab active:cursor-grabbing transition-all duration-150 hover:shadow-md hover:border-primary/30 group select-none ${
           isDragging ? 'opacity-40 scale-95 rotate-1' : 'opacity-100'
         }`}
@@ -490,6 +546,18 @@ function ClientKanbanCard({
             >
               Agendar
             </button>
+            <select
+              value=""
+              onMouseDown={(e) => e.stopPropagation()}
+              onChange={(e) => { if (e.target.value) onMove(e.target.value); }}
+              className="text-[10px] text-muted-foreground hover:text-primary transition-colors font-medium bg-transparent border-none outline-none cursor-pointer appearance-none"
+              title="Mover para outra etapa"
+            >
+              <option value="" disabled>Mover →</option>
+              {ETAPAS_PIPELINE.filter((e) => e.value !== client.etapa_pipeline).map((etapa) => (
+                <option key={etapa.value} value={etapa.value}>{etapa.label}</option>
+              ))}
+            </select>
             <Link
               href={`/clientes/${client.id}`}
               draggable={false}
