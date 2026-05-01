@@ -64,14 +64,14 @@ export function BecaAgent() {
   }, []);
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4 pointer-events-none">
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col items-end gap-3 sm:gap-4 pointer-events-none">
 
       {/* Chat panel */}
       <div
-        className={`w-[340px] flex flex-col rounded-2xl border border-border bg-card shadow-2xl shadow-black/15 overflow-hidden transition-all duration-200 origin-bottom-right pointer-events-auto ${
+        className={`w-[calc(100vw-32px)] sm:w-[340px] flex flex-col rounded-2xl border border-border bg-card shadow-2xl shadow-black/15 overflow-hidden transition-all duration-200 origin-bottom-right pointer-events-auto ${
           open ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
         }`}
-        style={{ height: '460px' }}
+        style={{ height: 'min(460px, calc(100svh - 140px))' }}
       >
         {/* Header do chat */}
         <div className="flex items-center gap-3 px-4 py-3 bg-[#2B1D2A]">
@@ -200,10 +200,10 @@ export function BecaAgent() {
         onMouseEnter={() => setHovering(true)}
         onMouseLeave={() => setHovering(false)}
       >
-        {/* CTA pill — só aparece no hover do avatar quando o chat está fechado */}
+        {/* CTA pill — só aparece no hover do avatar quando o chat está fechado (desktop only) */}
         <button
           onClick={() => setOpen(true)}
-          className={`bg-card border border-border rounded-full pl-4 pr-3 py-2.5 shadow-lg flex items-center gap-2.5 text-sm font-medium text-foreground hover:bg-secondary transition-all duration-200 whitespace-nowrap ${
+          className={`hidden sm:flex bg-card border border-border rounded-full pl-4 pr-3 py-2.5 shadow-lg items-center gap-2.5 text-sm font-medium text-foreground hover:bg-secondary transition-all duration-200 whitespace-nowrap ${
             hovering && !open
               ? 'opacity-100 translate-x-0'
               : 'opacity-0 translate-x-3 pointer-events-none'
@@ -221,7 +221,7 @@ export function BecaAgent() {
         <button
           onClick={() => setOpen((o) => !o)}
           aria-label="Abrir assistente Beca"
-          className={`w-24 h-24 rounded-full overflow-hidden border-[3px] shadow-2xl shadow-black/20 transition-all duration-200 hover:scale-110 ${
+          className={`w-16 h-16 sm:w-24 sm:h-24 rounded-full overflow-hidden border-[3px] shadow-2xl shadow-black/20 transition-all duration-200 hover:scale-110 ${
             open
               ? 'border-primary ring-4 ring-primary/25 scale-[1.06]'
               : 'border-white ring-2 ring-primary/20 hover:ring-primary/40'

@@ -102,7 +102,7 @@ export default async function DashboardPage({
       </div>
 
       {/* Cabeçalho métricas + filtro */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex flex-wrap items-center justify-between gap-y-3 mb-5">
         <div>
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
             {filtrado ? `Métricas — ${labelPeriodo}` : 'Visão geral'}

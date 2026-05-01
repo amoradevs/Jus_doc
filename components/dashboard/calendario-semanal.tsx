@@ -193,7 +193,7 @@ export function CalendarioSemanal() {
   const temEventos = eventos.length > 0;
 
   return (
-    <div className="bg-card rounded-2xl border border-border shadow-sm shadow-[0_2px_8px_rgba(166,102,138,0.06)] overflow-hidden">
+    <div className="bg-card rounded-2xl border border-border shadow-sm shadow-[0_2px_8px_rgba(166,102,138,0.06)]">
       {/* Cabeçalho de navegação */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-border">
         <span className="text-sm font-medium text-foreground capitalize">{labelSemana}</span>
@@ -225,8 +225,9 @@ export function CalendarioSemanal() {
         </div>
       </div>
 
-      {/* Grade semanal */}
-      <div className="grid grid-cols-7 divide-x divide-border">
+      {/* Grade semanal — scroll horizontal em mobile */}
+      <div className="overflow-x-auto">
+      <div className="grid grid-cols-7 divide-x divide-border min-w-[420px]">
         {dias.map((dia) => {
           const ehHoje = isToday(dia);
           const evsDia = eventosNoDia(dia);
@@ -263,6 +264,7 @@ export function CalendarioSemanal() {
             </div>
           );
         })}
+      </div>
       </div>
 
       {!loading && !temEventos && (

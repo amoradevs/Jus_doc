@@ -64,16 +64,26 @@ export default async function PipelinePage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Pipeline</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <p className="hidden sm:block text-sm text-muted-foreground mt-0.5">
             Arraste os cards para mover entre etapas
           </p>
         </div>
         <Button asChild className="rounded-xl">
           <Link href="/clientes/novo">+ Novo cliente</Link>
         </Button>
+      </div>
+
+      {/* Dica mobile — arrastar não funciona em touch */}
+      <div className="sm:hidden mb-4 flex items-center gap-2.5 bg-secondary/60 rounded-xl px-4 py-2.5">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground shrink-0">
+          <path d="M5 9l4-4 4 4M9 5v14M19 15l-4 4-4-4M15 19V5"/>
+        </svg>
+        <p className="text-[11px] text-muted-foreground leading-snug">
+          Deslize para ver as etapas · Use o ícone <strong className="font-semibold text-foreground">Mover</strong> em cada card para mudar de etapa
+        </p>
       </div>
 
       <KanbanBoard clients={enrichedClients} />
