@@ -74,7 +74,7 @@ export default function LoginPage() {
           <div className="mb-8">
             <div className="flex items-center gap-2.5 mb-3">
               <Image
-                src="/Claro.png"
+                src="/logo.png"
                 alt="Logo"
                 width={500}
                 height={500}

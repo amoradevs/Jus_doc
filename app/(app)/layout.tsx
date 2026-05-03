@@ -22,19 +22,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           {/* Logo — light / dark */}
           <Link href="/" className="shrink-0 flex items-center">
             <Image
-              src="/Claro.png"
-              alt="Lidiane Abreu Advogada"
+              src="/logo.png"
+              alt="Rocha & Alencar Advocacia"
               width={500}
               height={500}
-              className="h-[68px] sm:h-[110px] w-auto dark:hidden"
-              priority
-            />
-            <Image
-              src="/Escuro.png"
-              alt="Lidiane Abreu Advogada"
-              width={500}
-              height={500}
-              className="h-[68px] sm:h-[110px] w-auto hidden dark:block"
+              className="h-[68px] sm:h-[110px] w-auto"
               priority
             />
           </Link>
