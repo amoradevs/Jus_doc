@@ -49,10 +49,10 @@ export default function LoginPage() {
           {/* Imagem de fundo */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/Capa_Login.png"
+            src="/capa_login.png"
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
-            style={{ objectPosition: '40% center' }}
+            style={{ objectPosition: '50% center' }}
           />
           {/* Overlay gradiente */}
           <div className="absolute inset-0 bg-gradient-to-t from-[#3a1035]/85 via-[#3a1035]/30 to-transparent" />
@@ -62,7 +62,7 @@ export default function LoginPage() {
               Sistema de gestão
             </p>
             <p className="text-base font-bold leading-snug">
-              Lidiane Rocha Abreu
+              Rocha & Alencar Advocacia
             </p>
             <p className="text-xs text-white/70 mt-0.5">
               Advocacia Previdenciária
@@ -86,7 +86,7 @@ export default function LoginPage() {
               />
               <div>
                 <p className="text-lg font-bold text-foreground tracking-tight leading-none">
-                  Lidiane Rocha Abreu
+                  Rocha & Alencar Advocacia
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">Advocacia Previdenciária</p>
               </div>
@@ -144,7 +144,7 @@ export default function LoginPage() {
       </div>
 
       <p className="text-center text-xs text-muted-foreground mt-6">
-        Lidiane Rocha Abreu · Advocacia Previdenciária
+        Rocha & Alencar · Advocacia Previdenciária
       </p>
     </div>
   );
