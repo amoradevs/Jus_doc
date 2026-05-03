@@ -85,11 +85,11 @@ export default function LoginPage() {
                 <p className="text-lg font-bold text-foreground tracking-tight leading-none">
                   Rocha & Alencar Advocacia
                 </p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">Advocacia Previdenciária</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Advocacia</p>
               </div>
             </div>
             <p className="text-sm text-muted-foreground">
-              Consultoria Jurídica Previdenciária
+              Consultoria Jurídica
             </p>
           </div>
 
@@ -141,7 +141,7 @@ export default function LoginPage() {
       </div>
 
       <p className="text-center text-xs text-muted-foreground mt-6">
-        Rocha & Alencar · Advocacia Previdenciária
+        Rocha & Alencar · Advocacia
       </p>
     </div>
   );
