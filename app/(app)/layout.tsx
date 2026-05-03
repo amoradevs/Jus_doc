@@ -3,7 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Toaster } from '@/components/ui/sonner';
 import { NavLinks } from '@/components/nav-links';
-import { BecaAgent } from '@/components/beca-agent';
+import { RyAAgent } from '@/components/rya-agent';
 import { UserMenu } from '@/components/user-menu';
 import { SignOutForm } from '@/components/sign-out-form';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -70,7 +70,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         {children}
       </main>
 
-      <BecaAgent />
+      <RyAAgent />
       <Toaster richColors position="top-right" />
     </div>
   );
