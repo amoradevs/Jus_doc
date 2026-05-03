@@ -83,7 +83,7 @@ export default function LoginPage() {
               />
               <div>
                 <p className="text-lg font-bold text-foreground tracking-tight leading-none">
-                  Rocha & Alencar Advocacia
+                  Rocha & Alencar
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">Advocacia</p>
               </div>
