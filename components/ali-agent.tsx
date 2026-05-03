@@ -6,9 +6,9 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 type Message = { role: 'user' | 'assistant'; content: string };
 
 const GREETING =
-  'Olá, pessoal! Sou a consultora jurídica RyA, especializada em BPC/LOAS e Direito Previdenciário. Pode me perguntar sobre requisitos, jurisprudência, prazos ou procedimentos. Como posso ajudar?';
+  'Olá, pessoal! Sou a consultora jurídica Ali, especializada em BPC/LOAS e Direito Previdenciário. Pode me perguntar sobre requisitos, jurisprudência, prazos ou procedimentos. Como posso ajudar?';
 
-export function RyAAgent() {
+export function AliAgent() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -78,14 +78,14 @@ export function RyAAgent() {
           <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-white/20 shrink-0">
             <Image
               src="/Figurinha_Lidi.png"
-              alt="RyA"
+              alt="Ali"
               fill
               className="object-cover"
               style={{ objectPosition: '50% 8%' }}
             />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-white text-sm font-semibold leading-none">RyA</p>
+            <p className="text-white text-sm font-semibold leading-none">Ali</p>
             <p className="text-white/50 text-xs mt-0.5">Consultora Jurídica — BPC/LOAS</p>
           </div>
           <button
@@ -209,7 +209,7 @@ export function RyAAgent() {
               : 'opacity-0 translate-x-3 pointer-events-none'
           }`}
         >
-          Fale com a RyA
+          Fale com a Ali
           <span className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shrink-0">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-primary-foreground">
               <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
@@ -220,7 +220,7 @@ export function RyAAgent() {
         {/* Avatar */}
         <button
           onClick={() => setOpen((o) => !o)}
-          aria-label="Abrir assistente RyA"
+          aria-label="Abrir assistente Ali"
           className={`w-16 h-16 sm:w-24 sm:h-24 rounded-full overflow-hidden border-[3px] shadow-2xl shadow-black/20 transition-all duration-200 hover:scale-110 ${
             open
               ? 'border-primary ring-4 ring-primary/25 scale-[1.06]'
@@ -230,7 +230,7 @@ export function RyAAgent() {
           <div className="relative w-full h-full">
             <Image
               src="/Figurinha_Lidi.png"
-              alt="RyA"
+              alt="Ali"
               fill
               className="object-cover"
               style={{ objectPosition: '50% 8%' }}
