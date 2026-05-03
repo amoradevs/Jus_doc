@@ -35,7 +35,7 @@ async function main() {
   const senhaHash = await bcrypt.hash('admin123', 12);
   await supabase.from('users').insert({
     tenant_id: tenant.id,
-    email: 'lidiane@escritorio.com',
+    email: 'gestao@escritorio.com',
     senha_hash: senhaHash,
     nome: 'Lidiane Rocha Abreu',
   });

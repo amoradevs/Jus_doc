@@ -1,7 +1,7 @@
 -- JusDoc — Seed inicial
 -- Executar APÓS o schema.sql no SQL Editor do Supabase
 -- Acesso: https://supabase.com/dashboard/project/oemumlmszlklpbgkwhbs/editor
--- Login: lidiane@escritorio.com / Senha: admin123
+-- Login: gestao@escritorio.com / Senha: admin123
 
 -- Tenant
 insert into tenants (id, nome)
@@ -12,7 +12,7 @@ on conflict do nothing;
 insert into users (tenant_id, email, senha_hash, nome)
 values (
   '00000000-0000-0000-0000-000000000001',
-  'lidiane@escritorio.com',
+  'gestao@escritorio.com',
   '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewKyNiGvM5BxNBEi',
   'Lidiane Rocha Abreu'
 )
