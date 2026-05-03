@@ -64,9 +64,6 @@ export default function LoginPage() {
             <p className="text-base font-bold leading-snug">
               Rocha & Alencar Advocacia
             </p>
-            <p className="text-xs text-white/70 mt-0.5">
-              Advocacia Previdenciária
-            </p>
           </div>
         </div>
 
