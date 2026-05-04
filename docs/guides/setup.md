@@ -31,6 +31,7 @@ Edite `.env.local` com suas credenciais:
 | `SUPABASE_SERVICE_KEY` | Supabase → Project Settings → API → `service_role` key |
 | `SUPABASE_STORAGE_BUCKET` | `documentos-gerados` |
 | `PDF_CONVERTER_API_KEY` | CloudConvert → API Keys (para conversão .docx→.pdf) |
+| `GROQ_API_KEY` | groq.com → API Keys (para a agente Ali) |
 
 > **Não existe `DATABASE_URL`.** O banco é acessado diretamente via `supabase-js` usando `SUPABASE_URL` + `SUPABASE_SERVICE_KEY`.
 
@@ -43,27 +44,49 @@ https://supabase.com/dashboard/project/oemumlmszlklpbgkwhbs/editor
 
 Execute na ordem:
 
-**Passo 3a — Criar tabelas:**
-Cole e execute o conteúdo de `docs/schema.sql`
+**Passo 3a — Criar tabelas (schema base):**
+Cole e execute `docs/schema.sql`
 
 **Passo 3b — Popular dados iniciais:**
-Cole e execute o conteúdo de `docs/seed.sql`
+Cole e execute `docs/seed.sql`
 
 Isso cria:
-- 1 tenant (Escritório Lidiane & Alcione)
-- 1 usuária: `lidiane@escritorio.com` / `admin123`
+- 1 tenant (Escritório Rocha & Alencar)
+- 1 usuária: `gestao@escritorio.com` / `admin123`
 - 15 templates de documentos
 - Configurações iniciais do escritório (vazias)
 
-## 4. Crie o bucket de storage
+**Passo 3c — Migrações incrementais:**
+Execute os arquivos em `docs/migrations/` em ordem numérica:
 
-No Supabase → Storage → New Bucket:
-- **Nome:** `documentos-gerados`
-- **Visibilidade:** privado (todos os toggles desligados)
+```
+001_add_pedido_campos.sql
+002_add_tipo_pedido.sql
+003_case_documents.sql
+004_pipeline_e_cliente_exemplo.sql
+005_add_telefone.sql
+006_add_agenda_campos.sql
+007_add_descricao_evento.sql
+008_template_management.sql   ← gestão de templates e rascunhos
+```
+
+## 4. Crie os buckets de storage
+
+No Supabase → Storage → New Bucket, crie dois buckets:
+
+| Bucket | Visibilidade | Limite | Uso |
+|--------|-------------|--------|-----|
+| `documentos-gerados` | Privado | 50 MB | ZIPs gerados para download |
+| `templates` | Privado | 10 MB | Arquivos DOCX dos templates |
 
 ## 5. Adicione os templates
 
-Coloque os arquivos `.docx` e `.pdf` na pasta `templates/` conforme o catálogo em `templates/README.md`.
+**Opção A — Arquivos locais (deploy via código):**
+Coloque os `.docx` na pasta `templates/` conforme o catálogo em `templates/README.md`.
+
+**Opção B — Upload via sistema (recomendado):**
+Após o login, vá em **Configurações → Templates** e faça upload direto pela interface.
+Os arquivos são armazenados no bucket `templates` do Supabase Storage.
 
 ## 6. Inicie o servidor de desenvolvimento
 
@@ -73,7 +96,7 @@ npm run dev
 
 Acesse: http://localhost:3000
 
-Login: `lidiane@escritorio.com` / `admin123`
+Login: `gestao@escritorio.com` / `admin123`
 
 ## 7. Primeira configuração obrigatória
 
@@ -85,7 +108,7 @@ Após o login, vá em **Configurações** e preencha os dados do escritório ant
 vercel --prod
 ```
 
-Configure as mesmas variáveis de ambiente no painel da Vercel (Project → Settings → Environment Variables). O `NEXTAUTH_URL` deve ser a URL de produção (ex: `https://jus-doc-eta.vercel.app`).
+Configure as mesmas variáveis de ambiente no painel da Vercel (Project → Settings → Environment Variables). O `NEXTAUTH_URL` deve ser a URL de produção.
 
 **URL de produção atual:** https://jus-doc-eta.vercel.app
 
@@ -97,5 +120,6 @@ Configure as mesmas variáveis de ambiente no painel da Vercel (Project → Sett
 | `NEXTAUTH_URL` | ✅ Configurada |
 | `SUPABASE_URL` | ✅ Configurada |
 | `SUPABASE_SERVICE_KEY` | ✅ Configurada |
+| `GROQ_API_KEY` | ✅ Configurada |
 | `PDF_CONVERTER_API_KEY` | ⏳ Pendente |
 | `CRON_SECRET` | ⏳ Pendente |
