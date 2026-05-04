@@ -24,7 +24,7 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
   const client = clientRows?.[0];
   if (!client) notFound();
 
-  const [{ data: packages }, { data: caseDocs }] = await Promise.all([
+  const [{ data: packages }, { data: caseDocs }, { data: clientDocs }] = await Promise.all([
     db
       .from('generation_packages')
       .select('*')
@@ -38,6 +38,13 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
       .eq('client_id', id)
       .eq('tenant_id', user.tenantId)
       .order('criado_em', { ascending: true }),
+    db
+      .from('client_documents')
+      .select('id, template_nome, status, atualizado_em')
+      .eq('client_id', id)
+      .eq('tenant_id', user.tenantId)
+      .order('atualizado_em', { ascending: false })
+      .limit(10),
   ]);
 
   const agora = new Date();
@@ -195,6 +202,36 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
           </div>
         </div>
       </div>
+
+      {/* Rascunhos */}
+      {clientDocs && clientDocs.some((d: { status: string }) => d.status === 'RASCUNHO') && (
+        <div>
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
+            Rascunhos em andamento
+          </h2>
+          <div className="bg-card rounded-2xl border border-border overflow-hidden">
+            {clientDocs
+              .filter((d: { status: string }) => d.status === 'RASCUNHO')
+              .map((doc: { id: string; template_nome: string; status: string; atualizado_em: string }, i: number) => (
+                <div
+                  key={doc.id}
+                  className={`flex items-center justify-between px-5 py-4${i !== 0 ? ' border-t border-border' : ''}`}
+                >
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{doc.template_nome}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Editado em {new Date(doc.atualizado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg px-2.5 py-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    Rascunho
+                  </span>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
 
       {/* Histórico de pacotes */}
       <div>
