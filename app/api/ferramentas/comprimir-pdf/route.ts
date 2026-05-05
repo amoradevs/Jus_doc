@@ -40,22 +40,21 @@ export async function POST(req: Request) {
   try {
     const client = new CloudConvert(process.env.PDF_CONVERTER_API_KEY!);
 
-    // profile 'screen' = máxima compressão (72 dpi) — menor tamanho possível
+    // optimize é a operação correta do CloudConvert para compressão de PDF
+    // profile 'mrc' = Mixed Raster Content, máxima compressão para documentos escaneados
     const job = await client.jobs.create({
       tasks: {
         upload: { operation: 'import/upload' },
-        convert: {
-          operation: 'convert',
+        optimize: {
+          operation: 'optimize',
           input: ['upload'],
           input_format: 'pdf',
           output_format: 'pdf',
-          engine: 'ghostscript',
-          // ghostscript PDFSETTINGS: screen = máxima compressão (72dpi, menor arquivo)
-          pdf_settings: '/screen',
+          profile: 'mrc',
         },
         export: {
           operation: 'export/url',
-          input: ['convert'],
+          input: ['optimize'],
         },
       },
     });
