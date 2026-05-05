@@ -11,8 +11,7 @@ import { FontSizeControl } from '@/components/font-size-control';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
-  const nameParts = user.name?.split(' ').filter(Boolean) ?? [];
-  const initials = nameParts.map((n) => n[0].toUpperCase()).slice(0, 2).join('');
+  const initials = 'R&A';
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
