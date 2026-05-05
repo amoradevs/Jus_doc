@@ -47,11 +47,17 @@ export function PdfCompressor() {
     const form = new FormData();
     form.append('arquivo', file);
 
-    const res = await fetch('/api/ferramentas/comprimir-pdf', { method: 'POST', body: form });
+    let res: Response;
+    try {
+      res = await fetch('/api/ferramentas/comprimir-pdf', { method: 'POST', body: form });
+    } catch {
+      setState({ phase: 'error', message: 'Sem resposta do servidor. Verifique sua conexão.' });
+      return;
+    }
 
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      setState({ phase: 'error', message: body.error ?? 'Erro ao comprimir o arquivo.' });
+      setState({ phase: 'error', message: body.error ?? `Erro ${res.status} ao comprimir o arquivo.` });
       return;
     }
 
