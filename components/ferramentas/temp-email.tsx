@@ -5,6 +5,7 @@ import { Mail, Copy, RefreshCw, Inbox, ChevronDown, ChevronUp, X, Loader2 } from
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
+const MAILTM = 'https://api.mail.tm';
 const POLL_INTERVAL = 7000;
 
 type EmailHeader = {
@@ -20,17 +21,17 @@ type EmailBody = EmailHeader & {
   text: string;
 };
 
-async function api(body: Record<string, unknown>) {
-  const res = await fetch('/api/ferramentas/temp-email', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+async function mailtm(path: string, options?: RequestInit) {
+  const res = await fetch(`${MAILTM}${path}`, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error ?? 'Erro desconhecido.');
-  }
+  if (!res.ok) throw new Error(`mail.tm: ${res.status}`);
   return res.json();
+}
+
+function randomStr(len = 8) {
+  return Math.random().toString(36).slice(2, 2 + len);
 }
 
 function relativeTime(dateStr: string) {
@@ -58,8 +59,10 @@ export function TempEmail() {
 
   const fetchInbox = useCallback(async (jwt: string) => {
     try {
-      const data: EmailHeader[] = await api({ action: 'inbox', token: jwt });
-      setInbox(Array.isArray(data) ? data : []);
+      const data = await mailtm('/messages?page=1', {
+        headers: { Authorization: `Bearer ${jwt}` },
+      });
+      setInbox(Array.isArray(data['hydra:member']) ? data['hydra:member'] : []);
     } catch {
       // falha silenciosa durante polling
     }
@@ -82,13 +85,31 @@ export function TempEmail() {
     setLoading(true);
 
     try {
-      const data = await api({ action: 'gerar' });
-      setAddress(data.address);
-      setToken(data.token);
-      await fetchInbox(data.token);
-      startPolling(data.token);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Não foi possível gerar o endereço.');
+      // 1. Domínio disponível
+      const domains = await mailtm('/domains');
+      const domain: string = domains['hydra:member']?.[0]?.domain;
+      if (!domain) throw new Error('Nenhum domínio disponível.');
+
+      // 2. Cria conta
+      const addr = `adv${randomStr(7)}@${domain}`;
+      const pass = randomStr(16);
+      await mailtm('/accounts', {
+        method: 'POST',
+        body: JSON.stringify({ address: addr, password: pass }),
+      });
+
+      // 3. Obtém token
+      const { token: jwt } = await mailtm('/token', {
+        method: 'POST',
+        body: JSON.stringify({ address: addr, password: pass }),
+      });
+
+      setAddress(addr);
+      setToken(jwt);
+      await fetchInbox(jwt);
+      startPolling(jwt);
+    } catch {
+      setError('Não foi possível gerar o endereço. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -98,7 +119,9 @@ export function TempEmail() {
     if (!token) return;
     if (selected?.id === id) { setSelected(null); return; }
     try {
-      const data: EmailBody = await api({ action: 'mensagem', token, id });
+      const data: EmailBody = await mailtm(`/messages/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setSelected(data);
     } catch {
       toast.error('Não foi possível carregar o e-mail.');
@@ -158,7 +181,6 @@ export function TempEmail() {
       {/* Com endereço */}
       {address && !loading && (
         <div className="flex flex-col gap-4">
-          {/* Endereço */}
           <div className="bg-secondary/50 rounded-lg px-4 py-3 flex items-center gap-2">
             <p className="text-sm font-mono font-medium text-foreground flex-1 truncate">{address}</p>
             <button onClick={copyAddress} className="text-muted-foreground hover:text-foreground transition-colors" title="Copiar">
@@ -166,7 +188,6 @@ export function TempEmail() {
             </button>
           </div>
 
-          {/* Ações */}
           <div className="flex gap-2 flex-wrap items-center">
             <Button variant="outline" size="sm" className="gap-1.5" onClick={generate}>
               <RefreshCw className="w-3.5 h-3.5" />
@@ -185,13 +206,10 @@ export function TempEmail() {
             )}
           </div>
 
-          {/* Inbox */}
           <div className="border border-border rounded-lg overflow-hidden">
             <div className="px-4 py-2.5 bg-secondary/30 border-b border-border flex items-center gap-2">
               <Inbox className="w-3.5 h-3.5 text-muted-foreground" />
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Caixa de entrada
-              </span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Caixa de entrada</span>
               {inbox.length > 0 && (
                 <span className="ml-auto bg-primary text-primary-foreground text-xs rounded-full px-1.5 py-0.5 font-medium">
                   {inbox.length}
@@ -214,16 +232,10 @@ export function TempEmail() {
                   <Mail className={`w-4 h-4 mt-0.5 shrink-0 ${msg.seen ? 'text-muted-foreground' : 'text-blue-500'}`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="text-xs font-medium text-foreground truncate">
-                        {msg.from.name || msg.from.address}
-                      </p>
-                      <span className="text-xs text-muted-foreground shrink-0 ml-auto">
-                        {relativeTime(msg.createdAt)}
-                      </span>
+                      <p className="text-xs font-medium text-foreground truncate">{msg.from.name || msg.from.address}</p>
+                      <span className="text-xs text-muted-foreground shrink-0 ml-auto">{relativeTime(msg.createdAt)}</span>
                     </div>
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">
-                      {msg.subject || '(sem assunto)'}
-                    </p>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">{msg.subject || '(sem assunto)'}</p>
                   </div>
                   {selected?.id === msg.id
                     ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
@@ -239,10 +251,7 @@ export function TempEmail() {
                         <p className="text-xs text-muted-foreground">De: {selected.from.address}</p>
                       </div>
                       <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(selected.text || '');
-                          toast.success('Conteúdo copiado!');
-                        }}
+                        onClick={() => { navigator.clipboard.writeText(selected.text || ''); toast.success('Conteúdo copiado!'); }}
                         className="text-xs text-primary hover:underline shrink-0"
                       >
                         Copiar tudo
