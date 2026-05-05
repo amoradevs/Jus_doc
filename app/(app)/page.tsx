@@ -22,7 +22,7 @@ export default async function DashboardPage({
 }) {
   const { mes, ano } = await searchParams;
   const user = await getCurrentUser();
-  const firstName = user.name?.split(' ')[0] ?? 'Advogada';
+  const firstName = 'Doutores';
   const today = new Date().toLocaleDateString('pt-BR', {
     weekday: 'long',
     day: 'numeric',
