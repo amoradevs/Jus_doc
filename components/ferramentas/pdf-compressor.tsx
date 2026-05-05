@@ -8,8 +8,9 @@ import { toast } from 'sonner';
 type State =
   | { phase: 'idle' }
   | { phase: 'selected'; file: File }
-  | { phase: 'compressing' }
-  | { phase: 'done'; originalSize: number; compressedSize: number; blob: Blob; filename: string }
+  | { phase: 'uploading'; progress: number }
+  | { phase: 'processing' }
+  | { phase: 'done'; originalSize: number; compressedSize: number; downloadUrl: string; filename: string }
   | { phase: 'error'; message: string };
 
 function formatMB(bytes: number) {
@@ -20,15 +21,24 @@ function reduction(original: number, compressed: number) {
   return Math.round((1 - compressed / original) * 100);
 }
 
+async function pollResult(jobId: string): Promise<{ downloadUrl: string; compressedSize: number }> {
+  for (let i = 0; i < 60; i++) {
+    await new Promise((r) => setTimeout(r, 3000));
+    const res = await fetch(`/api/ferramentas/comprimir-pdf/resultado?jobId=${jobId}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? `Erro ${res.status}`);
+    if (data.status === 'finished') return { downloadUrl: data.downloadUrl, compressedSize: data.compressedSize };
+    if (data.status === 'error') throw new Error(data.error ?? 'Falha no processamento.');
+  }
+  throw new Error('Tempo limite excedido. Tente novamente.');
+}
+
 export function PdfCompressor() {
   const [state, setState] = useState<State>({ phase: 'idle' });
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (file: File) => {
-    if (file.type !== 'application/pdf') {
-      toast.error('Apenas arquivos PDF são aceitos.');
-      return;
-    }
+    if (file.type !== 'application/pdf') { toast.error('Apenas arquivos PDF são aceitos.'); return; }
     setState({ phase: 'selected', file });
   };
 
@@ -42,41 +52,62 @@ export function PdfCompressor() {
     if (state.phase !== 'selected') return;
     const { file } = state;
 
-    setState({ phase: 'compressing' });
+    // 1. Criar job no CloudConvert e obter URL de upload
+    const initRes = await fetch('/api/ferramentas/comprimir-pdf/iniciar', { method: 'POST' });
+    const initData = await initRes.json();
+    if (!initRes.ok) { setState({ phase: 'error', message: initData.error ?? 'Erro ao iniciar compressão.' }); return; }
 
-    const form = new FormData();
-    form.append('arquivo', file);
+    const { jobId, uploadUrl, uploadParams } = initData;
 
-    let res: Response;
+    // 2. Upload direto para CloudConvert (sem passar pelo servidor)
+    setState({ phase: 'uploading', progress: 0 });
+
+    await new Promise<void>((resolve, reject) => {
+      const formData = new FormData();
+      for (const [key, value] of Object.entries(uploadParams as Record<string, string>)) {
+        formData.append(key, value);
+      }
+      formData.append('file', file);
+
+      const xhr = new XMLHttpRequest();
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) setState({ phase: 'uploading', progress: Math.round((e.loaded / e.total) * 100) });
+      });
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) resolve();
+        else reject(new Error(`Erro no upload: ${xhr.status}`));
+      });
+      xhr.addEventListener('error', () => reject(new Error('Falha de rede no upload.')));
+      xhr.open('POST', uploadUrl);
+      xhr.send(formData);
+    }).catch((err: Error) => {
+      setState({ phase: 'error', message: err.message });
+      throw err;
+    });
+
+    // 3. Aguardar processamento
+    setState({ phase: 'processing' });
+
     try {
-      res = await fetch('/api/ferramentas/comprimir-pdf', { method: 'POST', body: form });
-    } catch {
-      setState({ phase: 'error', message: 'Sem resposta do servidor. Verifique sua conexão.' });
-      return;
+      const { downloadUrl, compressedSize } = await pollResult(jobId);
+      setState({
+        phase: 'done',
+        originalSize: file.size,
+        compressedSize,
+        downloadUrl,
+        filename: file.name.replace(/\.pdf$/i, '') + '_comprimido.pdf',
+      });
+    } catch (err: unknown) {
+      setState({ phase: 'error', message: err instanceof Error ? err.message : 'Erro desconhecido.' });
     }
-
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setState({ phase: 'error', message: body.error ?? `Erro ${res.status} ao comprimir o arquivo.` });
-      return;
-    }
-
-    const blob = await res.blob();
-    const originalSize = parseInt(res.headers.get('X-Original-Size') ?? '0', 10);
-    const compressedSize = parseInt(res.headers.get('X-Compressed-Size') ?? String(blob.size), 10);
-    const filename = file.name.replace(/\.pdf$/i, '') + '_comprimido.pdf';
-
-    setState({ phase: 'done', originalSize, compressedSize, blob, filename });
   };
 
   const handleDownload = () => {
     if (state.phase !== 'done') return;
-    const url = URL.createObjectURL(state.blob);
     const a = document.createElement('a');
-    a.href = url;
+    a.href = state.downloadUrl;
     a.download = state.filename;
     a.click();
-    URL.revokeObjectURL(url);
   };
 
   const reset = () => setState({ phase: 'idle' });
@@ -94,7 +125,7 @@ export function PdfCompressor() {
         </div>
       </div>
 
-      {/* Idle / Selected — drop zone */}
+      {/* Drop zone — idle ou selected */}
       {(state.phase === 'idle' || state.phase === 'selected') && (
         <div
           onDrop={handleDrop}
@@ -137,8 +168,24 @@ export function PdfCompressor() {
         onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }}
       />
 
-      {/* Compressing */}
-      {state.phase === 'compressing' && (
+      {/* Uploading */}
+      {state.phase === 'uploading' && (
+        <div className="flex flex-col gap-3 py-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Enviando arquivo…</span>
+            <span className="font-medium text-foreground">{state.progress}%</span>
+          </div>
+          <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
+            <div
+              className="h-full bg-primary rounded-full transition-all duration-200"
+              style={{ width: `${state.progress}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Processing */}
+      {state.phase === 'processing' && (
         <div className="flex flex-col items-center gap-3 py-4">
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
           <p className="text-sm text-muted-foreground">Comprimindo via CloudConvert…</p>
@@ -175,9 +222,7 @@ export function PdfCompressor() {
               <Download className="w-4 h-4" />
               Baixar PDF comprimido
             </Button>
-            <Button variant="outline" onClick={reset}>
-              Novo arquivo
-            </Button>
+            <Button variant="outline" onClick={reset}>Novo arquivo</Button>
           </div>
         </div>
       )}
@@ -192,11 +237,9 @@ export function PdfCompressor() {
         </div>
       )}
 
-      {/* Action button — only in selected state */}
+      {/* Botão comprimir */}
       {state.phase === 'selected' && (
-        <Button onClick={handleCompress} className="w-full">
-          Comprimir PDF
-        </Button>
+        <Button onClick={handleCompress} className="w-full">Comprimir PDF</Button>
       )}
     </div>
   );
