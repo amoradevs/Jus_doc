@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 const DOMAINS = ['1secmail.com', '1secmail.net', '1secmail.org'] as const;
-const API = 'https://www.1secmail.com/api/v1/';
 const POLL_INTERVAL = 6000;
 
 type EmailHeader = {
@@ -37,12 +36,20 @@ function relativeTime(dateStr: string) {
   return `${Math.floor(diff / 3600)}h atrás`;
 }
 
+async function apiProxy(params: Record<string, string>) {
+  const qs = new URLSearchParams(params).toString();
+  const res = await fetch(`/api/ferramentas/temp-email?${qs}`);
+  if (!res.ok) throw new Error('Falha na requisição.');
+  return res.json();
+}
+
 export function TempEmail() {
   const [login, setLogin] = useState('');
   const [domain, setDomain] = useState('');
   const [inbox, setInbox] = useState<EmailHeader[]>([]);
   const [selected, setSelected] = useState<EmailBody | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [polling, setPolling] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -55,10 +62,13 @@ export function TempEmail() {
   };
 
   const fetchInbox = useCallback(async (l: string, d: string) => {
-    const res = await fetch(`${API}?action=getMessages&login=${l}&domain=${d}`);
-    if (!res.ok) return;
-    const data: EmailHeader[] = await res.json();
-    setInbox(data);
+    try {
+      const data: EmailHeader[] = await apiProxy({ action: 'getMessages', login: l, domain: d });
+      setInbox(Array.isArray(data) ? data : []);
+      setError('');
+    } catch {
+      // falha silenciosa no polling; erro só aparece na geração inicial
+    }
   }, []);
 
   const startPolling = useCallback((l: string, d: string) => {
@@ -75,17 +85,26 @@ export function TempEmail() {
     setDomain(d);
     setInbox([]);
     setSelected(null);
+    setError('');
     setLoading(true);
-    await fetchInbox(l, d);
-    setLoading(false);
-    startPolling(l, d);
+    try {
+      await fetchInbox(l, d);
+      startPolling(l, d);
+    } catch {
+      setError('Não foi possível conectar ao serviço de e-mail temporário.');
+    } finally {
+      setLoading(false);
+    }
   }, [fetchInbox, startPolling]);
 
   const openEmail = async (id: number) => {
     if (!login || !domain) return;
-    const res = await fetch(`${API}?action=readMessage&login=${login}&domain=${domain}&id=${id}`);
-    if (!res.ok) return;
-    setSelected(await res.json());
+    try {
+      const data: EmailBody = await apiProxy({ action: 'readMessage', login, domain, id: String(id) });
+      setSelected(data);
+    } catch {
+      toast.error('Não foi possível carregar o e-mail.');
+    }
   };
 
   const discard = () => {
@@ -95,6 +114,7 @@ export function TempEmail() {
     setInbox([]);
     setSelected(null);
     setPolling(false);
+    setError('');
   };
 
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
@@ -121,10 +141,11 @@ export function TempEmail() {
           <p className="text-sm text-muted-foreground text-center">
             Gere um endereço temporário e receba e-mails aqui mesmo, sem usar sua caixa oficial.
           </p>
-          <Button onClick={generate} className="gap-2">
+          <Button onClick={generate} disabled={loading} className="gap-2">
             <Mail className="w-4 h-4" />
             Gerar E-mail Temporário
           </Button>
+          {error && <p className="text-xs text-red-500 text-center">{error}</p>}
         </div>
       )}
 
@@ -140,8 +161,8 @@ export function TempEmail() {
           </div>
 
           {/* Ações */}
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={generate}>
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={generate} disabled={loading}>
               <RefreshCw className="w-3.5 h-3.5" />
               Novo endereço
             </Button>
@@ -150,7 +171,7 @@ export function TempEmail() {
               Descartar
             </Button>
             <div className="flex-1" />
-            {polling && (
+            {polling && !loading && (
               <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                 Aguardando e-mails
@@ -173,10 +194,14 @@ export function TempEmail() {
             </div>
 
             {loading && (
-              <div className="px-4 py-6 text-center text-sm text-muted-foreground">Carregando…</div>
+              <div className="px-4 py-6 text-center text-sm text-muted-foreground">Verificando caixa…</div>
             )}
 
-            {!loading && inbox.length === 0 && (
+            {!loading && error && (
+              <div className="px-4 py-6 text-center text-sm text-red-500">{error}</div>
+            )}
+
+            {!loading && !error && inbox.length === 0 && (
               <div className="px-4 py-6 text-center text-sm text-muted-foreground">
                 Nenhum e-mail ainda. Cole o endereço acima no site externo e aguarde.
               </div>
@@ -203,7 +228,6 @@ export function TempEmail() {
                   )}
                 </button>
 
-                {/* Corpo do e-mail expandido */}
                 {selected?.id === msg.id && (
                   <div className="px-4 py-4 bg-secondary/20 border-b border-border">
                     <div className="flex items-start justify-between mb-3 gap-2">
