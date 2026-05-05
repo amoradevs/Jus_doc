@@ -121,5 +121,5 @@ Configure as mesmas variáveis de ambiente no painel da Vercel (Project → Sett
 | `SUPABASE_URL` | ✅ Configurada |
 | `SUPABASE_SERVICE_KEY` | ✅ Configurada |
 | `GROQ_API_KEY` | ✅ Configurada |
-| `PDF_CONVERTER_API_KEY` | ⏳ Pendente |
+| `PDF_CONVERTER_API_KEY` | ✅ Configurada |
 | `CRON_SECRET` | ⏳ Pendente |
