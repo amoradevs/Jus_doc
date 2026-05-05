@@ -90,7 +90,7 @@ export function PdfCompressor() {
         </div>
         <div>
           <h2 className="font-semibold text-foreground">Compressor de PDF</h2>
-          <p className="text-xs text-muted-foreground">Reduza o tamanho para enviar ao Meu INSS e tribunais</p>
+          <p className="text-xs text-muted-foreground">Comprime até 5 MB — ideal para Meu INSS e tribunais</p>
         </div>
       </div>
 

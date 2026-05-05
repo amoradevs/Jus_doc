@@ -30,15 +30,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Apenas arquivos PDF são aceitos.' }, { status: 400 });
   }
 
-  const MAX_MB = 20;
-  if (file.size > MAX_MB * 1024 * 1024) {
-    return NextResponse.json({ error: `Arquivo muito grande. Limite: ${MAX_MB} MB.` }, { status: 400 });
+  const MAX_INPUT_MB = 20;
+  const MAX_OUTPUT_MB = 5;
+
+  if (file.size > MAX_INPUT_MB * 1024 * 1024) {
+    return NextResponse.json({ error: `Arquivo muito grande. Limite de entrada: ${MAX_INPUT_MB} MB.` }, { status: 400 });
   }
 
   try {
     const client = new CloudConvert(process.env.PDF_CONVERTER_API_KEY!);
 
-    // Usa convert PDF→PDF com ghostscript (mais confiável que optimize)
+    // profile 'screen' = máxima compressão (72 dpi) — menor tamanho possível
     const job = await client.jobs.create({
       tasks: {
         upload: { operation: 'import/upload' },
@@ -48,6 +50,8 @@ export async function POST(req: Request) {
           input_format: 'pdf',
           output_format: 'pdf',
           engine: 'ghostscript',
+          // ghostscript PDFSETTINGS: screen = máxima compressão (72dpi, menor arquivo)
+          pdf_settings: '/screen',
         },
         export: {
           operation: 'export/url',
@@ -65,9 +69,7 @@ export async function POST(req: Request) {
     const completed = await client.jobs.wait(job.id);
 
     const failed = completed.tasks.find((t) => t.status === 'error');
-    if (failed) {
-      throw new Error(failed.message ?? 'Falha no processamento CloudConvert.');
-    }
+    if (failed) throw new Error(failed.message ?? 'Falha no processamento CloudConvert.');
 
     const exportTask = completed.tasks.find((t) => t.name === 'export');
     const fileUrl = exportTask?.result?.files?.[0]?.url;
@@ -77,6 +79,15 @@ export async function POST(req: Request) {
     if (!compressed.ok) throw new Error('Falha ao baixar arquivo comprimido.');
 
     const buffer = await compressed.arrayBuffer();
+
+    if (buffer.byteLength > MAX_OUTPUT_MB * 1024 * 1024) {
+      const sizeMB = (buffer.byteLength / (1024 * 1024)).toFixed(1);
+      return NextResponse.json(
+        { error: `Mesmo após compressão máxima, o arquivo ficou com ${sizeMB} MB. Tente dividir o PDF em partes menores.` },
+        { status: 422 },
+      );
+    }
+
     const originalName = file.name.replace(/\.pdf$/i, '');
 
     return new NextResponse(buffer, {
