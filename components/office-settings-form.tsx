@@ -49,7 +49,7 @@ export function OfficeSettingsForm({ defaultValues }: Props) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
       <section>
-        <h2 className="font-semibold text-slate-800 mb-4">Advogada principal</h2>
+        <h2 className="font-semibold text-slate-800 mb-4">Advogada 1</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {field('advogada_principal_nome', 'Nome completo')}
           {field('advogada_principal_nome_curto', 'Nome curto (assinaturas)')}
@@ -59,7 +59,7 @@ export function OfficeSettingsForm({ defaultValues }: Props) {
       </section>
 
       <section>
-        <h2 className="font-semibold text-slate-800 mb-4">Advogada parceira</h2>
+        <h2 className="font-semibold text-slate-800 mb-4">Advogada 2</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {field('advogada_parceira_nome', 'Nome completo')}
           {field('advogada_parceira_nome_curto', 'Nome curto (assinaturas)')}
