@@ -151,7 +151,9 @@ export default async function ClientesPage({ searchParams }: Props) {
               {lista.map((c) => (
                 <tr key={c.id} className="hover:bg-secondary/20 transition-colors">
                   <td className="px-5 py-3.5">
-                    <p className="font-medium text-foreground">{c.nome_completo}</p>
+                    <Link href={`/clientes/${c.id}`} className="font-medium text-foreground hover:text-primary transition-colors">
+                      {c.nome_completo}
+                    </Link>
                     {c.tipo_pedido && (
                       <p className="text-xs text-muted-foreground mt-0.5">{labelTipoPedido(c.tipo_pedido)}</p>
                     )}
