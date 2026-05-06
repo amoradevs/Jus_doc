@@ -13,9 +13,10 @@ export default function ResultadoPage() {
   const searchParams = useSearchParams();
   const codigos = searchParams.get('codigos') ?? '';
   const modo = searchParams.get('modo') ?? 'direto';
+  const packageIdParam = searchParams.get('packageId') ?? '';
 
-  const [status, setStatus] = useState<Status>('idle');
-  const [packageId, setPackageId] = useState('');
+  const [status, setStatus] = useState<Status>(packageIdParam ? 'done' : 'idle');
+  const [packageId, setPackageId] = useState(packageIdParam);
   const [docs, setDocs] = useState<Doc[]>([]);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -42,7 +43,7 @@ export default function ResultadoPage() {
   }
 
   useEffect(() => {
-    if (modo === 'direto') gerar();
+    if (modo === 'direto' && !packageIdParam) gerar();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
