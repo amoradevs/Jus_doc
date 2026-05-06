@@ -107,7 +107,7 @@ function DocEditor({ doc, onChange }: DocEditorProps) {
     onUpdate: ({ editor }) => onChange(doc.codigo, editor.getHTML()),
     editorProps: {
       attributes: {
-        class: 'prose prose-sm max-w-none focus:outline-none min-h-[300px] px-5 py-4 text-foreground leading-relaxed',
+        class: 'tiptap-editor focus:outline-none min-h-[300px] px-5 py-4 text-foreground leading-relaxed',
       },
     },
   });

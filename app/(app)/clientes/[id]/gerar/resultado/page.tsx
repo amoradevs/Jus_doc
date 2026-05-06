@@ -43,7 +43,15 @@ export default function ResultadoPage() {
   }
 
   useEffect(() => {
-    if (modo === 'direto' && !packageIdParam) gerar();
+    if (packageIdParam) {
+      // Veio do fluxo "Revisar Antes" — busca a lista de documentos do pacote
+      fetch(`/api/download/${packageIdParam}/docs`)
+        .then((r) => r.ok ? r.json() : [])
+        .then((data: Doc[]) => setDocs(data))
+        .catch(() => {});
+    } else if (modo === 'direto') {
+      gerar();
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
