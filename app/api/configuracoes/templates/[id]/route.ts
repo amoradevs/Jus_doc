@@ -48,7 +48,7 @@ export async function DELETE(_req: Request, { params }: Params) {
 
   const { error } = await db
     .from('document_templates')
-    .update({ ativo: 'false' })
+    .delete()
     .eq('id', id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
