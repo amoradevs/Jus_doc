@@ -14,10 +14,12 @@ export function FiltroPeriodo({
   mesAtivo,
   anoAtivo,
   anoAtual,
+  isPadrao = false,
 }: {
   mesAtivo: number | null;
   anoAtivo: number | null;
   anoAtual: number;
+  isPadrao?: boolean;
 }) {
   const router = useRouter();
 
@@ -30,8 +32,6 @@ export function FiltroPeriodo({
     if (ano) p.set('ano', ano.toString());
     router.push(p.toString() ? `/?${p.toString()}` : '/');
   }
-
-  const filtrado = mesAtivo !== null || anoAtivo !== null;
 
   return (
     <div className="flex items-center gap-2">
@@ -57,7 +57,7 @@ export function FiltroPeriodo({
         ))}
       </select>
 
-      {filtrado && (
+      {!isPadrao && (
         <button
           onClick={() => navigate(null, null)}
           className="h-8 px-2.5 rounded-lg text-xs text-muted-foreground border border-input bg-card hover:bg-secondary transition-colors"

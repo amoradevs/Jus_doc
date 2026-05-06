@@ -31,8 +31,9 @@ export default async function DashboardPage({
   });
 
   const anoAtual = new Date().getFullYear();
-  const mesParam = mes ? parseInt(mes) : null;
-  const anoParam = ano ? parseInt(ano) : null;
+  const mesAtual = new Date().getMonth() + 1;
+  const mesParam = mes ? parseInt(mes) : mesAtual;
+  const anoParam = ano ? parseInt(ano) : anoAtual;
 
   // Calcula intervalo de datas para o filtro
   let dateStart: string | null = null;
@@ -105,15 +106,13 @@ export default async function DashboardPage({
       <div className="flex flex-wrap items-center justify-between gap-y-3 mb-5">
         <div>
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-            {filtrado ? `Métricas — ${labelPeriodo}` : 'Visão geral'}
+            Visão Geral Mensal
           </h2>
-          {filtrado && (
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              Clientes cadastrados neste período
-            </p>
-          )}
+          <p className="text-[10px] text-muted-foreground mt-0.5">
+            {labelPeriodo}
+          </p>
         </div>
-        <FiltroPeriodo mesAtivo={mesParam} anoAtivo={anoParam} anoAtual={anoAtual} />
+        <FiltroPeriodo mesAtivo={mesParam} anoAtivo={anoParam} anoAtual={anoAtual} isPadrao={!mes && !ano} />
       </div>
 
       {/* Métricas */}
