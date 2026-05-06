@@ -8,6 +8,7 @@ import { calcularIdade } from '@/lib/format/age';
 import { labelTipoPedido } from '@/lib/processo';
 import { DocumentChecklist } from '@/components/document-checklist';
 import { InitChecklistButton } from '@/components/init-checklist-button';
+import { CadastroBadge } from '@/components/cadastro-badge';
 
 export default async function ClientePage({ params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
@@ -82,6 +83,12 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
             <span className="text-sm text-muted-foreground">{idade} anos</span>
             <span className="text-muted-foreground/40">·</span>
             <span className="text-sm text-muted-foreground">{client.estado_civil}</span>
+            {client.senha_cadastro && (
+              <>
+                <span className="text-muted-foreground/40">·</span>
+                <CadastroBadge senha={client.senha_cadastro} />
+              </>
+            )}
             <span className="text-muted-foreground/40">·</span>
             <StatusBadge status={client.status_pedido} />
           </div>

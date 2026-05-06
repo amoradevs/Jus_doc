@@ -44,6 +44,7 @@ export const clientSchema = z.object({
   endereco_cidade: z.string().min(2, 'Cidade obrigatória'),
   endereco_uf: z.string().length(2, 'UF deve ter 2 letras'),
   endereco_cep: z.string().regex(/^\d{8}$/, 'CEP inválido'),
+  senha_cadastro: z.string().optional(),
 });
 
 export type ClientInput = z.infer<typeof clientSchema>;

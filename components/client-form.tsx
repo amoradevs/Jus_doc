@@ -102,6 +102,7 @@ export function ClientForm({ mode, clientId, defaultValues }: Props) {
             </Select>
           </div>
           {field('data_entrada_pedido', 'Data de entrada / protocolo', 'date')}
+          {field('senha_cadastro', 'Senha do cadastro (Meu INSS / gov.br)')}
           <div className="space-y-1">
             <Label htmlFor="status_pedido">Situação</Label>
             <Select
