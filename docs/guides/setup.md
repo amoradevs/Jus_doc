@@ -32,6 +32,7 @@ Edite `.env.local` com suas credenciais:
 | `SUPABASE_STORAGE_BUCKET` | `documentos-gerados` |
 | `PDF_CONVERTER_API_KEY` | CloudConvert → API Keys (para conversão .docx→.pdf) |
 | `GROQ_API_KEY` | groq.com → API Keys (para a agente Ali) |
+| `ANTHROPIC_API_KEY` | console.anthropic.com → API Keys (para o Template Wizard) |
 
 > **Não existe `DATABASE_URL`.** O banco é acessado diretamente via `supabase-js` usando `SUPABASE_URL` + `SUPABASE_SERVICE_KEY`.
 
@@ -122,4 +123,5 @@ Configure as mesmas variáveis de ambiente no painel da Vercel (Project → Sett
 | `SUPABASE_SERVICE_KEY` | ✅ Configurada |
 | `GROQ_API_KEY` | ✅ Configurada |
 | `PDF_CONVERTER_API_KEY` | ✅ Configurada |
+| `ANTHROPIC_API_KEY` | ⏳ Pendente (Template Wizard) |
 | `CRON_SECRET` | ⏳ Pendente |

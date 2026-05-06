@@ -78,8 +78,8 @@ export async function buildTemplateContext(clientId: string, tenantId: string): 
       endereco_cep: settings.endereco_cep,
     } : {},
     documento: {
-      cidade: settings?.endereco_cidade ?? '',
-      uf: settings?.endereco_uf ?? '',
+      cidade: client.endereco_cidade ?? '',
+      uf: client.endereco_uf ?? '',
       data_extenso: formatDateExtenso(new Date()),
     },
   };
