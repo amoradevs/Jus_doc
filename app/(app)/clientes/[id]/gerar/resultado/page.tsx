@@ -85,13 +85,20 @@ function PdfViewer({
     if (!win) return;
     win.document.write(`<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>${doc.nome}</title><style>
-  body { font-family: Arial, sans-serif; font-size: 12pt; line-height: 1.6;
-         color: #000; text-align: justify; }
-  @page { margin: 2.5cm; }
-  h1, h2, h3 { text-align: center; }
-  p { margin-bottom: 0.8em; }
-  table { width: 100%; border-collapse: collapse; }
-  td, th { border: 1px solid #000; padding: 4px 8px; }
+  body { font-family: Arial, sans-serif; font-size: 12pt; line-height: 1.5;
+         color: #000; margin: 0; }
+  @page { margin: 2.5cm; size: A4; }
+  h1, h2, h3, .doc-title, .doc-subtitle { text-align: center; font-weight: bold;
+         margin: 0.5em 0; font-size: 12pt; }
+  .doc-center { text-align: center; }
+  p { margin: 0 0 0.5em; text-align: justify; }
+  strong, b { font-weight: bold; }
+  em, i { font-style: italic; }
+  u { text-decoration: underline; }
+  table { width: 100%; border-collapse: collapse; margin: 0.5em 0; }
+  td, th { border: 1px solid #000; padding: 3px 6px; font-size: 11pt; }
+  ul, ol { margin: 0.3em 0 0.3em 1.5em; }
+  li { margin-bottom: 0.2em; }
 </style></head><body>${content}</body></html>`);
     win.document.close();
     win.focus();
@@ -208,21 +215,32 @@ function PdfViewer({
               </p>
             </div>
             {/* Documento editável */}
+            <style>{`
+              .doc-editor p { margin: 0 0 0.55em; text-align: justify; }
+              .doc-editor h1, .doc-editor h2, .doc-editor h3 { text-align: center; font-weight: bold; margin: 0.6em 0 0.3em; font-size: 12pt; }
+              .doc-editor .doc-title, .doc-editor .doc-subtitle { text-align: center; font-weight: bold; }
+              .doc-editor .doc-center { text-align: center; }
+              .doc-editor strong { font-weight: bold; }
+              .doc-editor em { font-style: italic; }
+              .doc-editor u { text-decoration: underline; }
+              .doc-editor table { width: 100%; border-collapse: collapse; margin: 0.5em 0; }
+              .doc-editor td, .doc-editor th { border: 1px solid #333; padding: 4px 8px; }
+              .doc-editor ul, .doc-editor ol { margin: 0.3em 0 0.3em 1.5em; }
+            `}</style>
             <div
               ref={editorRef}
               contentEditable
               suppressContentEditableWarning
               // eslint-disable-next-line react/no-danger
               dangerouslySetInnerHTML={{ __html: html }}
-              className="bg-white shadow-sm rounded-xl outline-none focus:ring-2 focus:ring-primary/20"
+              className="doc-editor bg-white shadow-sm rounded-xl outline-none focus:ring-2 focus:ring-primary/20"
               style={{
                 fontFamily: 'Arial, sans-serif',
                 fontSize: '12pt',
-                lineHeight: '1.6',
+                lineHeight: '1.5',
                 color: '#000',
                 padding: '2.5cm',
                 minHeight: '29.7cm',
-                textAlign: 'justify',
               }}
             />
           </div>

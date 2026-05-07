@@ -52,7 +52,21 @@ export async function GET(req: Request) {
       try {
         const templateBuffer = await getTemplateBuffer(template);
         const docxBuffer = await renderDocxTemplate(templateBuffer, context);
-        const { value: html } = await mammoth.convertToHtml({ buffer: Buffer.from(docxBuffer) });
+        const { value: html } = await mammoth.convertToHtml(
+          { buffer: Buffer.from(docxBuffer) },
+          {
+            includeEmbeddedStyleMap: true,
+            styleMap: [
+              "p[style-name='Heading 1'] => h1:fresh",
+              "p[style-name='Heading 2'] => h2:fresh",
+              "p[style-name='Heading 3'] => h3:fresh",
+              "p[style-name='Title'] => h1.doc-title:fresh",
+              "p[style-name='Subtitle'] => h2.doc-subtitle:fresh",
+              "p[style-name='Centered'] => p.doc-center:fresh",
+              "u => u",
+            ],
+          },
+        );
         return { codigo: template.codigo, nome: template.nome, html, editavel: true };
       } catch {
         return { codigo: template.codigo, nome: template.nome, html: '', editavel: false };
