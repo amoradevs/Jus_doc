@@ -31,14 +31,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Erro ao ler o formulário.' }, { status: 400 });
   }
 
-  if (!file || !mappingsRaw || !nome || !categoria || !codigo) {
+  if (!file || !nome || !categoria || !codigo) {
     return NextResponse.json({ error: 'Campos obrigatórios ausentes.' }, { status: 400 });
   }
 
   let mappings: Mapping[];
   let camposContextuais: string[];
   try {
-    mappings = JSON.parse(mappingsRaw);
+    mappings = mappingsRaw ? JSON.parse(mappingsRaw) : [];
     camposContextuais = camposRaw ? JSON.parse(camposRaw) : [];
   } catch {
     return NextResponse.json({ error: 'Formato inválido de mapeamentos.' }, { status: 400 });
@@ -46,13 +46,15 @@ export async function POST(req: Request) {
 
   try {
     const buffer = await file.arrayBuffer();
-    const taggedDocx = applyMappings(buffer, mappings);
+    const docxToUpload = mappings.length > 0
+      ? applyMappings(buffer, mappings)
+      : Buffer.from(buffer);
 
     const storagePath = `templates/${codigo}_${nome.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')}.docx`;
 
     const { error: uploadError } = await storage.storage
       .from('templates')
-      .upload(storagePath, taggedDocx, {
+      .upload(storagePath, docxToUpload, {
         contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         upsert: true,
       });

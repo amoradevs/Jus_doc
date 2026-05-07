@@ -1,11 +1,10 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Upload, FileText, Loader2 } from 'lucide-react';
+import { Upload, FileText, Loader2, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { TagSuggestion } from '@/lib/template-wizard/ai-tagger';
 
 const FAMILIAS = [
   { value: 'contrato', label: 'Contrato' },
@@ -15,40 +14,52 @@ const FAMILIAS = [
   { value: 'outro', label: 'Outro' },
 ];
 
+async function extractTagsFromDocx(file: File): Promise<string[]> {
+  try {
+    const JSZip = (await import('jszip')).default;
+    const zip = await JSZip.loadAsync(await file.arrayBuffer());
+    const xmlFile = zip.file('word/document.xml');
+    if (!xmlFile) return [];
+    const xml = await xmlFile.async('text');
+    const stripped = xml.replace(/<[^>]+>/g, '');
+    const matches = [...stripped.matchAll(/\{([^}]+)\}/g)];
+    const unique = [...new Set(matches.map((m) => `{${m[1]}}`))]
+    return unique;
+  } catch {
+    return [];
+  }
+}
+
+function fileToNome(filename: string) {
+  return filename
+    .replace(/\.docx$/i, '')
+    .split(/(\s+|-)/)
+    .map((part) =>
+      part.trim().length > 0
+        ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+        : part
+    )
+    .join('');
+}
+
 type Props = {
   proximoCodigo: string;
-  onAnalyzed: (result: {
-    file: File;
-    suggestions: TagSuggestion[];
-    textPreview: string;
-    nome: string;
-    categoria: string;
-    codigo: string;
-  }) => void;
+  onSaved: () => void;
 };
 
-export function UploadStep({ proximoCodigo, onAnalyzed }: Props) {
+export function UploadStep({ proximoCodigo, onSaved }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [tags, setTags] = useState<string[]>([]);
   const [form, setForm] = useState({ nome: '', categoria: 'contrato', codigo: proximoCodigo });
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  function fileToNome(filename: string) {
-    return filename
-      .replace(/\.docx$/i, '')
-      .split(/(\s+|-)/)
-      .map((part) =>
-        part.trim().length > 0
-          ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
-          : part
-      )
-      .join('');
-  }
-
-  function pickFile(f: File) {
+  async function pickFile(f: File) {
     setFile(f);
     setForm((prev) => ({ ...prev, nome: prev.nome || fileToNome(f.name) }));
+    const found = await extractTagsFromDocx(f);
+    setTags(found);
   }
 
   const handleDrop = (e: React.DragEvent) => {
@@ -57,30 +68,35 @@ export function UploadStep({ proximoCodigo, onAnalyzed }: Props) {
     if (f?.name.endsWith('.docx')) pickFile(f);
   };
 
-  const handleAnalyze = async () => {
+  const handleSave = async () => {
     if (!file) return setError('Selecione um arquivo .docx');
     if (!form.nome.trim()) return setError('Informe o nome do template');
     if (!form.codigo.trim()) return setError('Informe o código do template');
     setError('');
-    setLoading(true);
+    setSaving(true);
 
     const fd = new FormData();
     fd.append('arquivo', file);
+    fd.append('mappings', JSON.stringify([]));
+    fd.append('nome', form.nome.trim());
+    fd.append('categoria', form.categoria);
+    fd.append('codigo', form.codigo.trim());
+    fd.append('campos_contextuais', JSON.stringify([]));
 
-    const res = await fetch('/api/configuracoes/templates/wizard/analyze', { method: 'POST', body: fd });
+    const res = await fetch('/api/configuracoes/templates/wizard/save', { method: 'POST', body: fd });
     const json = await res.json();
-    setLoading(false);
+    setSaving(false);
 
-    if (!res.ok) return setError(json.error ?? 'Erro na análise.');
-    onAnalyzed({ file, suggestions: json.suggestions, textPreview: json.textPreview, ...form });
+    if (!res.ok) return setError(json.error ?? 'Erro ao salvar.');
+    onSaved();
   };
 
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-base font-semibold text-foreground">1. Selecione o documento</h2>
+        <h2 className="text-base font-semibold text-foreground">Selecione o documento</h2>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Faça upload do DOCX original (sem edição). A IA identificará os dados a substituir.
+          Faça upload do DOCX com as tags já inseridas no Word (ex: <span className="font-mono text-primary">{'{cliente.nome_completo}'}</span>).
         </p>
       </div>
 
@@ -103,7 +119,12 @@ export function UploadStep({ proximoCodigo, onAnalyzed }: Props) {
               <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(0)} KB</p>
             </div>
             <button
-              onClick={(e) => { e.stopPropagation(); setFile(null); setForm((f) => ({ ...f, nome: '' })); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setFile(null);
+                setTags([]);
+                setForm((f) => ({ ...f, nome: '' }));
+              }}
               className="ml-2 text-muted-foreground hover:text-foreground text-xs"
             >
               trocar
@@ -126,7 +147,32 @@ export function UploadStep({ proximoCodigo, onAnalyzed }: Props) {
         onChange={(e) => { const f = e.target.files?.[0]; if (f) pickFile(f); e.target.value = ''; }}
       />
 
-      {/* Metadados básicos */}
+      {/* Tags detectadas */}
+      {file && (
+        <div className="rounded-xl border border-border bg-secondary/20 px-4 py-3 space-y-2">
+          <div className="flex items-center gap-1.5">
+            <Tag className="w-3.5 h-3.5 text-muted-foreground" />
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Tags detectadas no documento
+            </p>
+          </div>
+          {tags.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {tags.map((t) => (
+                <span key={t} className="text-xs font-mono bg-primary/10 text-primary px-2 py-0.5 rounded-md">
+                  {t}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground italic">
+              Nenhuma tag encontrada. Certifique-se de usar o formato <span className="font-mono not-italic">{'{tag}'}</span> no Word.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Metadados */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label htmlFor="wz-codigo">Código</Label>
@@ -164,14 +210,14 @@ export function UploadStep({ proximoCodigo, onAnalyzed }: Props) {
 
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
-      <Button onClick={handleAnalyze} disabled={loading} className="w-full gap-2">
-        {loading ? (
+      <Button onClick={handleSave} disabled={saving || !file} className="w-full gap-2">
+        {saving ? (
           <>
             <Loader2 className="w-4 h-4 animate-spin" />
-            Analisando com IA…
+            Salvando…
           </>
         ) : (
-          'Analisar documento com IA'
+          'Salvar template'
         )}
       </Button>
     </div>

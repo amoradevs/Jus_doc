@@ -1,17 +1,120 @@
 import { db } from '@/lib/db';
-import { formatDateExtenso } from '@/lib/format/date';
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function calcularIdade(dataIso: string): number {
+  const nasc = new Date(dataIso);
+  const hoje = new Date();
+  let idade = hoje.getFullYear() - nasc.getFullYear();
+  const m = hoje.getMonth() - nasc.getMonth();
+  if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
+  return idade;
+}
+
+function formatarCPF(cpf: string): string {
+  const d = (cpf ?? '').replace(/\D/g, '');
+  return d.length === 11 ? `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}` : cpf;
+}
+
+function formatarCEP(cep: string): string {
+  const d = (cep ?? '').replace(/\D/g, '');
+  return d.length === 8 ? `${d.slice(0,5)}-${d.slice(5)}` : cep;
+}
+
+function formatarData(iso: string): string {
+  if (!iso) return '';
+  // Add noon UTC to avoid timezone-shift to previous day
+  const d = new Date(`${iso.slice(0, 10)}T12:00:00Z`);
+  return d.toLocaleDateString('pt-BR');
+}
+
+const MESES = [
+  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+];
+
+// ─── Tipo de benefício → descrições e checkboxes ──────────────────────────────
+
+const TIPO_BENEFICIO_MAP: Record<string, { descricao: string; objeto: string; marcados: string[] }> = {
+  aposentadoria_idade_urbana: {
+    descricao: 'BENEFÍCIO DE APOSENTADORIA POR IDADE URBANA',
+    objeto: 'ingressar com Pedido de BENEFÍCIO DE APOSENTADORIA POR IDADE EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
+    marcados: ['aposentadoria_idade', 'aposentadoria_idade_urbana'],
+  },
+  aposentadoria_idade_rural: {
+    descricao: 'BENEFÍCIO DE APOSENTADORIA POR IDADE RURAL',
+    objeto: 'ingressar com Pedido de BENEFÍCIO DE APOSENTADORIA POR IDADE RURAL EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
+    marcados: ['aposentadoria_idade', 'aposentadoria_idade_rural'],
+  },
+  bpc_idoso: {
+    descricao: 'BENEFÍCIO DE PRESTAÇÃO CONTINUADA – IDOSO',
+    objeto: 'ingressar com Pedido de BENEFÍCIO DE PRESTAÇÃO CONTINUADA EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
+    marcados: ['bpc'],
+  },
+  bpc_deficiente_adulto: {
+    descricao: 'BENEFÍCIO DE PRESTAÇÃO CONTINUADA – DEFICIENTE',
+    objeto: 'ingressar com Pedido de BENEFÍCIO DE PRESTAÇÃO CONTINUADA EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
+    marcados: ['bpc'],
+  },
+  bpc_deficiente_menor_16: {
+    descricao: 'BENEFÍCIO DE PRESTAÇÃO CONTINUADA – DEFICIENTE MENOR',
+    objeto: 'ingressar com Pedido de BENEFÍCIO DE PRESTAÇÃO CONTINUADA EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
+    marcados: ['bpc'],
+  },
+  bpc_deficiente_16_18: {
+    descricao: 'BENEFÍCIO DE PRESTAÇÃO CONTINUADA – DEFICIENTE',
+    objeto: 'ingressar com Pedido de BENEFÍCIO DE PRESTAÇÃO CONTINUADA EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
+    marcados: ['bpc'],
+  },
+  bpc_loas: {
+    descricao: 'BENEFÍCIO DE PRESTAÇÃO CONTINUADA – BPC/LOAS',
+    objeto: 'ingressar com Pedido de BENEFÍCIO DE PRESTAÇÃO CONTINUADA EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
+    marcados: ['bpc'],
+  },
+  mandado_seguranca: {
+    descricao: 'IMPETRAÇÃO DE MANDADO DE SEGURANÇA',
+    objeto: 'impetrar MANDADO DE SEGURANÇA em face do INSS (Instituto Nacional do Seguro Social)',
+    marcados: [],
+  },
+};
+
+const TODAS_OPCOES_CHECKBOX = [
+  'aposentadoria_idade', 'aposentadoria_idade_urbana', 'aposentadoria_idade_rural',
+  'aposentadoria_tempo', 'aposentadoria_especial',
+  'pensao_morte', 'pensao_morte_urbana', 'pensao_morte_rural',
+  'auxilio_reclusao', 'auxilio_reclusao_urbano', 'auxilio_reclusao_rural',
+  'salario_maternidade', 'salario_maternidade_urbano', 'salario_maternidade_rural',
+  'bpc', 'atualizacao_cadastral',
+];
+
+// ─── Tipo exportado ───────────────────────────────────────────────────────────
 
 export type TemplateContext = {
-  cliente: Record<string, string | undefined>;
-  escritorio: Record<string, string | undefined>;
-  documento: { cidade: string; uf: string; data_extenso: string };
-  representante?: Record<string, string | undefined>;
-  conjuge?: Record<string, string | undefined>;
-  filho_dependente?: Record<string, string | undefined>;
-  imovel?: Record<string, string | undefined>;
-  empresa_mei?: Record<string, string | undefined>;
-  testemunhas?: Record<string, string | undefined>[];
+  bloco_contratante_maior_capaz: boolean;
+  bloco_contratante_a_rogo: boolean;
+  bloco_contratante_menor: boolean;
+  bloco_paragrafos_recurso: boolean;
+  bloco_mora_sozinho: boolean;
+  bloco_mora_com_dependentes: boolean;
+
+  cliente: { nome_completo: string; nacionalidade: string; estado_civil: string; cpf: string; rg: string; rg_orgao_emissor: string; data_nascimento: string; nome_mae: string; nome_pai: string; nit: string; condicao_menor: string };
+  endereco: { logradouro: string; numero: string; complemento_formatado: string; bairro: string; cidade: string; uf: string; cep: string };
+  imovel: { cedido: boolean; proprietario_nome: string };
+  representante: { nome_completo: string; cpf: string; rg: string; parentesco: string };
+  dependentes: Array<{ nome_completo: string; cpf: string; rg: string; data_nascimento: string; parentesco: string }>;
+  conjuge: { nome_completo: string; data_nascimento: string };
+  separacao: { data: string; recebe_pensao: boolean; valor_pensao: string };
+  empresa: { cnpj: string; razao_social: string; cnae: string; ramo: string; data_abertura: string; data_inicio_inatividade: string };
+  testemunhas: Array<{ tipo_label: string; nome_completo: string; cpf: string; rg: string }>;
+  processo: { tipo_beneficio_descricao: string; objeto_procuracao: string };
+  honorarios: { qtd_salarios: number; qtd_salarios_extenso: string; percentual_padrao: number; percentual_recurso: number };
+  multa: { qtd_salarios_minimos: number; qtd_salarios_minimos_extenso: string };
+  escritorio: { adv1_nome: string; adv1_oab: string; adv1_email: string; adv2_nome: string; adv2_oab: string; adv2_cpf: string; adv2_email: string; endereco_logradouro: string; endereco_numero: string; endereco_complemento: string; endereco_bairro: string; endereco_cidade: string; endereco_uf: string; endereco_cep: string; foro_eleito: string };
+  doc: { cidade_assinatura: string; dia_assinatura: string; mes_assinatura_extenso: string; mes_assinatura_numero: string; ano_assinatura: string };
+  checkbox: Record<string, string>;
 };
+
+// ─── Builder principal ────────────────────────────────────────────────────────
 
 export async function buildTemplateContext(clientId: string, tenantId: string): Promise<TemplateContext> {
   const { data: clientRows } = await db
@@ -25,70 +128,184 @@ export async function buildTemplateContext(clientId: string, tenantId: string): 
   const client = clientRows?.[0];
   if (!client) throw new Error('Cliente não encontrado');
 
-  const { data: contextualRows } = await db
-    .from('client_contextual_data')
-    .select('*')
-    .eq('client_id', clientId)
-    .limit(1);
+  const [{ data: contextualRows }, { data: settingsRows }] = await Promise.all([
+    db.from('client_contextual_data').select('*').eq('client_id', clientId).limit(1),
+    db.from('office_settings').select('*').eq('tenant_id', tenantId).limit(1),
+  ]);
 
-  const { data: settingsRows } = await db
-    .from('office_settings')
-    .select('*')
-    .eq('tenant_id', tenantId)
-    .limit(1);
-
-  const contextual = contextualRows?.[0] ?? null;
+  const ctx = contextualRows?.[0] ?? null;
   const settings = settingsRows?.[0] ?? null;
 
-  const ctx: TemplateContext = {
+  // ── Blocos condicionais ────────────────────────────────────────────────────
+  const idade = calcularIdade(client.data_nascimento);
+  const ehMenor = idade < 18;
+  const sabeAssinar = client.sabe_assinar !== false; // default true
+
+  const bloco_contratante_menor = ehMenor;
+  const bloco_contratante_maior_capaz = !ehMenor && sabeAssinar;
+  const bloco_contratante_a_rogo = !ehMenor && !sabeAssinar;
+
+  const tipoBeneficio: string = client.tipo_pedido ?? '';
+  const tipoInfo = TIPO_BENEFICIO_MAP[tipoBeneficio] ?? { descricao: '', objeto: '', marcados: [] };
+  const bloco_paragrafos_recurso = tipoBeneficio !== 'mandado_seguranca';
+
+  // ── Dependentes ───────────────────────────────────────────────────────────
+  type Dependente = { nome_completo?: string; cpf?: string; rg?: string; data_nascimento?: string; parentesco?: string };
+  const fdRaw = ctx?.filho_dependente;
+  const dependentesRaw: Dependente[] = !fdRaw ? [] : Array.isArray(fdRaw) ? fdRaw : [fdRaw];
+  const dependentes = dependentesRaw
+    .filter((d) => d?.nome_completo)
+    .map((d) => ({
+      nome_completo: d.nome_completo ?? '',
+      cpf: formatarCPF(d.cpf ?? ''),
+      rg: d.rg ?? '',
+      data_nascimento: formatarData(d.data_nascimento ?? ''),
+      parentesco: d.parentesco ?? '',
+    }));
+
+  const bloco_mora_sozinho = dependentes.length === 0;
+  const bloco_mora_com_dependentes = dependentes.length > 0;
+
+  // ── Imóvel ────────────────────────────────────────────────────────────────
+  type ImovelData = { cedido?: boolean | string; proprietario_nome?: string };
+  const imovelRaw: ImovelData = (ctx?.imovel as ImovelData) ?? {};
+  const imovelCedido = imovelRaw.cedido === true || imovelRaw.cedido === 'true';
+
+  // ── Checkboxes ────────────────────────────────────────────────────────────
+  const checkbox: Record<string, string> = {};
+  for (const opcao of TODAS_OPCOES_CHECKBOX) {
+    checkbox[opcao] = tipoInfo.marcados.includes(opcao) ? '☑' : '☐';
+  }
+
+  // ── Data de assinatura ────────────────────────────────────────────────────
+  const hoje = new Date();
+
+  // ── Contexto final ────────────────────────────────────────────────────────
+  return {
+    // Blocos condicionais
+    bloco_contratante_maior_capaz,
+    bloco_contratante_a_rogo,
+    bloco_contratante_menor,
+    bloco_paragrafos_recurso,
+    bloco_mora_sozinho,
+    bloco_mora_com_dependentes,
+
+    // Cliente
     cliente: {
-      nome_completo: client.nome_completo,
-      nacionalidade: client.nacionalidade,
-      genero: client.genero === 'F' ? 'feminino' : 'masculino',
-      estado_civil: client.estado_civil,
-      data_nascimento: new Date(client.data_nascimento).toLocaleDateString('pt-BR'),
-      cpf: client.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4'),
-      rg: client.rg,
-      rg_orgao_emissor: client.rg_orgao_emissor,
-      nome_mae: client.nome_mae,
-      nome_pai: client.nome_pai ?? undefined,
-      endereco_logradouro: client.endereco_logradouro,
-      endereco_numero: client.endereco_numero,
-      endereco_complemento: client.endereco_complemento ?? undefined,
-      endereco_bairro: client.endereco_bairro,
-      endereco_cidade: client.endereco_cidade,
-      endereco_uf: client.endereco_uf,
-      endereco_cep: client.endereco_cep.replace(/(\d{5})(\d{3})/, '$1-$2'),
+      nome_completo: client.nome_completo ?? '',
+      nacionalidade: client.nacionalidade ?? 'brasileiro',
+      estado_civil: client.estado_civil ?? '',
+      cpf: formatarCPF(client.cpf ?? ''),
+      rg: client.rg ?? '',
+      rg_orgao_emissor: client.rg_orgao_emissor ?? '',
+      data_nascimento: formatarData(client.data_nascimento ?? ''),
+      nome_mae: client.nome_mae ?? '',
+      nome_pai: client.nome_pai ?? '',
+      nit: client.nit ?? '',
+      condicao_menor: ehMenor ? (idade < 16 ? 'impúbere' : 'púbere') : '',
     },
-    escritorio: settings ? {
-      advogada_principal_nome: settings.advogada_principal_nome,
-      advogada_principal_nome_curto: settings.advogada_principal_nome_curto,
-      advogada_principal_oab: settings.advogada_principal_oab,
-      advogada_principal_email: settings.advogada_principal_email,
-      advogada_parceira_nome: settings.advogada_parceira_nome,
-      advogada_parceira_nome_curto: settings.advogada_parceira_nome_curto,
-      advogada_parceira_oab: settings.advogada_parceira_oab,
-      advogada_parceira_email: settings.advogada_parceira_email,
-      endereco_logradouro: settings.endereco_logradouro,
-      endereco_numero: settings.endereco_numero,
-      endereco_complemento: settings.endereco_complemento ?? undefined,
-      endereco_bairro: settings.endereco_bairro,
-      endereco_cidade: settings.endereco_cidade,
-      endereco_uf: settings.endereco_uf,
-      endereco_cep: settings.endereco_cep,
-    } : {},
-    documento: {
+
+    // Endereço
+    endereco: {
+      logradouro: client.endereco_logradouro ?? '',
+      numero: client.endereco_numero ?? '',
+      complemento_formatado: client.endereco_complemento ? `, ${client.endereco_complemento}` : '',
+      bairro: client.endereco_bairro ?? '',
       cidade: client.endereco_cidade ?? '',
       uf: client.endereco_uf ?? '',
-      data_extenso: formatDateExtenso(new Date()),
+      cep: formatarCEP(client.endereco_cep ?? ''),
     },
+
+    // Imóvel
+    imovel: {
+      cedido: imovelCedido,
+      proprietario_nome: imovelRaw.proprietario_nome ?? '',
+    },
+
+    // Representante legal (menores)
+    representante: {
+      nome_completo: (ctx?.representante_legal as Record<string, string>)?.nome_completo ?? '',
+      cpf: formatarCPF((ctx?.representante_legal as Record<string, string>)?.cpf ?? ''),
+      rg: (ctx?.representante_legal as Record<string, string>)?.rg ?? '',
+      parentesco: (ctx?.representante_legal as Record<string, string>)?.parentesco ?? '',
+    },
+
+    // Dependentes (loop)
+    dependentes,
+
+    // Cônjuge
+    conjuge: {
+      nome_completo: (ctx?.conjuge as Record<string, string>)?.nome_completo ?? '',
+      data_nascimento: formatarData((ctx?.conjuge as Record<string, string>)?.data_nascimento ?? ''),
+    },
+
+    // Separação
+    separacao: {
+      data: '',
+      recebe_pensao: false,
+      valor_pensao: '',
+    },
+
+    // Empresa MEI
+    empresa: {
+      cnpj: (ctx?.empresa_mei as Record<string, string>)?.cnpj ?? '',
+      razao_social: (ctx?.empresa_mei as Record<string, string>)?.razao_social ?? '',
+      cnae: (ctx?.empresa_mei as Record<string, string>)?.cnae ?? '',
+      ramo: (ctx?.empresa_mei as Record<string, string>)?.ramo ?? '',
+      data_abertura: formatarData((ctx?.empresa_mei as Record<string, string>)?.data_abertura ?? ''),
+      data_inicio_inatividade: formatarData((ctx?.empresa_mei as Record<string, string>)?.data_inicio_inatividade ?? ''),
+    },
+
+    // Testemunhas (loop — preenchidas via dados do processo futuramente)
+    testemunhas: [],
+
+    // Processo
+    processo: {
+      tipo_beneficio_descricao: tipoInfo.descricao,
+      objeto_procuracao: tipoInfo.objeto,
+    },
+
+    // Honorários
+    honorarios: {
+      qtd_salarios: 3,
+      qtd_salarios_extenso: 'três',
+      percentual_padrao: 30,
+      percentual_recurso: 40,
+    },
+    multa: {
+      qtd_salarios_minimos: 3,
+      qtd_salarios_minimos_extenso: 'três',
+    },
+
+    // Escritório
+    escritorio: {
+      adv1_nome: settings?.advogada_principal_nome ?? '',
+      adv1_oab: settings?.advogada_principal_oab ?? '',
+      adv1_email: settings?.advogada_principal_email ?? '',
+      adv2_nome: settings?.advogada_parceira_nome ?? '',
+      adv2_oab: settings?.advogada_parceira_oab ?? '',
+      adv2_cpf: settings?.advogada_parceira_cpf ?? '',
+      adv2_email: settings?.advogada_parceira_email ?? '',
+      endereco_logradouro: settings?.endereco_logradouro ?? '',
+      endereco_numero: settings?.endereco_numero ?? '',
+      endereco_complemento: settings?.endereco_complemento ?? '',
+      endereco_bairro: settings?.endereco_bairro ?? '',
+      endereco_cidade: settings?.endereco_cidade ?? '',
+      endereco_uf: settings?.endereco_uf ?? '',
+      endereco_cep: settings?.endereco_cep ?? '',
+      foro_eleito: settings?.foro_eleito ?? '',
+    },
+
+    // Documento (data de assinatura)
+    doc: {
+      cidade_assinatura: `${client.endereco_cidade ?? ''} (${client.endereco_uf ?? ''})`,
+      dia_assinatura: String(hoje.getDate()).padStart(2, '0'),
+      mes_assinatura_extenso: MESES[hoje.getMonth()],
+      mes_assinatura_numero: String(hoje.getMonth() + 1).padStart(2, '0'),
+      ano_assinatura: String(hoje.getFullYear()),
+    },
+
+    // Checkboxes do Termo INSS
+    checkbox,
   };
-
-  if (contextual?.representante_legal) ctx.representante = contextual.representante_legal as Record<string, string>;
-  if (contextual?.conjuge) ctx.conjuge = contextual.conjuge as Record<string, string>;
-  if (contextual?.filho_dependente) ctx.filho_dependente = contextual.filho_dependente as Record<string, string>;
-  if (contextual?.imovel) ctx.imovel = contextual.imovel as Record<string, string>;
-  if (contextual?.empresa_mei) ctx.empresa_mei = contextual.empresa_mei as Record<string, string>;
-
-  return ctx;
 }
