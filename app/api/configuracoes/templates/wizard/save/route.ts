@@ -64,6 +64,7 @@ export async function POST(req: Request) {
     const { data, error } = await db
       .from('document_templates')
       .insert({
+        tenant_id: user.tenantId,
         codigo,
         nome,
         familia: categoria,

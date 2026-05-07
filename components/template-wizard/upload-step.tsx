@@ -37,8 +37,13 @@ export function UploadStep({ proximoCodigo, onAnalyzed }: Props) {
   function fileToNome(filename: string) {
     return filename
       .replace(/\.docx$/i, '')
-      .toLowerCase()
-      .replace(/\b\w/g, (c) => c.toUpperCase());
+      .split(/(\s+|-)/)
+      .map((part) =>
+        part.trim().length > 0
+          ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+          : part
+      )
+      .join('');
   }
 
   function pickFile(f: File) {
