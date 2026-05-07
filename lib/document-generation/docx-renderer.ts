@@ -4,9 +4,10 @@ import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 import type { TemplateContext } from './template-context';
 
-export async function renderDocxTemplate(templatePath: string, context: TemplateContext): Promise<Buffer> {
-  const fullPath = path.resolve(process.cwd(), templatePath);
-  const content = fs.readFileSync(fullPath);
+export async function renderDocxTemplate(templatePathOrBuffer: string | Buffer, context: TemplateContext): Promise<Buffer> {
+  const content = Buffer.isBuffer(templatePathOrBuffer)
+    ? templatePathOrBuffer
+    : fs.readFileSync(path.resolve(process.cwd(), templatePathOrBuffer));
   const zip = new PizZip(content);
 
   const doc = new Docxtemplater(zip, {

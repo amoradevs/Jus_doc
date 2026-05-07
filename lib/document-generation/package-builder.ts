@@ -1,10 +1,26 @@
 import path from 'path';
+import fs from 'fs';
 import JSZip from 'jszip';
+import { createClient } from '@supabase/supabase-js';
 import { db } from '@/lib/db';
 import { buildTemplateContext } from './template-context';
 import { renderDocxTemplate } from './docx-renderer';
 import { convertDocxToPdf } from './pdf-converter';
 import { renderPdfOverlay } from './pdf-overlay';
+
+const storage = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_KEY!,
+);
+
+async function getTemplateBuffer(template: { caminho_arquivo: string; storage_path: string | null }): Promise<Buffer> {
+  if (template.storage_path) {
+    const { data, error } = await storage.storage.from('templates').download(template.storage_path);
+    if (error || !data) throw new Error(`Erro ao baixar template do Storage: ${error?.message}`);
+    return Buffer.from(await data.arrayBuffer());
+  }
+  return fs.readFileSync(path.resolve(process.cwd(), template.caminho_arquivo));
+}
 
 function normalizeName(name: string): string {
   return name
@@ -41,7 +57,8 @@ export async function buildDocumentPackage(
     let pdfBuffer: Buffer;
 
     if (template.formato === 'docx') {
-      const docxBuffer = await renderDocxTemplate(template.caminho_arquivo, context);
+      const templateBuffer = await getTemplateBuffer(template);
+      const docxBuffer = await renderDocxTemplate(templateBuffer, context);
       pdfBuffer = await convertDocxToPdf(docxBuffer);
     } else {
       const slug = path.basename(template.caminho_arquivo, '.pdf');
