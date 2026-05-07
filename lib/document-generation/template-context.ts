@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import type { Cenario } from './cadeia-documental';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -124,18 +125,93 @@ export type TemplateContext = {
   conjuge: { nome_completo: string; data_nascimento: string };
   separacao: { data: string; recebe_pensao: boolean; valor_pensao: string };
   empresa: { cnpj: string; razao_social: string; cnae: string; ramo: string; data_abertura: string; data_inicio_inatividade: string };
-  testemunhas: Array<{ tipo_label: string; nome_completo: string; cpf: string; rg: string }>;
+  testemunhas: Array<{ tipo_label: string; nome_completo: string; cpf: string; rg: string; data_nascimento: string }>;
   processo: { tipo_beneficio_descricao: string; objeto_procuracao: string };
-  honorarios: { qtd_salarios: number; qtd_salarios_extenso: string; percentual_padrao: number; percentual_recurso: number };
+  // Blocos de honorários (exatamente um ativo por geração)
+  bloco_honorarios_padrao: boolean;          // BPC adulto, Aposentadoria, qualquer adulto
+  bloco_honorarios_menor: boolean;           // qualquer benefício + perfil menor
+  bloco_honorarios_mandado_seguranca: boolean; // MS (valor fixo)
+
+  // Blocos de assinatura (exatamente um ativo por geração)
+  bloco_assinatura_adulto: boolean;          // adulto capaz (qualquer benefício)
+  bloco_assinatura_a_rogo: boolean;          // adulto a rogo
+  bloco_assinatura_menor: boolean;           // menor (representante assina)
+
+  honorarios: { qtd_salarios: number; qtd_salarios_extenso: string; percentual_padrao: number; percentual_padrao_extenso: string; percentual_recurso: number; percentual_recurso_extenso: string; valor_fixo: string; valor_fixo_extenso: string };
   multa: { qtd_salarios_minimos: number; qtd_salarios_minimos_extenso: string };
   escritorio: { adv1_nome: string; adv1_oab: string; adv1_email: string; adv2_nome: string; adv2_oab: string; adv2_cpf: string; adv2_email: string; endereco_logradouro: string; endereco_numero: string; endereco_complemento: string; endereco_bairro: string; endereco_cidade: string; endereco_uf: string; endereco_cep: string; foro_eleito: string };
   doc: { cidade_assinatura: string; dia_assinatura: string; mes_assinatura_extenso: string; mes_assinatura_numero: string; ano_assinatura: string };
   checkbox: Record<string, string>;
 };
 
+// ─── Mapeamento BeneficioId → texto jurídico ──────────────────────────────────
+
+const BENEFICIO_ID_MAP: Record<string, { descricao: string; objeto: string; marcados: string[] }> = {
+  bpc: {
+    descricao: 'BENEFÍCIO DE PRESTAÇÃO CONTINUADA – BPC/LOAS',
+    objeto: 'ingressar com Pedido de BENEFÍCIO DE PRESTAÇÃO CONTINUADA EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
+    marcados: ['bpc'],
+  },
+  aposentadoria_idade: {
+    descricao: 'BENEFÍCIO DE APOSENTADORIA POR IDADE',
+    objeto: 'ingressar com Pedido de BENEFÍCIO DE APOSENTADORIA POR IDADE EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
+    marcados: ['aposentadoria_idade'],
+  },
+  mandado_seguranca: {
+    descricao: 'IMPETRAÇÃO DE MANDADO DE SEGURANÇA',
+    objeto: 'impetrar MANDADO DE SEGURANÇA em face do INSS (Instituto Nacional do Seguro Social)',
+    marcados: [],
+  },
+};
+
+const PERFIS_MENORES_ID = new Set(['menor_impubere', 'menor_pubere', 'incapaz_curador']);
+
+/**
+ * Retorna os overrides de bloco_* e processo.* derivados exclusivamente do
+ * cenário do wizard. Função pura — sem efeitos colaterais ou acesso ao DB.
+ */
+export function getCenarioContextOverrides(cenario: Cenario): Partial<TemplateContext> {
+  const ehMenor = PERFIS_MENORES_ID.has(cenario.perfil);
+  const ehARogo = cenario.perfil === 'a_rogo';
+  const ehMS = cenario.beneficio === 'mandado_seguranca';
+
+  const bloco_contratante_menor = ehMenor;
+  const bloco_contratante_a_rogo = !ehMenor && ehARogo;
+  const bloco_contratante_maior_capaz = !ehMenor && !ehARogo;
+
+  const bloco_assinatura_menor = ehMenor;
+  const bloco_assinatura_a_rogo = !ehMenor && ehARogo;
+  const bloco_assinatura_adulto = !ehMenor && !ehARogo;
+
+  const bloco_honorarios_menor = ehMenor;
+  const bloco_honorarios_mandado_seguranca = ehMS && !ehMenor;
+  const bloco_honorarios_padrao = !ehMS && !ehMenor;
+
+  const bloco_paragrafos_recurso = !ehMS;
+
+  const benInfo = BENEFICIO_ID_MAP[cenario.beneficio] ?? BENEFICIO_ID_MAP.bpc;
+
+  return {
+    bloco_contratante_maior_capaz,
+    bloco_contratante_a_rogo,
+    bloco_contratante_menor,
+    bloco_paragrafos_recurso,
+    bloco_honorarios_padrao,
+    bloco_honorarios_menor,
+    bloco_honorarios_mandado_seguranca,
+    bloco_assinatura_adulto,
+    bloco_assinatura_a_rogo,
+    bloco_assinatura_menor,
+    processo: {
+      tipo_beneficio_descricao: benInfo.descricao,
+      objeto_procuracao: benInfo.objeto,
+    },
+  };
+}
+
 // ─── Builder principal ────────────────────────────────────────────────────────
 
-export async function buildTemplateContext(clientId: string, tenantId: string): Promise<TemplateContext> {
+export async function buildTemplateContext(clientId: string, tenantId: string, cenario?: Cenario): Promise<TemplateContext> {
   const { data: clientRows } = await db
     .from('clients')
     .select('*')
@@ -200,14 +276,24 @@ export async function buildTemplateContext(clientId: string, tenantId: string): 
   const hoje = new Date();
 
   // ── Contexto final ────────────────────────────────────────────────────────
-  return {
-    // Blocos condicionais
+  const baseContext: TemplateContext = {
+    // Blocos condicionais de contratante
     bloco_contratante_maior_capaz,
     bloco_contratante_a_rogo,
     bloco_contratante_menor,
     bloco_paragrafos_recurso,
     bloco_mora_sozinho,
     bloco_mora_com_dependentes,
+
+    // Blocos de honorários
+    bloco_honorarios_padrao: tipoBeneficio !== 'mandado_seguranca' && !ehMenor,
+    bloco_honorarios_menor: ehMenor,
+    bloco_honorarios_mandado_seguranca: tipoBeneficio === 'mandado_seguranca' && !ehMenor,
+
+    // Blocos de assinatura
+    bloco_assinatura_adulto: !ehMenor && sabeAssinar,
+    bloco_assinatura_a_rogo: !ehMenor && !sabeAssinar,
+    bloco_assinatura_menor: ehMenor,
 
     // Cliente
     cliente: {
@@ -290,6 +376,10 @@ export async function buildTemplateContext(clientId: string, tenantId: string): 
       qtd_salarios_extenso: 'três',
       percentual_padrao: 30,
       percentual_recurso: 40,
+      valor_fixo: '',
+      valor_fixo_extenso: '',
+      percentual_padrao_extenso: 'trinta por cento',
+      percentual_recurso_extenso: 'quarenta por cento',
     },
     multa: {
       qtd_salarios_minimos: 3,
@@ -326,5 +416,15 @@ export async function buildTemplateContext(clientId: string, tenantId: string): 
 
     // Checkboxes do Termo INSS
     checkbox,
+  };
+
+  if (!cenario) return baseContext;
+
+
+  const overrides = getCenarioContextOverrides(cenario);
+  return {
+    ...baseContext,
+    ...overrides,
+    processo: overrides.processo ?? baseContext.processo,
   };
 }

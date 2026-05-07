@@ -1,7 +1,7 @@
 import { getCurrentUser } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
 import { notFound, redirect } from 'next/navigation';
-import { TemplateSelector } from '@/components/template-selector';
+import { GerarModo } from '@/components/cenario-wizard/gerar-modo';
 import Link from 'next/link';
 
 export default async function GerarPage({ params }: { params: Promise<{ id: string }> }) {
@@ -47,8 +47,8 @@ export default async function GerarPage({ params }: { params: Promise<{ id: stri
       </Link>
 
       <h1 className="text-2xl font-bold text-foreground mb-1">Gerar documentos</h1>
-      <p className="text-muted-foreground text-sm mb-6">Selecione os documentos que deseja gerar.</p>
-      <TemplateSelector clientId={id} templates={templates ?? []} />
+      <p className="text-muted-foreground text-sm mb-6">Monte o pacote de documentos para este cliente.</p>
+      <GerarModo clientId={id} templates={templates ?? []} />
     </div>
   );
 }
