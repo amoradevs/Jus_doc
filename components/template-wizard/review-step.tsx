@@ -29,7 +29,9 @@ type Props = {
   onSaved: () => void;
 };
 
-export function ReviewStep({ file, suggestions: initial, nome, categoria, codigo, onBack, onSaved }: Props) {
+const ZERO_MAPPINGS_WARNING = 'Nenhuma substituição ativa. O documento será salvo sem tags dinâmicas e os dados do cliente não serão preenchidos automaticamente. Deseja continuar assim mesmo?';
+
+export function ReviewStep({ file, suggestions: initial, textPreview, nome, categoria, codigo, onBack, onSaved }: Props) {
   const [items, setItems] = useState<ReviewItem[]>(
     initial.map((s) => ({ ...s, accepted: true })),
   );
@@ -54,6 +56,7 @@ export function ReviewStep({ file, suggestions: initial, nome, categoria, codigo
 
   const handleSave = async () => {
     const accepted = items.filter((i) => i.accepted);
+    if (accepted.length === 0 && !confirm(ZERO_MAPPINGS_WARNING)) return;
     setSaving(true);
     setError('');
 
@@ -83,6 +86,21 @@ export function ReviewStep({ file, suggestions: initial, nome, categoria, codigo
           {accepted} de {items.length} substituições ativas. Aceite, rejeite ou adicione manualmente.
         </p>
       </div>
+
+      {/* Preview do texto extraído */}
+      {textPreview && (
+        <details className="group">
+          <summary className="cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground transition-colors select-none list-none flex items-center gap-1.5">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="transition-transform group-open:rotate-90">
+              <path d="M9 18l6-6-6-6" strokeLinecap="round"/>
+            </svg>
+            Ver texto extraído do documento
+          </summary>
+          <div className="mt-2 bg-secondary/30 border border-border rounded-xl p-4 max-h-52 overflow-y-auto">
+            <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans leading-relaxed">{textPreview}</pre>
+          </div>
+        </details>
+      )}
 
       {/* Lista de sugestões */}
       <div className="border border-border rounded-xl overflow-hidden divide-y divide-border">
