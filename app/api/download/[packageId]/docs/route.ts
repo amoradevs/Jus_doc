@@ -6,14 +6,25 @@ export async function GET(_req: Request, { params }: { params: Promise<{ package
   await getCurrentUser();
   const { packageId } = await params;
 
-  const { data } = await db
+  const { data: genDocs } = await db
     .from('generated_documents')
     .select('template_codigo, nome_arquivo')
     .eq('package_id', packageId)
     .order('template_codigo');
 
-  const docs = (data ?? []).map((d) => ({
+  if (!genDocs?.length) return NextResponse.json([]);
+
+  const codigos = genDocs.map((d) => d.template_codigo);
+  const { data: templates } = await db
+    .from('document_templates')
+    .select('codigo, nome')
+    .in('codigo', codigos);
+
+  const nomeMap = Object.fromEntries((templates ?? []).map((t) => [t.codigo, t.nome]));
+
+  const docs = genDocs.map((d) => ({
     codigo: d.template_codigo,
+    nome: nomeMap[d.template_codigo] ?? d.template_codigo,
     nome_arquivo: d.nome_arquivo,
   }));
 

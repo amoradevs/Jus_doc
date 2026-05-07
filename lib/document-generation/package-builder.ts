@@ -33,7 +33,7 @@ function normalizeName(name: string): string {
 
 export type PackageResult = {
   packageId: string;
-  documents: Array<{ codigo: string; nome_arquivo: string }>;
+  documents: Array<{ codigo: string; nome: string; nome_arquivo: string }>;
 };
 
 export async function buildDocumentPackage(
@@ -51,7 +51,7 @@ export async function buildDocumentPackage(
     .in('codigo', templateCodes);
 
   const zip = new JSZip();
-  const docs: Array<{ codigo: string; nome_arquivo: string; buffer: Buffer }> = [];
+  const docs: Array<{ codigo: string; nome: string; nome_arquivo: string; buffer: Buffer }> = [];
 
   for (const template of templates ?? []) {
     let pdfBuffer: Buffer;
@@ -67,7 +67,7 @@ export async function buildDocumentPackage(
 
     const nomeArquivo = `${clientNameNorm}_${template.codigo}_${normalizeName(template.nome)}_${dateStr}.pdf`;
     zip.file(nomeArquivo, pdfBuffer);
-    docs.push({ codigo: template.codigo, nome_arquivo: nomeArquivo, buffer: pdfBuffer });
+    docs.push({ codigo: template.codigo, nome: template.nome, nome_arquivo: nomeArquivo, buffer: pdfBuffer });
   }
 
   const zipBuffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
@@ -112,6 +112,6 @@ export async function buildDocumentPackage(
 
   return {
     packageId: pkg.id,
-    documents: docs.map(({ codigo, nome_arquivo }) => ({ codigo, nome_arquivo })),
+    documents: docs.map(({ codigo, nome, nome_arquivo }) => ({ codigo, nome, nome_arquivo })),
   };
 }
