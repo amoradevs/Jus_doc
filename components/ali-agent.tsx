@@ -196,32 +196,32 @@ export function AliAgent() {
 
       {/* CTA + botão flutuante */}
       <div
-        className="flex items-center gap-3 pointer-events-auto"
+        className="flex flex-col items-end gap-1.5 pointer-events-auto"
         onMouseEnter={() => setHovering(true)}
         onMouseLeave={() => setHovering(false)}
       >
-        {/* CTA pill — só aparece no hover do avatar quando o chat está fechado (desktop only) */}
+        {/* CTA pill — aparece ACIMA do avatar no hover, quando o chat está fechado */}
         <button
           onClick={() => setOpen(true)}
-          className={`hidden sm:flex bg-card border border-border rounded-full pl-4 pr-3 py-2.5 shadow-lg items-center gap-2.5 text-sm font-medium text-foreground hover:bg-secondary transition-all duration-200 whitespace-nowrap ${
+          className={`hidden sm:flex bg-card border border-border rounded-full pl-3.5 pr-3 py-2 shadow-lg items-center gap-2 text-xs font-medium text-foreground hover:bg-secondary transition-all duration-200 whitespace-nowrap ${
             hovering && !open
-              ? 'opacity-100 translate-x-0'
-              : 'opacity-0 translate-x-3 pointer-events-none'
+              ? 'opacity-100 translate-y-0'
+              : 'opacity-0 translate-y-1 pointer-events-none'
           }`}
         >
           Fale com a Ali
-          <span className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shrink-0">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-primary-foreground">
+          <span className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-primary-foreground">
               <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </span>
         </button>
 
-        {/* Avatar */}
+        {/* Avatar — menor */}
         <button
           onClick={() => setOpen((o) => !o)}
           aria-label="Abrir assistente Ali"
-          className={`w-16 h-16 sm:w-24 sm:h-24 rounded-full overflow-hidden border-[3px] shadow-2xl shadow-black/20 transition-all duration-200 hover:scale-110 ${
+          className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden border-2 shadow-xl shadow-black/20 transition-all duration-200 hover:scale-110 ${
             open
               ? 'border-primary ring-4 ring-primary/25 scale-[1.06]'
               : 'border-white ring-2 ring-primary/20 hover:ring-primary/40'
