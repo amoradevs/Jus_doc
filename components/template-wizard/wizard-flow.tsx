@@ -19,7 +19,7 @@ type AnalysisResult = {
 
 type Phase = 'upload' | 'review' | 'done';
 
-export function WizardFlow() {
+export function WizardFlow({ proximoCodigo }: { proximoCodigo: string }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>('upload');
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -58,6 +58,7 @@ export function WizardFlow() {
 
   return (
     <UploadStep
+      proximoCodigo={proximoCodigo}
       onAnalyzed={(data) => {
         setResult(data);
         setPhase('review');

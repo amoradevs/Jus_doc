@@ -16,6 +16,7 @@ const FAMILIAS = [
 ];
 
 type Props = {
+  proximoCodigo: string;
   onAnalyzed: (result: {
     file: File;
     suggestions: TagSuggestion[];
@@ -26,10 +27,10 @@ type Props = {
   }) => void;
 };
 
-export function UploadStep({ onAnalyzed }: Props) {
+export function UploadStep({ proximoCodigo, onAnalyzed }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
-  const [form, setForm] = useState({ nome: '', categoria: 'contrato', codigo: '' });
+  const [form, setForm] = useState({ nome: '', categoria: 'contrato', codigo: proximoCodigo });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -126,7 +127,7 @@ export function UploadStep({ onAnalyzed }: Props) {
           <Label htmlFor="wz-codigo">Código</Label>
           <Input
             id="wz-codigo"
-            placeholder="ex: 16"
+            placeholder={proximoCodigo}
             value={form.codigo}
             onChange={(e) => setForm((f) => ({ ...f, codigo: e.target.value }))}
           />

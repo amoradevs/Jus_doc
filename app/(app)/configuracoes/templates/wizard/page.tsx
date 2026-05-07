@@ -1,9 +1,20 @@
 import { getCurrentUser } from '@/lib/auth-helpers';
+import { db } from '@/lib/db';
 import Link from 'next/link';
 import { WizardFlow } from '@/components/template-wizard/wizard-flow';
 
 export default async function TemplateWizardPage() {
-  await getCurrentUser();
+  const user = await getCurrentUser();
+
+  const { data: rows } = await db
+    .from('document_templates')
+    .select('codigo')
+    .eq('tenant_id', user.tenantId)
+    .order('codigo', { ascending: false })
+    .limit(1);
+
+  const ultimoCodigo = rows?.[0]?.codigo ? parseInt(rows[0].codigo) : 0;
+  const proximoCodigo = String(ultimoCodigo + 1).padStart(2, '0');
 
   return (
     <div className="max-w-2xl">
@@ -27,7 +38,7 @@ export default async function TemplateWizardPage() {
       </div>
 
       <div className="bg-card border border-border rounded-2xl p-6">
-        <WizardFlow />
+        <WizardFlow proximoCodigo={proximoCodigo} />
       </div>
     </div>
   );
