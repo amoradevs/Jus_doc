@@ -33,10 +33,22 @@ export function UploadStep({ onAnalyzed }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  function fileToNome(filename: string) {
+    return filename
+      .replace(/\.docx$/i, '')
+      .toLowerCase()
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+
+  function pickFile(f: File) {
+    setFile(f);
+    setForm((prev) => ({ ...prev, nome: prev.nome || fileToNome(f.name) }));
+  }
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const f = e.dataTransfer.files[0];
-    if (f?.name.endsWith('.docx')) setFile(f);
+    if (f?.name.endsWith('.docx')) pickFile(f);
   };
 
   const handleAnalyze = async () => {
@@ -85,7 +97,7 @@ export function UploadStep({ onAnalyzed }: Props) {
               <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(0)} KB</p>
             </div>
             <button
-              onClick={(e) => { e.stopPropagation(); setFile(null); }}
+              onClick={(e) => { e.stopPropagation(); setFile(null); setForm((f) => ({ ...f, nome: '' })); }}
               className="ml-2 text-muted-foreground hover:text-foreground text-xs"
             >
               trocar
@@ -105,7 +117,7 @@ export function UploadStep({ onAnalyzed }: Props) {
         type="file"
         accept=".docx"
         className="hidden"
-        onChange={(e) => { const f = e.target.files?.[0]; if (f) setFile(f); e.target.value = ''; }}
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) pickFile(f); e.target.value = ''; }}
       />
 
       {/* Metadados básicos */}
