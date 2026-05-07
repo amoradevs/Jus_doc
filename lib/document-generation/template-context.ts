@@ -2,6 +2,25 @@ import { db } from '@/lib/db';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+// Converte palavras com desinência de gênero para o padrão neutro "(a)"
+// ex: "divorciado" → "divorciado(a)", "brasileiro" → "brasileiro(a)"
+function neutralizar(palavra: string): string {
+  if (!palavra) return '';
+  if (palavra.endsWith('(a)')) return palavra;
+  if (palavra.endsWith('o')) return palavra + '(a)';
+  if (palavra.endsWith('a')) return palavra.slice(0, -1) + 'o(a)';
+  return palavra;
+}
+
+const ESTADO_CIVIL_NEUTRO: Record<string, string> = {
+  solteiro:      'solteiro(a)',
+  casado:        'casado(a)',
+  separado:      'separado(a)',
+  divorciado:    'divorciado(a)',
+  viuvo:         'viúvo(a)',
+  uniao_estavel: 'em união estável',
+};
+
 function calcularIdade(dataIso: string): number {
   const nasc = new Date(dataIso);
   const hoje = new Date();
@@ -193,8 +212,8 @@ export async function buildTemplateContext(clientId: string, tenantId: string): 
     // Cliente
     cliente: {
       nome_completo: client.nome_completo ?? '',
-      nacionalidade: client.nacionalidade ?? 'brasileiro',
-      estado_civil: client.estado_civil ?? '',
+      nacionalidade: neutralizar(client.nacionalidade ?? 'brasileiro'),
+      estado_civil: ESTADO_CIVIL_NEUTRO[client.estado_civil] ?? neutralizar(client.estado_civil ?? ''),
       cpf: formatarCPF(client.cpf ?? ''),
       rg: client.rg ?? '',
       rg_orgao_emissor: client.rg_orgao_emissor ?? '',
