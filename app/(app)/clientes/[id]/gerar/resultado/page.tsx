@@ -1,9 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Check, Download, FileText, Loader2, RotateCcw, ChevronLeft, Eye, X } from 'lucide-react';
+import {
+  Check, Download, FileText, Loader2, RotateCcw,
+  ChevronLeft, Eye, X, Pencil, Printer, ArrowLeft,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 type Doc = { codigo: string; nome: string; nome_arquivo: string };
@@ -26,91 +29,205 @@ async function triggerDownload(blob: Blob, filename: string) {
   URL.revokeObjectURL(href);
 }
 
-// ── Visualizador de PDF ────────────────────────────────────────────────────────
+// ── Visualizador / Editor de PDF ──────────────────────────────────────────────
 function PdfViewer({
   doc,
   packageId,
+  clientId,
   onClose,
 }: {
   doc: Doc;
   packageId: string;
+  clientId: string;
   onClose: () => void;
 }) {
+  const [view, setView] = useState<'pdf' | 'editor'>('pdf');
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [loadingPdf, setLoadingPdf] = useState(true);
+  const [loadingEditor, setLoadingEditor] = useState(false);
+  const [html, setHtml] = useState('');
   const [downloading, setDownloading] = useState(false);
+  const [pdfError, setPdfError] = useState('');
+  const editorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchBlob(`/api/download/${packageId}/pdf/${doc.codigo}`)
-      .then((blob) => {
-        setBlobUrl(URL.createObjectURL(blob));
-      })
-      .catch(() => setError('Não foi possível carregar o PDF.'))
-      .finally(() => setLoading(false));
+      .then((blob) => setBlobUrl(URL.createObjectURL(blob)))
+      .catch(() => setPdfError('Não foi possível carregar o PDF.'))
+      .finally(() => setLoadingPdf(false));
 
     return () => {
       setBlobUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
     };
   }, [doc.codigo, packageId]);
 
-  async function handleDownload() {
+  async function abrirEditor() {
+    setLoadingEditor(true);
+    try {
+      const res = await fetch(`/api/geracao/rascunho?clientId=${clientId}&codigos=${doc.codigo}`);
+      const data = await res.json();
+      const found = Array.isArray(data) ? data.find((d) => d.codigo === doc.codigo) : null;
+      if (found?.html) {
+        setHtml(found.html);
+        setView('editor');
+      } else {
+        setPdfError('Este documento não suporta edição.');
+      }
+    } catch {
+      setPdfError('Erro ao carregar editor.');
+    }
+    setLoadingEditor(false);
+  }
+
+  function salvarComoPDF() {
+    const content = editorRef.current?.innerHTML ?? html;
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.write(`<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>${doc.nome}</title><style>
+  body { font-family: Arial, sans-serif; font-size: 12pt; line-height: 1.6;
+         color: #000; text-align: justify; }
+  @page { margin: 2.5cm; }
+  h1, h2, h3 { text-align: center; }
+  p { margin-bottom: 0.8em; }
+  table { width: 100%; border-collapse: collapse; }
+  td, th { border: 1px solid #000; padding: 4px 8px; }
+</style></head><body>${content}</body></html>`);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 400);
+  }
+
+  async function baixarPdfOriginal() {
     if (!blobUrl) return;
     setDownloading(true);
     const res = await fetch(blobUrl);
     const blob = await res.blob();
-    triggerDownload(blob, doc.nome_arquivo);
+    await triggerDownload(blob, doc.nome_arquivo);
     setDownloading(false);
   }
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background">
-      {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card shrink-0">
+
+      {/* ── Header ── */}
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-card shrink-0">
+        {/* Ícone + nome */}
         <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
           <FileText className="w-4 h-4 text-primary" />
         </div>
-        <span className="flex-1 text-sm font-medium text-foreground truncate">{doc.nome || doc.codigo}</span>
-        <Button
-          size="sm"
-          onClick={handleDownload}
-          disabled={downloading || !blobUrl}
-          className="gap-2 shrink-0"
-        >
-          {downloading
-            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            : <Download className="w-3.5 h-3.5" />}
-          Salvar
-        </Button>
+        <span className="flex-1 text-sm font-medium text-foreground truncate min-w-0">
+          {doc.nome || doc.codigo}
+        </span>
+
+        {view === 'pdf' ? (
+          /* Ações no modo PDF */
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={abrirEditor}
+              disabled={loadingEditor || loadingPdf}
+              className="gap-1.5"
+            >
+              {loadingEditor
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <Pencil className="w-3.5 h-3.5" />}
+              Editar
+            </Button>
+            <Button
+              size="sm"
+              onClick={baixarPdfOriginal}
+              disabled={downloading || !blobUrl}
+              className="gap-1.5"
+            >
+              {downloading
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <Download className="w-3.5 h-3.5" />}
+              Salvar
+            </Button>
+          </div>
+        ) : (
+          /* Ações no modo editor */
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setView('pdf')}
+              className="gap-1.5"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Ver PDF
+            </Button>
+            <Button
+              size="sm"
+              onClick={salvarComoPDF}
+              className="gap-1.5"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              Salvar como PDF
+            </Button>
+          </div>
+        )}
+
         <button
           onClick={onClose}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shrink-0"
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shrink-0 ml-1"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Corpo */}
-      <div className="flex-1 relative bg-secondary/30">
-        {loading && (
-          <div className="absolute inset-0 flex items-center justify-center gap-3">
-            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Carregando PDF…</span>
+      {/* ── Corpo ── */}
+      {view === 'pdf' ? (
+        <div className="flex-1 relative bg-secondary/20">
+          {loadingPdf && (
+            <div className="absolute inset-0 flex items-center justify-center gap-3">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Carregando PDF…</span>
+            </div>
+          )}
+          {pdfError && !loadingPdf && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <p className="text-sm text-muted-foreground">{pdfError}</p>
+            </div>
+          )}
+          {blobUrl && (
+            <iframe src={blobUrl} className="w-full h-full border-0" title={doc.nome} />
+          )}
+        </div>
+      ) : (
+        /* Editor */
+        <div className="flex-1 overflow-auto bg-secondary/10 py-10 px-4">
+          <div className="max-w-3xl mx-auto">
+            {/* Barra de dica */}
+            <div className="flex items-center gap-2 mb-4 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-xl">
+              <Pencil className="w-3.5 h-3.5 text-primary shrink-0" />
+              <p className="text-xs text-muted-foreground">
+                Clique em qualquer trecho para editar. Use <kbd className="px-1 py-0.5 bg-secondary rounded text-xs font-mono">Ctrl+B</kbd> negrito, <kbd className="px-1 py-0.5 bg-secondary rounded text-xs font-mono">Ctrl+I</kbd> itálico.
+              </p>
+            </div>
+            {/* Documento editável */}
+            <div
+              ref={editorRef}
+              contentEditable
+              suppressContentEditableWarning
+              // eslint-disable-next-line react/no-danger
+              dangerouslySetInnerHTML={{ __html: html }}
+              className="bg-white shadow-sm rounded-xl outline-none focus:ring-2 focus:ring-primary/20"
+              style={{
+                fontFamily: 'Arial, sans-serif',
+                fontSize: '12pt',
+                lineHeight: '1.6',
+                color: '#000',
+                padding: '2.5cm',
+                minHeight: '29.7cm',
+                textAlign: 'justify',
+              }}
+            />
           </div>
-        )}
-        {error && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <p className="text-sm text-muted-foreground">{error}</p>
-          </div>
-        )}
-        {blobUrl && (
-          <iframe
-            src={blobUrl}
-            className="w-full h-full border-0"
-            title={doc.nome}
-          />
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -170,7 +287,7 @@ export default function ResultadoPage() {
       const blob = await fetchBlob(`/api/download/${packageId}`);
       await triggerDownload(blob, `documentos_${packageId.slice(0, 8)}.zip`);
     } catch {
-      setErrorMsg('Erro ao baixar ZIP. Tente novamente.');
+      setErrorMsg('Erro ao baixar ZIP.');
     }
     setDownloadingZip(false);
   }
@@ -186,12 +303,13 @@ export default function ResultadoPage() {
     setDownloadingPdf(null);
   }
 
-  /* ── Visualizador fullscreen ── */
+  /* ── Visualizador / Editor fullscreen ── */
   if (previewing) {
     return (
       <PdfViewer
         doc={previewing}
         packageId={packageId}
+        clientId={id}
         onClose={() => setPreviewing(null)}
       />
     );
@@ -206,10 +324,7 @@ export default function ResultadoPage() {
           Gere os PDFs direto ou revise o conteúdo antes de finalizar.
         </p>
         <div className="grid gap-3">
-          <button
-            onClick={gerar}
-            className="flex items-start gap-4 text-left p-5 bg-card border border-border rounded-2xl hover:border-primary/40 hover:bg-secondary/30 transition-all group"
-          >
+          <button onClick={gerar} className="flex items-start gap-4 text-left p-5 bg-card border border-border rounded-2xl hover:border-primary/40 hover:bg-secondary/30 transition-all group">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
               <FileText className="w-5 h-5 text-primary" />
             </div>
@@ -218,15 +333,9 @@ export default function ResultadoPage() {
               <p className="text-sm text-muted-foreground mt-0.5">Gera e baixa os documentos imediatamente.</p>
             </div>
           </button>
-          <Link
-            href={`/clientes/${id}/gerar/revisar?codigos=${codigos}`}
-            className="flex items-start gap-4 text-left p-5 bg-card border border-border rounded-2xl hover:border-primary/40 hover:bg-secondary/30 transition-all group"
-          >
+          <Link href={`/clientes/${id}/gerar/revisar?codigos=${codigos}`} className="flex items-start gap-4 text-left p-5 bg-card border border-border rounded-2xl hover:border-primary/40 hover:bg-secondary/30 transition-all group">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary">
-                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" strokeLinecap="round"/>
-              </svg>
+              <Pencil className="w-5 h-5 text-primary" />
             </div>
             <div>
               <p className="font-semibold text-foreground group-hover:text-primary transition-colors">Revisar antes de gerar</p>
@@ -263,8 +372,7 @@ export default function ResultadoPage() {
         </div>
         <div className="flex gap-2">
           <Button onClick={gerar} variant="outline" className="gap-2">
-            <RotateCcw className="w-4 h-4" />
-            Tentar novamente
+            <RotateCcw className="w-4 h-4" /> Tentar novamente
           </Button>
           <Button variant="ghost" asChild>
             <Link href={`/clientes/${id}/gerar`}>Voltar</Link>
@@ -277,7 +385,6 @@ export default function ResultadoPage() {
   /* ── Sucesso ── */
   return (
     <div className="max-w-md space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <div className="w-11 h-11 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center shrink-0">
           <Check className="w-5 h-5 text-green-600 dark:text-green-400" strokeWidth={2.5} />
@@ -290,7 +397,6 @@ export default function ResultadoPage() {
         </div>
       </div>
 
-      {/* Lista de documentos */}
       {docs.length > 0 && (
         <div className="rounded-2xl border border-border bg-card overflow-hidden divide-y divide-border">
           {docs.map((doc) => (
@@ -325,7 +431,6 @@ export default function ResultadoPage() {
         </div>
       )}
 
-      {/* Botão ZIP */}
       <Button onClick={baixarZip} disabled={downloadingZip} className="w-full gap-2" size="lg">
         {downloadingZip
           ? <><Loader2 className="w-4 h-4 animate-spin" />Baixando…</>
@@ -334,15 +439,13 @@ export default function ResultadoPage() {
 
       {errorMsg && <p className="text-sm text-red-600 dark:text-red-400">{errorMsg}</p>}
 
-      {/* Ações secundárias */}
       <div className="flex gap-2">
         <Button variant="outline" asChild className="flex-1">
           <Link href={`/clientes/${id}/gerar`}>Gerar mais</Link>
         </Button>
         <Button variant="ghost" asChild className="flex-1">
           <Link href={`/clientes/${id}`}>
-            <ChevronLeft className="w-4 h-4 mr-1" />
-            Voltar ao cliente
+            <ChevronLeft className="w-4 h-4 mr-1" /> Voltar ao cliente
           </Link>
         </Button>
       </div>
