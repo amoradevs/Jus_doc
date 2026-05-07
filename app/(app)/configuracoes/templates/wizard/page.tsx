@@ -4,12 +4,11 @@ import Link from 'next/link';
 import { WizardFlow } from '@/components/template-wizard/wizard-flow';
 
 export default async function TemplateWizardPage() {
-  const user = await getCurrentUser();
+  await getCurrentUser();
 
   const { data: rows } = await db
     .from('document_templates')
     .select('codigo')
-    .eq('tenant_id', user.tenantId)
     .order('codigo', { ascending: false })
     .limit(1);
 
