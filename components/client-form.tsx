@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { maskCPF, unmaskCPF } from '@/lib/validators/cpf';
 import { useCepLookup } from '@/hooks/use-cep-lookup';
 import Link from 'next/link';
+import { useState } from 'react';
 
 type Props = {
   mode: 'create' | 'edit';
@@ -19,12 +20,33 @@ type Props = {
   defaultValues?: Partial<ClientInput>;
 };
 
+type CpfCheck = { exists: true; id: string; nome: string } | { exists: false };
+
 export function ClientForm({ mode, clientId, defaultValues }: Props) {
   const router = useRouter();
+  const [cpfCheck, setCpfCheck] = useState<CpfCheck | null>(null);
+  const [cpfChecking, setCpfChecking] = useState(false);
+
   const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<ClientInput>({
     resolver: zodResolver(clientSchema),
     defaultValues: defaultValues ?? { nacionalidade: 'brasileiro' },
   });
+
+  async function checkCpf(cpfMasked: string) {
+    if (mode !== 'create') return;
+    const raw = unmaskCPF(cpfMasked);
+    if (raw.length !== 11) { setCpfCheck(null); return; }
+    setCpfChecking(true);
+    try {
+      const res = await fetch(`/api/clientes/check-cpf?cpf=${raw}`);
+      const data: CpfCheck = await res.json();
+      setCpfCheck(data);
+    } catch {
+      setCpfCheck(null);
+    } finally {
+      setCpfChecking(false);
+    }
+  }
 
   const { lookupCep, loading: cepLoading } = useCepLookup((data) => {
     setValue('endereco_logradouro', data.logradouro);
@@ -87,16 +109,67 @@ export function ClientForm({ mode, clientId, defaultValues }: Props) {
         <h2 className="font-semibold text-foreground mb-4">Identificação</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2">{field('nome_completo', 'Nome completo')}</div>
-          <div className="space-y-1">
+          <div className="space-y-1 sm:col-span-2">
             <Label htmlFor="cpf">CPF</Label>
-            <Input
-              id="cpf"
-              maxLength={14}
-              placeholder="000.000.000-00"
-              {...register('cpf')}
-              onChange={(e) => setValue('cpf', maskCPF(e.target.value))}
-            />
+            <div className="relative">
+              <Input
+                id="cpf"
+                maxLength={14}
+                placeholder="000.000.000-00"
+                {...register('cpf')}
+                onChange={(e) => {
+                  const masked = maskCPF(e.target.value);
+                  setValue('cpf', masked);
+                  setCpfCheck(null);
+                }}
+                onBlur={(e) => checkCpf(e.target.value)}
+                className={cpfCheck?.exists ? 'border-amber-400 focus-visible:ring-amber-400/30' : ''}
+              />
+              {cpfChecking && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <div className="w-3.5 h-3.5 border-2 border-primary/40 border-t-primary rounded-full animate-spin" />
+                </div>
+              )}
+            </div>
             {errors.cpf && <p className="text-xs text-destructive">{errors.cpf.message}</p>}
+
+            {/* Banner de duplicata */}
+            {cpfCheck?.exists && (
+              <div className="flex items-start gap-3 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 mt-1">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                    CPF já cadastrado
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                    <strong>{cpfCheck.nome}</strong> já tem cadastro neste sistema.{' '}
+                    Para adicionar um novo processo, acesse o perfil dela.
+                  </p>
+                  <Link
+                    href={`/clientes/${cpfCheck.id}`}
+                    className="inline-flex items-center gap-1 mt-2 text-xs font-semibold text-amber-700 dark:text-amber-300 hover:underline"
+                  >
+                    Abrir perfil de {cpfCheck.nome.split(' ')[0]}
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </Link>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCpfCheck(null)}
+                  className="text-amber-500 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
+                  aria-label="Fechar aviso"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M18 6 6 18M6 6l12 12" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
           {field('rg', 'RG')}
           {field('rg_orgao_emissor', 'Órgão emissor')}
@@ -160,7 +233,7 @@ export function ClientForm({ mode, clientId, defaultValues }: Props) {
       </section>
 
       <div className="flex gap-3">
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting || cpfCheck?.exists === true}>
           {isSubmitting ? 'Salvando…' : mode === 'create' ? 'Cadastrar cliente' : 'Salvar alterações'}
         </Button>
         <Button type="button" variant="outline" onClick={() => router.back()}>Cancelar</Button>
