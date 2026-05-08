@@ -6,6 +6,8 @@ import {
   date,
   jsonb,
   unique,
+  boolean,
+  index,
 } from 'drizzle-orm/pg-core';
 
 export const tenants = pgTable('tenants', {
@@ -44,8 +46,11 @@ export const office_settings = pgTable('office_settings', {
 });
 
 export const clients = pgTable('clients', {
+  // ── Identidade ─────────────────────────────────────────────────────
   id: uuid('id').primaryKey().defaultRandom(),
   tenant_id: uuid('tenant_id').notNull().references(() => tenants.id),
+
+  // ── Dados de pessoa (permanecem em clients) ────────────────────────
   nome_completo: text('nome_completo').notNull(),
   nacionalidade: text('nacionalidade').notNull().default('brasileiro'),
   genero: text('genero', { enum: ['M', 'F'] }).notNull(),
@@ -56,6 +61,12 @@ export const clients = pgTable('clients', {
   rg_orgao_emissor: text('rg_orgao_emissor').notNull(),
   nome_mae: text('nome_mae').notNull(),
   nome_pai: text('nome_pai'),
+  telefone: text('telefone'),
+  senha_cadastro: text('senha_cadastro'),
+  sabe_assinar: boolean('sabe_assinar').notNull().default(true),
+  nit: text('nit'),
+
+  // ── Endereço ───────────────────────────────────────────────────────
   endereco_logradouro: text('endereco_logradouro').notNull(),
   endereco_numero: text('endereco_numero').notNull(),
   endereco_complemento: text('endereco_complemento'),
@@ -63,11 +74,88 @@ export const clients = pgTable('clients', {
   endereco_cidade: text('endereco_cidade').notNull(),
   endereco_uf: text('endereco_uf').notNull(),
   endereco_cep: text('endereco_cep').notNull(),
+
+  // ── Auditoria ──────────────────────────────────────────────────────
   criado_em: timestamp('criado_em').notNull().defaultNow(),
   atualizado_em: timestamp('atualizado_em').notNull().defaultNow(),
   deletado_em: timestamp('deletado_em'),
 }, (t) => ({
   cpf_tenant_unique: unique().on(t.cpf, t.tenant_id),
+}));
+
+// ── processos ──────────────────────────────────────────────────────────────
+// Entidade-caso: vinculada a um cliente, com seus próprios atributos.
+// Um cliente pode ter zero, um ou múltiplos processos.
+// Migration 011 — Bloco A.
+
+export const TIPO_BENEFICIO_VALUES = [
+  'aposentadoria_idade_urbana',
+  'aposentadoria_idade_rural',
+  'aposentadoria_tempo_contribuicao',
+  'bpc_idoso',
+  'bpc_deficiente_adulto',
+  'bpc_deficiente_menor_16',
+  'bpc_deficiente_16_18',
+  'mandado_seguranca',
+  'pensao_morte',
+  'auxilio_doenca',
+] as const;
+
+export type TipoBeneficio = (typeof TIPO_BENEFICIO_VALUES)[number];
+
+export const ETAPA_PIPELINE_VALUES = [
+  'triagem', 'consulta', 'documentos', 'aguardando_inss',
+  'pericia', 'judicial', 'concedido', 'encerrado',
+] as const;
+
+export type EtapaPipelineProcesso = (typeof ETAPA_PIPELINE_VALUES)[number];
+
+export const STATUS_RESULTADO_VALUES = [
+  'em_andamento', 'exigencia', 'deferido', 'indeferido',
+  'recurso_administrativo', 'judicializado', 'arquivado',
+] as const;
+
+export type StatusResultado = (typeof STATUS_RESULTADO_VALUES)[number];
+
+export const processos = pgTable('processos', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenant_id: uuid('tenant_id').notNull().references(() => tenants.id),
+  cliente_id: uuid('cliente_id').notNull().references(() => clients.id),
+
+  numero_interno: text('numero_interno').notNull().unique(),
+
+  tipo_beneficio: text('tipo_beneficio', { enum: TIPO_BENEFICIO_VALUES }),
+
+  etapa_pipeline: text('etapa_pipeline', { enum: ETAPA_PIPELINE_VALUES })
+    .notNull()
+    .default('triagem'),
+
+  status_resultado: text('status_resultado', { enum: STATUS_RESULTADO_VALUES })
+    .notNull()
+    .default('em_andamento'),
+
+  numero_protocolo_inss: text('numero_protocolo_inss'),
+  numero_processo_judicial: text('numero_processo_judicial'),
+
+  data_entrada: date('data_entrada'),
+  dib_pleiteada: date('dib_pleiteada'),
+
+  // Campos transitórios de agenda (migrados de clients; substituídos por prazos no Bloco B)
+  observacao_pipeline: text('observacao_pipeline'),
+  data_proxima_audiencia: date('data_proxima_audiencia'),
+  data_prazo: date('data_prazo'),
+  tipo_evento: text('tipo_evento', {
+    enum: ['audiencia', 'pericia', 'consulta', 'prazo', 'outro'],
+  }),
+  descricao_evento: text('descricao_evento'),
+
+  created_at: timestamp('created_at').notNull().defaultNow(),
+  updated_at: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => ({
+  idx_cliente: index('idx_processos_cliente_id').on(t.cliente_id),
+  idx_tenant: index('idx_processos_tenant_id').on(t.tenant_id),
+  idx_etapa: index('idx_processos_etapa').on(t.etapa_pipeline),
+  idx_status: index('idx_processos_status').on(t.status_resultado),
 }));
 
 export const client_contextual_data = pgTable('client_contextual_data', {

@@ -5,10 +5,39 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { maskCPF } from '@/lib/validators/cpf';
 import { calcularIdade } from '@/lib/format/age';
-import { labelTipoPedido } from '@/lib/processo';
+import { labelTipoBeneficio, labelStatusResultado } from '@/lib/processo';
+import { labelEtapa as labelEtapaPipeline } from '@/lib/pipeline';
 import { DocumentChecklist } from '@/components/document-checklist';
 import { InitChecklistButton } from '@/components/init-checklist-button';
 import { CadastroBadge } from '@/components/cadastro-badge';
+
+type Processo = {
+  id: string;
+  numero_interno: string;
+  tipo_beneficio: string | null;
+  status_resultado: string;
+  etapa_pipeline: string;
+  data_entrada: string | null;
+  updated_at: string;
+};
+
+function StatusResultadoBadge({ status }: { status: string }) {
+  const map: Record<string, { color: string; dot: string; label: string }> = {
+    deferido:              { color: 'text-emerald-700 bg-emerald-50 border-emerald-200', dot: 'bg-emerald-500', label: 'Deferido' },
+    indeferido:            { color: 'text-destructive bg-destructive/5 border-destructive/20', dot: 'bg-destructive', label: 'Indeferido' },
+    exigencia:             { color: 'text-amber-700 bg-amber-50 border-amber-200', dot: 'bg-amber-500', label: 'Exigência' },
+    recurso_administrativo:{ color: 'text-violet-700 bg-violet-50 border-violet-200', dot: 'bg-violet-500', label: 'Recurso Adm.' },
+    judicializado:         { color: 'text-rose-700 bg-rose-50 border-rose-200', dot: 'bg-rose-500', label: 'Judicializado' },
+    arquivado:             { color: 'text-gray-600 bg-gray-50 border-gray-200', dot: 'bg-gray-400', label: 'Arquivado' },
+  };
+  const s = map[status] ?? { color: 'text-muted-foreground bg-secondary border-border', dot: 'bg-muted-foreground/40', label: 'Em andamento' };
+  return (
+    <span className={`inline-flex items-center gap-1 text-xs font-medium border rounded-full px-2 py-0.5 ${s.color}`}>
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${s.dot}`} />
+      {s.label}
+    </span>
+  );
+}
 
 export default async function ClientePage({ params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
@@ -25,7 +54,7 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
   const client = clientRows?.[0];
   if (!client) notFound();
 
-  const [{ data: packages }, { data: caseDocs }, { data: clientDocs }] = await Promise.all([
+  const [{ data: packages }, { data: caseDocs }, { data: clientDocs }, { data: processoRows }] = await Promise.all([
     db
       .from('generation_packages')
       .select('*')
@@ -46,6 +75,12 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
       .eq('tenant_id', user.tenantId)
       .order('atualizado_em', { ascending: false })
       .limit(10),
+    db
+      .from('processos')
+      .select('id, numero_interno, tipo_beneficio, status_resultado, etapa_pipeline, data_entrada, updated_at')
+      .eq('cliente_id', id)
+      .eq('tenant_id', user.tenantId)
+      .order('created_at', { ascending: false }),
   ]);
 
   const agora = new Date();
@@ -59,6 +94,9 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
     recebido_em: string | null;
     observacao: string | null;
   }[];
+
+  const processos = (processoRows ?? []) as Processo[];
+  const primeiroBeneficio = processos[0]?.tipo_beneficio ?? null;
 
   return (
     <div>
@@ -89,8 +127,6 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
                 <CadastroBadge senha={client.senha_cadastro} />
               </>
             )}
-            <span className="text-muted-foreground/40">·</span>
-            <StatusBadge status={client.status_pedido} />
           </div>
         </div>
         <div className="flex gap-2 shrink-0">
@@ -109,40 +145,71 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
             </a>
           )}
           <Button asChild variant="outline" size="sm" className="rounded-lg border-border">
-            <Link href={`/clientes/${id}/editar`}>Editar</Link>
-          </Button>
-          <Button asChild size="sm" className="rounded-lg">
-            <Link href={`/clientes/${id}/gerar`}>
-              <span className="sm:hidden">Gerar</span>
-              <span className="hidden sm:inline">Gerar documentos</span>
-            </Link>
+            <Link href={`/clientes/${id}/editar`}>Editar dados</Link>
           </Button>
         </div>
       </div>
 
-      {/* Card Processo */}
-      <div className="bg-card rounded-2xl border border-border p-5 mb-4">
-        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
-          Processo
-        </h2>
-        <div className="flex flex-wrap gap-x-10 gap-y-3">
-          <div className="flex gap-3 text-sm">
-            <span className="text-muted-foreground text-xs pt-0.5 w-32 shrink-0">Tipo de benefício</span>
-            <span className="text-foreground">{labelTipoPedido(client.tipo_pedido)}</span>
-          </div>
-          <div className="flex gap-3 text-sm">
-            <span className="text-muted-foreground text-xs pt-0.5 w-32 shrink-0">Data de entrada</span>
-            <span className="text-foreground">
-              {client.data_entrada_pedido
-                ? new Date(client.data_entrada_pedido + 'T12:00:00').toLocaleDateString('pt-BR')
-                : <span className="text-muted-foreground">—</span>}
-            </span>
-          </div>
-          <div className="flex gap-3 text-sm items-center">
-            <span className="text-muted-foreground text-xs w-32 shrink-0">Situação</span>
-            <StatusBadge status={client.status_pedido} />
-          </div>
+      {/* Seção: Processos */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+            Processos
+          </h2>
+          <Button asChild size="sm" variant="outline" className="rounded-lg border-border text-xs h-7">
+            <Link href={`/clientes/${id}/processos/novo`}>+ Novo processo</Link>
+          </Button>
         </div>
+
+        {processos.length === 0 ? (
+          <div className="bg-card rounded-2xl border border-dashed border-border p-10 text-center">
+            <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center mx-auto mb-3">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-muted-foreground">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/>
+              </svg>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">Nenhum processo cadastrado.</p>
+            <Button asChild size="sm" className="rounded-lg">
+              <Link href={`/clientes/${id}/processos/novo`}>Criar primeiro processo</Link>
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {processos.map((p) => (
+              <Link
+                key={p.id}
+                href={`/processos/${p.numero_interno}`}
+                className="block bg-card rounded-2xl border border-border p-4 hover:border-primary/30 hover:shadow-sm transition-all group"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-mono text-xs font-semibold text-primary">{p.numero_interno}</span>
+                      <StatusResultadoBadge status={p.status_resultado} />
+                    </div>
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {labelTipoBeneficio(p.tipo_beneficio)}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {labelEtapaPipeline(p.etapa_pipeline)}
+                      {p.data_entrada && (
+                        <> · Entrada: {new Date(p.data_entrada + 'T12:00:00').toLocaleDateString('pt-BR')}</>
+                      )}
+                    </p>
+                  </div>
+                  <svg
+                    width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                    className="text-muted-foreground/30 shrink-0 mt-1 group-hover:text-primary/50 transition-colors"
+                  >
+                    <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Checklist de documentos */}
@@ -157,7 +224,7 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
         ) : (
           <div className="bg-card rounded-2xl border border-border p-6 text-center">
             <p className="text-sm text-muted-foreground mb-3">Nenhum checklist de documentos iniciado.</p>
-            <InitChecklistButton clientId={id} tipoPedido={client.tipo_pedido} />
+            <InitChecklistButton clientId={id} tipoPedido={primeiroBeneficio} />
           </div>
         )}
       </div>
@@ -175,6 +242,7 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
             <Row label="Nacionalidade" value={client.nacionalidade} />
             <Row label="Nome da mãe" value={client.nome_mae} />
             {client.nome_pai && <Row label="Nome do pai" value={client.nome_pai} />}
+            {client.nit && <Row label="NIT/PIS" value={client.nit} />}
             {client.telefone && (
               <div className="flex gap-3 text-sm">
                 <span className="text-muted-foreground w-28 shrink-0 text-xs pt-0.5">Telefone</span>
@@ -212,7 +280,7 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
 
       {/* Rascunhos */}
       {clientDocs && clientDocs.some((d: { status: string }) => d.status === 'RASCUNHO') && (
-        <div>
+        <div className="mb-10">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
             Rascunhos em andamento
           </h2>
@@ -242,9 +310,14 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
 
       {/* Histórico de pacotes */}
       <div>
-        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
-          Documentos gerados
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+            Documentos gerados
+          </h2>
+          <Button asChild size="sm" variant="outline" className="rounded-lg border-border text-xs h-7">
+            <Link href={`/clientes/${id}/gerar`}>Gerar documentos</Link>
+          </Button>
+        </div>
 
         {!packages || packages.length === 0 ? (
           <div className="bg-card rounded-2xl border border-border p-10 text-center">
@@ -283,31 +356,6 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
         )}
       </div>
     </div>
-  );
-}
-
-function StatusBadge({ status }: { status: string | null }) {
-  if (status === 'deferido') {
-    return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-        Deferido
-      </span>
-    );
-  }
-  if (status === 'indeferido') {
-    return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive bg-destructive/5 border border-destructive/20 rounded-full px-2 py-0.5">
-        <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" />
-        Indeferido
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground bg-muted border border-border rounded-full px-2 py-0.5">
-      <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
-      Em andamento
-    </span>
   );
 }
 

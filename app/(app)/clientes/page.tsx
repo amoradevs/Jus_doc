@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { maskCPF, unmaskCPF } from '@/lib/validators/cpf';
 import { ClientFilters } from '@/components/client-filters';
-import { labelTipoPedido } from '@/lib/processo';
+import { labelTipoBeneficio, labelStatusResultado } from '@/lib/processo';
 import { ExportarClientes } from '@/components/exportar-clientes';
 import { Suspense } from 'react';
 
@@ -25,30 +25,68 @@ type Client = {
   criado_em: string;
   endereco_cidade: string;
   endereco_uf: string;
-  tipo_pedido: string | null;
-  status_pedido: string | null;
-  data_entrada_pedido: string | null;
 };
 
-function StatusBadge({ status }: { status: string | null }) {
-  if (status === 'deferido') {
+type Processo = {
+  cliente_id: string;
+  tipo_beneficio: string | null;
+  status_resultado: string;
+};
+
+function ProcessosBadge({ processos }: { processos: Processo[] }) {
+  if (processos.length === 0) {
+    return <span className="text-xs text-muted-foreground">Sem processo</span>;
+  }
+
+  if (processos.length === 1) {
+    const p = processos[0];
+    const colorClass =
+      p.status_resultado === 'deferido'
+        ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+        : p.status_resultado === 'indeferido'
+          ? 'text-destructive bg-destructive/5 border-destructive/20'
+          : p.status_resultado === 'exigencia'
+            ? 'text-amber-700 bg-amber-50 border-amber-200'
+            : 'text-muted-foreground bg-secondary border-border';
+    const dotClass =
+      p.status_resultado === 'deferido'
+        ? 'bg-emerald-500'
+        : p.status_resultado === 'indeferido'
+          ? 'bg-destructive'
+          : p.status_resultado === 'exigencia'
+            ? 'bg-amber-500'
+            : 'bg-muted-foreground/50';
+
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-        Deferido
-      </span>
+      <div className="flex flex-col gap-1">
+        <span className="text-xs text-muted-foreground leading-snug">
+          {labelTipoBeneficio(p.tipo_beneficio)}
+        </span>
+        <span className={`inline-flex items-center gap-1 text-xs font-medium border rounded-full px-2 py-0.5 w-fit ${colorClass}`}>
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass}`} />
+          {labelStatusResultado(p.status_resultado)}
+        </span>
+      </div>
     );
   }
-  if (status === 'indeferido') {
-    return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive bg-destructive/5 border border-destructive/20 rounded-full px-2 py-0.5">
-        <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" />
-        Indeferido
-      </span>
-    );
-  }
+
+  // 2+ processos
+  const hasIndeferido = processos.some((p) => p.status_resultado === 'indeferido');
+  const hasExigencia = processos.some((p) => p.status_resultado === 'exigencia');
+  const allDeferido = processos.every((p) => p.status_resultado === 'deferido');
+  const dotClass = hasIndeferido
+    ? 'bg-destructive'
+    : hasExigencia
+      ? 'bg-amber-500'
+      : allDeferido
+        ? 'bg-emerald-500'
+        : 'bg-muted-foreground/50';
+
   return (
-    <span className="text-xs text-muted-foreground">Em andamento</span>
+    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass}`} />
+      {processos.length} processos
+    </span>
   );
 }
 
@@ -59,35 +97,71 @@ export default async function ClientesPage({ searchParams }: Props) {
   const limit = 20;
   const offset = (pageNum - 1) * limit;
 
-  let query = db
-    .from('clients')
-    .select('*')
-    .eq('tenant_id', user.tenantId)
-    .is('deletado_em', null)
-    .range(offset, offset + limit - 1);
+  // Filtro por status: resolve quais client_ids têm processos com o status pedido
+  let clientIdsFromStatus: string[] | null = null;
+  if (status === 'deferido' || status === 'indeferido' || status === 'andamento') {
+    const statusValue =
+      status === 'deferido' ? 'deferido'
+        : status === 'indeferido' ? 'indeferido'
+          : 'em_andamento';
 
-  // Busca por nome ou CPF
-  if (search) {
-    const term = unmaskCPF(search);
-    query = query.or(`nome_completo.ilike.%${search}%,cpf.ilike.%${term}%`);
+    const { data: processoRows } = await db
+      .from('processos')
+      .select('cliente_id')
+      .eq('tenant_id', user.tenantId)
+      .eq('status_resultado', statusValue);
+
+    clientIdsFromStatus = (processoRows ?? []).map((r: { cliente_id: string }) => r.cliente_id);
   }
 
-  // Filtro por status
-  if (status === 'deferido') query = query.eq('status_pedido', 'deferido');
-  else if (status === 'indeferido') query = query.eq('status_pedido', 'indeferido');
-  else if (status === 'andamento') query = query.is('status_pedido', null);
+  // Se o filtro de status não encontrou nenhum processo, lista vazia
+  const noMatches = clientIdsFromStatus !== null && clientIdsFromStatus.length === 0;
 
-  // Filtro por cidade
-  if (cidade) query = query.ilike('endereco_cidade', `%${cidade}%`);
+  let lista: Client[] = [];
+  let processoMap = new Map<string, Processo[]>();
 
-  // Ordenação
-  if (sort === 'nome') query = query.order('nome_completo', { ascending: true });
-  else if (sort === 'antigos') query = query.order('criado_em', { ascending: true });
-  else if (sort === 'pedido') query = query.order('data_entrada_pedido', { ascending: false });
-  else query = query.order('criado_em', { ascending: false });
+  if (!noMatches) {
+    let query = db
+      .from('clients')
+      .select('id, nome_completo, cpf, criado_em, endereco_cidade, endereco_uf')
+      .eq('tenant_id', user.tenantId)
+      .is('deletado_em', null)
+      .range(offset, offset + limit - 1);
 
-  const { data: rows } = await query;
-  const lista = (rows ?? []) as Client[];
+    if (search) {
+      const term = unmaskCPF(search);
+      query = query.or(`nome_completo.ilike.%${search}%,cpf.ilike.%${term}%`);
+    }
+
+    if (clientIdsFromStatus !== null) {
+      query = query.in('id', clientIdsFromStatus);
+    }
+
+    if (cidade) query = query.ilike('endereco_cidade', `%${cidade}%`);
+
+    if (sort === 'nome') query = query.order('nome_completo', { ascending: true });
+    else if (sort === 'antigos') query = query.order('criado_em', { ascending: true });
+    else query = query.order('criado_em', { ascending: false });
+
+    const { data: rows } = await query;
+    lista = (rows ?? []) as Client[];
+
+    // Busca processos dos clientes listados e monta mapa cliente_id → processos
+    if (lista.length > 0) {
+      const ids = lista.map((c) => c.id);
+      const { data: processoRows } = await db
+        .from('processos')
+        .select('cliente_id, tipo_beneficio, status_resultado')
+        .eq('tenant_id', user.tenantId)
+        .in('cliente_id', ids);
+
+      for (const p of (processoRows ?? []) as Processo[]) {
+        const list = processoMap.get(p.cliente_id) ?? [];
+        list.push(p);
+        processoMap.set(p.cliente_id, list);
+      }
+    }
+  }
 
   return (
     <div>
@@ -109,7 +183,6 @@ export default async function ClientesPage({ searchParams }: Props) {
           placeholder="Buscar por nome ou CPF…"
           className="w-full sm:w-80 bg-white border border-border rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-colors"
         />
-        {/* Preserva filtros ao buscar */}
         {status && <input type="hidden" name="status" value={status} />}
         {cidade && <input type="hidden" name="cidade" value={cidade} />}
         {sort && <input type="hidden" name="sort" value={sort} />}
@@ -139,7 +212,7 @@ export default async function ClientesPage({ searchParams }: Props) {
                   Cidade
                 </th>
                 <th className="text-left px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Status
+                  Processos
                 </th>
                 <th className="text-left px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Cadastro
@@ -151,19 +224,21 @@ export default async function ClientesPage({ searchParams }: Props) {
               {lista.map((c) => (
                 <tr key={c.id} className="hover:bg-secondary/20 transition-colors">
                   <td className="px-5 py-3.5">
-                    <Link href={`/clientes/${c.id}`} className="font-medium text-foreground hover:text-primary transition-colors">
+                    <Link
+                      href={`/clientes/${c.id}`}
+                      className="font-medium text-foreground hover:text-primary transition-colors"
+                    >
                       {c.nome_completo}
                     </Link>
-                    {c.tipo_pedido && (
-                      <p className="text-xs text-muted-foreground mt-0.5">{labelTipoPedido(c.tipo_pedido)}</p>
-                    )}
                   </td>
-                  <td className="px-5 py-3.5 text-muted-foreground font-mono text-xs">{maskCPF(c.cpf)}</td>
+                  <td className="px-5 py-3.5 text-muted-foreground font-mono text-xs">
+                    {maskCPF(c.cpf)}
+                  </td>
                   <td className="px-5 py-3.5 text-muted-foreground">
                     {c.endereco_cidade} / {c.endereco_uf}
                   </td>
                   <td className="px-5 py-3.5">
-                    <StatusBadge status={c.status_pedido} />
+                    <ProcessosBadge processos={processoMap.get(c.id) ?? []} />
                   </td>
                   <td className="px-5 py-3.5 text-muted-foreground">
                     {new Date(c.criado_em).toLocaleDateString('pt-BR')}

@@ -23,9 +23,6 @@ export const officeSettingsSchema = z.object({
 export type OfficeSettingsInput = z.infer<typeof officeSettingsSchema>;
 
 export const clientSchema = z.object({
-  tipo_pedido: z.union([z.string().min(1), z.literal(''), z.null()]).optional(),
-  data_entrada_pedido: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal(''), z.null()]).optional(),
-  status_pedido: z.union([z.enum(['deferido', 'indeferido']), z.literal(''), z.null()]).optional(),
   nome_completo: z.string().min(3, 'Nome obrigatório'),
   nacionalidade: z.string().min(2, 'Nacionalidade obrigatória'),
   genero: z.enum(['M', 'F'], { message: 'Selecione o gênero' }),
@@ -83,3 +80,16 @@ export const empresaMeiSchema = z.object({
 export const imovelSchema = z.object({
   proprietario_nome: z.string().min(3),
 });
+
+export const processoSchema = z.object({
+  tipo_beneficio: z.string().min(1, 'Selecione o tipo de benefício'),
+  status_resultado: z.string().min(1, 'Selecione o status'),
+  etapa_pipeline: z.string().min(1, 'Selecione a etapa'),
+  data_entrada: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida').optional().or(z.literal('')),
+  dib_pleiteada: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida').optional().or(z.literal('')),
+  numero_protocolo_inss: z.string().optional(),
+  numero_processo_judicial: z.string().optional(),
+  observacao_pipeline: z.string().optional(),
+});
+
+export type ProcessoInput = z.infer<typeof processoSchema>;

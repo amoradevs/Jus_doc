@@ -14,7 +14,6 @@ const SORT_OPTIONS = [
   { value: '', label: 'Mais recentes' },
   { value: 'nome', label: 'Nome A→Z' },
   { value: 'antigos', label: 'Mais antigos' },
-  { value: 'pedido', label: 'Data do pedido' },
 ];
 
 export function ClientFilters() {

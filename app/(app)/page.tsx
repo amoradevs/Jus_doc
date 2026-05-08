@@ -1,7 +1,7 @@
 import { getCurrentUser } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
 import Link from 'next/link';
-import { labelTipoPedido } from '@/lib/processo';
+import { maskCPF } from '@/lib/validators/cpf';
 import { FiltroPeriodo } from '@/components/dashboard/filtro-periodo';
 import { CalendarioSemanal } from '@/components/dashboard/calendario-semanal';
 
@@ -9,8 +9,6 @@ type RecentClient = {
   id: string;
   nome_completo: string;
   cpf: string;
-  status_pedido: string | null;
-  tipo_pedido: string | null;
   endereco_cidade: string;
   endereco_uf: string;
 };
@@ -35,7 +33,6 @@ export default async function DashboardPage({
   const mesParam = mes ? parseInt(mes) : mesAtual;
   const anoParam = ano ? parseInt(ano) : anoAtual;
 
-  // Calcula intervalo de datas para o filtro
   let dateStart: string | null = null;
   let dateEnd: string | null = null;
 
@@ -55,22 +52,29 @@ export default async function DashboardPage({
 
   const filtrado = !!(dateStart && dateEnd);
 
-  const t = db.from('clients');
+  // Clientes: conta sempre (sem filtro de data)
+  const qTotal = db
+    .from('clients')
+    .select('*', { count: 'exact', head: true })
+    .eq('tenant_id', user.tenantId)
+    .is('deletado_em', null);
 
-  const qTotal = filtrado
-    ? t.select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).is('deletado_em', null).gte('criado_em', dateStart!).lte('criado_em', dateEnd!)
-    : t.select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).is('deletado_em', null);
-
+  // KPIs de processo — filtráveis por data de criação do processo
   const qDeferidos = filtrado
-    ? db.from('clients').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).is('deletado_em', null).eq('status_pedido', 'deferido').gte('criado_em', dateStart!).lte('criado_em', dateEnd!)
-    : db.from('clients').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).is('deletado_em', null).eq('status_pedido', 'deferido');
+    ? db.from('processos').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'deferido').gte('created_at', dateStart!).lte('created_at', dateEnd!)
+    : db.from('processos').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'deferido');
 
   const qIndeferidos = filtrado
-    ? db.from('clients').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).is('deletado_em', null).eq('status_pedido', 'indeferido').gte('criado_em', dateStart!).lte('criado_em', dateEnd!)
-    : db.from('clients').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).is('deletado_em', null).eq('status_pedido', 'indeferido');
+    ? db.from('processos').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'indeferido').gte('created_at', dateStart!).lte('created_at', dateEnd!)
+    : db.from('processos').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'indeferido');
 
-  const qRecentes = db.from('clients')
-    .select('id,nome_completo,cpf,status_pedido,tipo_pedido,endereco_cidade,endereco_uf')
+  const qAndamento = filtrado
+    ? db.from('processos').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'em_andamento').gte('created_at', dateStart!).lte('created_at', dateEnd!)
+    : db.from('processos').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'em_andamento');
+
+  const qRecentes = db
+    .from('clients')
+    .select('id,nome_completo,cpf,endereco_cidade,endereco_uf')
     .eq('tenant_id', user.tenantId)
     .is('deletado_em', null)
     .order('criado_em', { ascending: false })
@@ -80,11 +84,11 @@ export default async function DashboardPage({
     { count: total },
     { count: deferidos },
     { count: indeferidos },
+    { count: andamento },
     { data: recentes },
-  ] = await Promise.all([qTotal, qDeferidos, qIndeferidos, qRecentes]);
+  ] = await Promise.all([qTotal, qDeferidos, qIndeferidos, qAndamento, qRecentes]);
 
   const lista = (recentes ?? []) as RecentClient[];
-  const emAndamento = (total ?? 0) - (deferidos ?? 0) - (indeferidos ?? 0);
 
   const labelPeriodo = filtrado
     ? mesParam && anoParam
@@ -96,29 +100,26 @@ export default async function DashboardPage({
 
   return (
     <div>
-      {/* Boas-vindas */}
       <div className="mb-8">
         <p className="text-xs text-muted-foreground mb-0.5 capitalize">{today}</p>
         <h1 className="text-2xl font-bold text-foreground">Olá, {firstName}</h1>
       </div>
 
-      {/* Cabeçalho métricas + filtro */}
       <div className="flex flex-wrap items-center justify-between gap-y-3 mb-5">
         <div>
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-            Visão Geral Mensal
+            Visão Geral
           </h2>
-          <p className="text-[10px] text-muted-foreground mt-0.5">
-            {labelPeriodo}
-          </p>
+          {labelPeriodo && (
+            <p className="text-[10px] text-muted-foreground mt-0.5">{labelPeriodo}</p>
+          )}
         </div>
         <FiltroPeriodo mesAtivo={mesParam} anoAtivo={anoParam} anoAtual={anoAtual} isPadrao={!mes && !ano} />
       </div>
 
-      {/* Métricas */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10">
         <MetricCard
-          label={filtrado ? 'Novos clientes' : 'Total de clientes'}
+          label="Total de clientes"
           value={total ?? 0}
           numClass="text-foreground"
           icon={
@@ -130,8 +131,8 @@ export default async function DashboardPage({
           }
         />
         <MetricCard
-          label="Em andamento"
-          value={emAndamento}
+          label="Processos ativos"
+          value={andamento ?? 0}
           numClass="text-primary"
           icon={
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -165,7 +166,6 @@ export default async function DashboardPage({
         />
       </div>
 
-      {/* Lista de clientes recentes — sempre os 3 últimos, sem filtro */}
       <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
         Clientes recentes
       </h2>
@@ -197,11 +197,10 @@ export default async function DashboardPage({
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm text-foreground truncate">{c.nome_completo}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {c.tipo_pedido ? labelTipoPedido(c.tipo_pedido) : 'Sem benefício definido'}
+                  {maskCPF(c.cpf)}
                   {' · '}{c.endereco_cidade}/{c.endereco_uf}
                 </p>
               </div>
-              <StatusBadge status={c.status_pedido} />
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-muted-foreground/40 shrink-0 group-hover:text-muted-foreground transition-colors">
                 <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
@@ -209,7 +208,7 @@ export default async function DashboardPage({
           ))}
         </div>
       )}
-      {/* Calendário semanal */}
+
       <div className="mt-10">
         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
           Agenda da semana
@@ -227,26 +226,5 @@ function MetricCard({ label, value, numClass, icon }: { label: string; value: nu
       <p className={`text-3xl font-bold tabular-nums ${numClass}`}>{value}</p>
       <p className="text-xs text-muted-foreground mt-1 leading-tight">{label}</p>
     </div>
-  );
-}
-
-function StatusBadge({ status }: { status: string | null }) {
-  if (status === 'deferido') return (
-    <span className="hidden sm:inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-0.5 shrink-0 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900/30">
-      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-      Deferido
-    </span>
-  );
-  if (status === 'indeferido') return (
-    <span className="hidden sm:inline-flex items-center gap-1 text-xs font-medium text-destructive bg-destructive/5 border border-destructive/20 rounded-full px-2 py-0.5 shrink-0">
-      <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" />
-      Indeferido
-    </span>
-  );
-  return (
-    <span className="hidden sm:inline-flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 border border-primary/20 rounded-full px-2 py-0.5 shrink-0">
-      <span className="w-1.5 h-1.5 rounded-full bg-primary/60 shrink-0" />
-      Andamento
-    </span>
   );
 }

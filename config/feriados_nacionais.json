@@ -1,0 +1,32 @@
+{
+  "_comment": "Feriados nacionais brasileiros. Para adicionar feriados estaduais ou municipais, inclua em feriados_moveis com o campo 'abrangencia'. O recesso forense é suspenso no cálculo de dias úteis judiciais (CPC art. 220).",
+
+  "feriados_fixos": [
+    { "mes_dia": "01-01", "nome": "Confraternização Universal" },
+    { "mes_dia": "04-21", "nome": "Tiradentes" },
+    { "mes_dia": "05-01", "nome": "Dia do Trabalho" },
+    { "mes_dia": "09-07", "nome": "Independência do Brasil" },
+    { "mes_dia": "10-12", "nome": "Nossa Senhora Aparecida" },
+    { "mes_dia": "11-02", "nome": "Finados" },
+    { "mes_dia": "11-15", "nome": "Proclamação da República" },
+    { "mes_dia": "11-20", "nome": "Dia da Consciência Negra" },
+    { "mes_dia": "12-25", "nome": "Natal" }
+  ],
+
+  "feriados_moveis": [
+    { "data": "2026-02-16", "nome": "Carnaval (segunda-feira)" },
+    { "data": "2026-02-17", "nome": "Carnaval (terça-feira)" },
+    { "data": "2026-04-03", "nome": "Sexta-feira Santa" },
+    { "data": "2026-06-04", "nome": "Corpus Christi" },
+    { "data": "2027-02-15", "nome": "Carnaval (segunda-feira)" },
+    { "data": "2027-02-16", "nome": "Carnaval (terça-feira)" },
+    { "data": "2027-03-26", "nome": "Sexta-feira Santa" },
+    { "data": "2027-05-27", "nome": "Corpus Christi" }
+  ],
+
+  "recesso_forense": {
+    "inicio_mes_dia": "12-20",
+    "fim_mes_dia": "01-20",
+    "descricao": "Recesso forense — CPC art. 220 (20 de dezembro a 20 de janeiro)"
+  }
+}

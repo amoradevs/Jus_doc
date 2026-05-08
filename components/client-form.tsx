@@ -3,7 +3,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { clientSchema, type ClientInput } from '@/lib/validators/schemas';
-import { TIPOS_PEDIDO } from '@/lib/processo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,7 +21,7 @@ type Props = {
 
 export function ClientForm({ mode, clientId, defaultValues }: Props) {
   const router = useRouter();
-  const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<ClientInput>({
+  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<ClientInput>({
     resolver: zodResolver(clientSchema),
     defaultValues: defaultValues ?? { nacionalidade: 'brasileiro' },
   });
@@ -40,9 +39,6 @@ export function ClientForm({ mode, clientId, defaultValues }: Props) {
     const payload = {
       ...data,
       cpf: unmaskCPF(data.cpf),
-      tipo_pedido: data.tipo_pedido || null,
-      data_entrada_pedido: data.data_entrada_pedido || null,
-      status_pedido: data.status_pedido || null,
     };
 
     const res = await fetch(url, {
@@ -54,7 +50,11 @@ export function ClientForm({ mode, clientId, defaultValues }: Props) {
     if (res.ok) {
       const json = await res.json();
       toast.success(mode === 'create' ? 'Cliente cadastrado com sucesso.' : 'Dados atualizados com sucesso.');
-      router.push(`/clientes/${mode === 'create' ? json.id : clientId}`);
+      if (mode === 'create') {
+        router.push(`/clientes/${json.id}/processos/novo`);
+      } else {
+        router.push(`/clientes/${clientId}`);
+      }
     } else {
       const err = await res.json();
       if (err?.error?.code === 'CPF_ALREADY_EXISTS') {
@@ -82,43 +82,6 @@ export function ClientForm({ mode, clientId, defaultValues }: Props) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-
-      <section>
-        <h2 className="font-semibold text-foreground mb-4">Processo</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="sm:col-span-2 space-y-1">
-            <Label htmlFor="tipo_pedido">Tipo de benefício / processo</Label>
-            <Select
-              onValueChange={(v) => setValue('tipo_pedido', v === 'none' ? '' : v)}
-              defaultValue={defaultValues?.tipo_pedido || 'none'}
-            >
-              <SelectTrigger id="tipo_pedido"><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">— Não informado</SelectItem>
-                {TIPOS_PEDIDO.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {field('data_entrada_pedido', 'Data de entrada / protocolo', 'date')}
-          {field('senha_cadastro', 'Senha do cadastro (Meu INSS / gov.br)')}
-          <div className="space-y-1">
-            <Label htmlFor="status_pedido">Situação</Label>
-            <Select
-              onValueChange={(v) => setValue('status_pedido', v === 'none' ? '' : v as 'deferido' | 'indeferido')}
-              defaultValue={defaultValues?.status_pedido || 'none'}
-            >
-              <SelectTrigger id="status_pedido"><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Em andamento (sem resposta)</SelectItem>
-                <SelectItem value="deferido">Deferido</SelectItem>
-                <SelectItem value="indeferido">Indeferido</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </section>
 
       <section>
         <h2 className="font-semibold text-foreground mb-4">Identificação</h2>
@@ -168,6 +131,7 @@ export function ClientForm({ mode, clientId, defaultValues }: Props) {
           {field('nome_mae', 'Nome da mãe')}
           {field('nome_pai', 'Nome do pai (opcional)')}
           {field('telefone', 'WhatsApp / telefone', 'tel')}
+          {field('senha_cadastro', 'Senha do cadastro (Meu INSS / gov.br)')}
         </div>
       </section>
 

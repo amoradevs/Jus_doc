@@ -7,18 +7,45 @@ import { Button } from '@/components/ui/button';
 export default async function PipelinePage() {
   const user = await getCurrentUser();
 
-  // Buscar todos os clientes ativos com contagem de documentos
-  const { data: clientRows } = await db
-    .from('clients')
-    .select('id,nome_completo,tipo_pedido,etapa_pipeline,observacao_pipeline,status_pedido,atualizado_em,data_proxima_audiencia,data_prazo,tipo_evento')
+  // Buscar todos os processos ativos com dados do cliente
+  const { data: processoRows } = await db
+    .from('processos')
+    .select(`
+      id,
+      numero_interno,
+      tipo_beneficio,
+      etapa_pipeline,
+      observacao_pipeline,
+      status_resultado,
+      updated_at,
+      data_proxima_audiencia,
+      data_prazo,
+      tipo_evento,
+      cliente_id,
+      clients(nome_completo)
+    `)
     .eq('tenant_id', user.tenantId)
-    .is('deletado_em', null)
-    .order('atualizado_em', { ascending: false });
+    .order('updated_at', { ascending: false });
 
-  const clients = clientRows ?? [];
+  type ProcessoRow = {
+    id: string;
+    numero_interno: string;
+    tipo_beneficio: string | null;
+    etapa_pipeline: string;
+    observacao_pipeline: string | null;
+    status_resultado: string;
+    updated_at: string;
+    data_proxima_audiencia: string | null;
+    data_prazo: string | null;
+    tipo_evento: string | null;
+    cliente_id: string;
+    clients: { nome_completo: string } | null;
+  };
 
-  // Buscar contagem de documentos por cliente
-  const clientIds = clients.map((c: { id: string }) => c.id);
+  const processos = (processoRows ?? []) as unknown as ProcessoRow[];
+
+  // Buscar contagem de documentos por cliente (case_documents ainda é por cliente)
+  const clientIds = [...new Set(processos.map((p) => p.cliente_id))];
 
   let docsMap: Record<string, { total: number; recebidos: number }> = {};
 
@@ -38,28 +65,20 @@ export default async function PipelinePage() {
     }
   }
 
-  const enrichedClients = clients.map((c: {
-    id: string;
-    nome_completo: string;
-    tipo_pedido: string | null;
-    etapa_pipeline: string;
-    observacao_pipeline: string | null;
-    atualizado_em: string;
-    data_proxima_audiencia: string | null;
-    data_prazo: string | null;
-    tipo_evento: string | null;
-  }) => ({
-    id: c.id,
-    nome_completo: c.nome_completo,
-    tipo_pedido: c.tipo_pedido,
-    etapa_pipeline: c.etapa_pipeline || 'triagem',
-    observacao_pipeline: c.observacao_pipeline,
-    docs_total: docsMap[c.id]?.total ?? 0,
-    docs_recebidos: docsMap[c.id]?.recebidos ?? 0,
-    atualizado_em: c.atualizado_em,
-    data_proxima_audiencia: c.data_proxima_audiencia ?? null,
-    data_prazo: c.data_prazo ?? null,
-    tipo_evento: c.tipo_evento ?? null,
+  const enrichedProcessos = processos.map((p) => ({
+    id: p.id,
+    numero_interno: p.numero_interno,
+    cliente_id: p.cliente_id,
+    nome_completo: p.clients?.nome_completo ?? '—',
+    tipo_beneficio: p.tipo_beneficio,
+    etapa_pipeline: p.etapa_pipeline || 'triagem',
+    observacao_pipeline: p.observacao_pipeline,
+    docs_total: docsMap[p.cliente_id]?.total ?? 0,
+    docs_recebidos: docsMap[p.cliente_id]?.recebidos ?? 0,
+    updated_at: p.updated_at,
+    data_proxima_audiencia: p.data_proxima_audiencia ?? null,
+    data_prazo: p.data_prazo ?? null,
+    tipo_evento: p.tipo_evento ?? null,
   }));
 
   return (
@@ -76,7 +95,7 @@ export default async function PipelinePage() {
         </Button>
       </div>
 
-      {/* Dica mobile — arrastar não funciona em touch */}
+      {/* Dica mobile */}
       <div className="sm:hidden mb-4 flex items-center gap-2.5 bg-secondary/60 rounded-xl px-4 py-2.5">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground shrink-0">
           <path d="M5 9l4-4 4 4M9 5v14M19 15l-4 4-4-4M15 19V5"/>
@@ -86,7 +105,7 @@ export default async function PipelinePage() {
         </p>
       </div>
 
-      <KanbanBoard clients={enrichedClients} />
+      <KanbanBoard processos={enrichedProcessos} />
     </div>
   );
 }

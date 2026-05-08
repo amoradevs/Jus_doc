@@ -5,56 +5,53 @@ import { db } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { checklistPadrao } from '@/lib/pipeline';
 
-// ── Kanban: mover cliente entre etapas ──────────────────────────────
+// ── Kanban: mover processo entre etapas ─────────────────────────────
 
-export async function moverEtapa(clientId: string, novaEtapa: string) {
+export async function moverEtapa(processoId: string, novaEtapa: string) {
   const user = await getCurrentUser();
 
   await db
-    .from('clients')
+    .from('processos')
     .update({
       etapa_pipeline: novaEtapa,
-      atualizado_em: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     })
-    .eq('id', clientId)
+    .eq('id', processoId)
     .eq('tenant_id', user.tenantId);
 
   revalidatePath('/pipeline');
-  revalidatePath(`/clientes/${clientId}`);
   revalidatePath('/');
 }
 
-export async function atualizarObservacao(clientId: string, observacao: string) {
+export async function atualizarObservacao(processoId: string, observacao: string) {
   const user = await getCurrentUser();
 
   await db
-    .from('clients')
+    .from('processos')
     .update({
       observacao_pipeline: observacao,
-      atualizado_em: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     })
-    .eq('id', clientId)
+    .eq('id', processoId)
     .eq('tenant_id', user.tenantId);
 
   revalidatePath('/pipeline');
-  revalidatePath(`/clientes/${clientId}`);
 }
 
 // ── Checklist de documentos ─────────────────────────────────────────
 
-export async function inicializarChecklist(clientId: string, tipoPedido: string | null) {
+export async function inicializarChecklist(clientId: string, tipoBeneficio: string | null) {
   const user = await getCurrentUser();
 
-  // Verificar se já tem documentos cadastrados
   const { count } = await db
     .from('case_documents')
     .select('*', { count: 'exact', head: true })
     .eq('client_id', clientId)
     .eq('tenant_id', user.tenantId);
 
-  if ((count ?? 0) > 0) return; // já inicializado
+  if ((count ?? 0) > 0) return;
 
-  const docs = checklistPadrao(tipoPedido);
+  const docs = checklistPadrao(tipoBeneficio);
 
   const inserts = docs.map((d) => ({
     tenant_id: user.tenantId,
@@ -66,7 +63,6 @@ export async function inicializarChecklist(clientId: string, tipoPedido: string 
   }));
 
   await db.from('case_documents').insert(inserts);
-
   revalidatePath(`/clientes/${clientId}`);
 }
 

@@ -3,25 +3,27 @@
 import { useState, useTransition, useRef } from 'react';
 import Link from 'next/link';
 import { ETAPAS_PIPELINE } from '@/lib/pipeline';
-import { labelTipoPedido } from '@/lib/processo';
+import { labelTipoBeneficio } from '@/lib/processo';
 import { moverEtapa } from '@/app/(app)/pipeline/actions';
 
-type ClientCard = {
+type ProcessoCard = {
   id: string;
+  numero_interno: string;
+  cliente_id: string;
   nome_completo: string;
-  tipo_pedido: string | null;
+  tipo_beneficio: string | null;
   etapa_pipeline: string;
   observacao_pipeline: string | null;
   docs_total: number;
   docs_recebidos: number;
-  atualizado_em: string;
+  updated_at: string;
   data_proxima_audiencia?: string | null;
   data_prazo?: string | null;
   tipo_evento?: string | null;
 };
 
 interface KanbanBoardProps {
-  clients: ClientCard[];
+  processos: ProcessoCard[];
 }
 
 const ETAPA_COLORS: Record<string, string> = {
@@ -81,14 +83,12 @@ function EtapaIcon({ name }: { name: string }) {
     ),
     aguardando_inss: (
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={cls}>
-        <circle cx="12" cy="12" r="10"/>
-        <polyline points="12 6 12 12 16 14"/>
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
       </svg>
     ),
     pericia: (
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={cls}>
-        <circle cx="11" cy="11" r="8"/>
-        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
       </svg>
     ),
     judicial: (
@@ -124,14 +124,14 @@ const TIPO_EVENTO_LABEL: Record<string, string> = {
 };
 
 function AgendarDialog({
-  clientId,
+  processoId,
   dataAudienciaInicial,
   dataPrazoInicial,
   tipoEventoInicial,
   onClose,
   onSaved,
 }: {
-  clientId: string;
+  processoId: string;
   dataAudienciaInicial: string | null | undefined;
   dataPrazoInicial: string | null | undefined;
   tipoEventoInicial: string | null | undefined;
@@ -149,7 +149,7 @@ function AgendarDialog({
     setSaving(true);
     setErro('');
     try {
-      const res = await fetch(`/api/clientes/${clientId}/agenda`, {
+      const res = await fetch(`/api/processos/${processoId}/agenda`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -161,7 +161,7 @@ function AgendarDialog({
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        setErro(body?.error ?? 'Erro ao salvar. Verifique se a migration 006 foi executada no Supabase.');
+        setErro(body?.error ?? 'Erro ao salvar.');
         return;
       }
       onSaved(dataAud || null, dataPraz || null, tipo || null);
@@ -218,7 +218,6 @@ function AgendarDialog({
               />
             </div>
           )}
-
           <div className="space-y-1.5">
             <label className="text-xs text-muted-foreground font-medium">Data do evento</label>
             <input
@@ -240,9 +239,7 @@ function AgendarDialog({
         </div>
 
         {erro && (
-          <p className="text-[11px] text-destructive bg-destructive/10 rounded-lg px-3 py-2 leading-snug">
-            {erro}
-          </p>
+          <p className="text-[11px] text-destructive bg-destructive/10 rounded-lg px-3 py-2 leading-snug">{erro}</p>
         )}
 
         <div className="flex gap-2 pt-1">
@@ -265,7 +262,7 @@ function AgendarDialog({
   );
 }
 
-export function KanbanBoard({ clients }: KanbanBoardProps) {
+export function KanbanBoard({ processos }: KanbanBoardProps) {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverEtapa, setDragOverEtapa] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -274,8 +271,8 @@ export function KanbanBoard({ clients }: KanbanBoardProps) {
   const mouseXRef = useRef(0);
   const isScrollingRef = useRef(false);
 
-  const clientsByEtapa = (etapa: string) =>
-    clients.filter((c) => (c.etapa_pipeline || 'triagem') === etapa);
+  const processosByEtapa = (etapa: string) =>
+    processos.filter((p) => (p.etapa_pipeline || 'triagem') === etapa);
 
   function startAutoScroll() {
     if (isScrollingRef.current) return;
@@ -302,10 +299,10 @@ export function KanbanBoard({ clients }: KanbanBoardProps) {
     isScrollingRef.current = false;
   }
 
-  function handleDragStart(e: React.DragEvent, clientId: string) {
-    setDraggedId(clientId);
+  function handleDragStart(e: React.DragEvent, processoId: string) {
+    setDraggedId(processoId);
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', clientId);
+    e.dataTransfer.setData('text/plain', processoId);
     startAutoScroll();
   }
 
@@ -329,25 +326,25 @@ export function KanbanBoard({ clients }: KanbanBoardProps) {
   function handleDrop(e: React.DragEvent, etapa: string) {
     e.preventDefault();
     stopAutoScroll();
-    const clientId = e.dataTransfer.getData('text/plain');
+    const processoId = e.dataTransfer.getData('text/plain');
     setDragOverEtapa(null);
     setDraggedId(null);
 
-    if (!clientId) return;
+    if (!processoId) return;
 
-    const client = clients.find((c) => c.id === clientId);
-    if (!client || (client.etapa_pipeline || 'triagem') === etapa) return;
+    const processo = processos.find((p) => p.id === processoId);
+    if (!processo || (processo.etapa_pipeline || 'triagem') === etapa) return;
 
     startTransition(() => {
-      moverEtapa(clientId, etapa);
+      moverEtapa(processoId, etapa);
     });
   }
 
-  function handleMove(clientId: string, etapa: string) {
-    const client = clients.find((c) => c.id === clientId);
-    if (!client || (client.etapa_pipeline || 'triagem') === etapa) return;
+  function handleMove(processoId: string, etapa: string) {
+    const processo = processos.find((p) => p.id === processoId);
+    if (!processo || (processo.etapa_pipeline || 'triagem') === etapa) return;
     startTransition(() => {
-      moverEtapa(clientId, etapa);
+      moverEtapa(processoId, etapa);
     });
   }
 
@@ -357,7 +354,7 @@ export function KanbanBoard({ clients }: KanbanBoardProps) {
       className="flex gap-3 overflow-x-auto pb-4 min-h-[calc(100vh-220px)]"
     >
       {ETAPAS_PIPELINE.map((etapa) => {
-        const cards = clientsByEtapa(etapa.value);
+        const cards = processosByEtapa(etapa.value);
         const isOver = dragOverEtapa === etapa.value;
 
         return (
@@ -370,7 +367,6 @@ export function KanbanBoard({ clients }: KanbanBoardProps) {
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, etapa.value)}
           >
-            {/* Coluna Header */}
             <div className={`px-4 py-3 border-t-[3px] rounded-t-2xl ${ETAPA_COLORS[etapa.value] || 'border-t-gray-300'}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -385,7 +381,6 @@ export function KanbanBoard({ clients }: KanbanBoardProps) {
               </div>
             </div>
 
-            {/* Cards */}
             <div className="flex-1 px-2 pb-2 space-y-2 overflow-y-auto max-h-[calc(100vh-320px)]">
               {cards.length === 0 && (
                 <div className={`rounded-xl border border-dashed border-border/60 p-4 text-center transition-all ${
@@ -397,14 +392,14 @@ export function KanbanBoard({ clients }: KanbanBoardProps) {
                 </div>
               )}
 
-              {cards.map((client) => (
-                <ClientKanbanCard
-                  key={client.id}
-                  client={client}
-                  isDragging={draggedId === client.id}
-                  onDragStart={(e) => handleDragStart(e, client.id)}
+              {cards.map((processo) => (
+                <ProcessoKanbanCard
+                  key={processo.id}
+                  processo={processo}
+                  isDragging={draggedId === processo.id}
+                  onDragStart={(e) => handleDragStart(e, processo.id)}
                   onDragEnd={handleDragEnd}
-                  onMove={(etapa) => handleMove(client.id, etapa)}
+                  onMove={(etapa) => handleMove(processo.id, etapa)}
                 />
               ))}
             </div>
@@ -422,29 +417,29 @@ export function KanbanBoard({ clients }: KanbanBoardProps) {
   );
 }
 
-function ClientKanbanCard({
-  client,
+function ProcessoKanbanCard({
+  processo,
   isDragging,
   onDragStart,
   onDragEnd,
   onMove,
 }: {
-  client: ClientCard;
+  processo: ProcessoCard;
   isDragging: boolean;
   onDragStart: (e: React.DragEvent) => void;
   onDragEnd: () => void;
   onMove: (etapa: string) => void;
 }) {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dataAud, setDataAud] = useState(client.data_proxima_audiencia ?? null);
-  const [dataPraz, setDataPraz] = useState(client.data_prazo ?? null);
-  const [tipoEv, setTipoEv] = useState(client.tipo_evento ?? null);
+  const [dataAud, setDataAud] = useState(processo.data_proxima_audiencia ?? null);
+  const [dataPraz, setDataPraz] = useState(processo.data_prazo ?? null);
+  const [tipoEv, setTipoEv] = useState(processo.tipo_evento ?? null);
 
-  const docsProgress = client.docs_total > 0
-    ? Math.round((client.docs_recebidos / client.docs_total) * 100)
+  const docsProgress = processo.docs_total > 0
+    ? Math.round((processo.docs_recebidos / processo.docs_total) * 100)
     : -1;
 
-  const updatedAt = new Date(client.atualizado_em).toLocaleDateString('pt-BR', {
+  const updatedAt = new Date(processo.updated_at).toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: 'short',
   });
@@ -474,16 +469,17 @@ function ClientKanbanCard({
           </svg>
           <div className="flex-1 min-w-0">
             <Link
-              href={`/clientes/${client.id}`}
+              href={`/clientes/${processo.cliente_id}`}
               draggable={false}
               onMouseDown={(e) => e.stopPropagation()}
               className="text-sm font-medium text-foreground truncate block group-hover:text-primary transition-colors"
             >
-              {client.nome_completo}
+              {processo.nome_completo}
             </Link>
             <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-              {client.tipo_pedido ? labelTipoPedido(client.tipo_pedido) : 'Sem benefício definido'}
+              {labelTipoBeneficio(processo.tipo_beneficio)}
             </p>
+            <p className="text-[10px] text-muted-foreground/60 font-mono">{processo.numero_interno}</p>
           </div>
         </div>
 
@@ -506,11 +502,9 @@ function ClientKanbanCard({
           <div className="mt-2.5">
             <div className="flex items-center justify-between mb-1">
               <span className="text-[10px] text-muted-foreground">
-                Docs: {client.docs_recebidos}/{client.docs_total}
+                Docs: {processo.docs_recebidos}/{processo.docs_total}
               </span>
-              <span className="text-[10px] font-medium text-muted-foreground">
-                {docsProgress}%
-              </span>
+              <span className="text-[10px] font-medium text-muted-foreground">{docsProgress}%</span>
             </div>
             <div className="h-1 bg-border rounded-full overflow-hidden">
               <div
@@ -528,9 +522,9 @@ function ClientKanbanCard({
         )}
 
         {/* Observação */}
-        {client.observacao_pipeline && (
+        {processo.observacao_pipeline && (
           <p className="text-[10px] text-muted-foreground/80 mt-2 italic line-clamp-2 border-l-2 border-primary/20 pl-2">
-            {client.observacao_pipeline}
+            {processo.observacao_pipeline}
           </p>
         )}
 
@@ -552,7 +546,7 @@ function ClientKanbanCard({
               </svg>
             </button>
 
-            {/* Mover para (select invisível sobre ícone) */}
+            {/* Mover para */}
             <div className="relative w-6 h-6" title="Mover para outra etapa">
               <select
                 value=""
@@ -561,7 +555,7 @@ function ClientKanbanCard({
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               >
                 <option value="" disabled></option>
-                {ETAPAS_PIPELINE.filter((e) => e.value !== client.etapa_pipeline).map((etapa) => (
+                {ETAPAS_PIPELINE.filter((e) => e.value !== processo.etapa_pipeline).map((etapa) => (
                   <option key={etapa.value} value={etapa.value}>{etapa.label}</option>
                 ))}
               </select>
@@ -572,11 +566,11 @@ function ClientKanbanCard({
               </div>
             </div>
 
-            {/* Abrir cliente */}
+            {/* Abrir processo */}
             <Link
-              href={`/clientes/${client.id}`}
+              href={`/processos/${processo.numero_interno}`}
               draggable={false}
-              title="Abrir cliente"
+              title="Abrir processo"
               onMouseDown={(e) => e.stopPropagation()}
               className="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
             >
@@ -591,7 +585,7 @@ function ClientKanbanCard({
 
       {dialogOpen && (
         <AgendarDialog
-          clientId={client.id}
+          processoId={processo.id}
           dataAudienciaInicial={dataAud}
           dataPrazoInicial={dataPraz}
           tipoEventoInicial={tipoEv}

@@ -7,6 +7,7 @@ import Link from 'next/link';
 
 type EventoAgenda = {
   id: string;
+  cliente_id: string;
   nome_completo: string;
   etapa_pipeline: string;
   tipo_pedido: string | null;
@@ -17,6 +18,7 @@ type EventoAgenda = {
 };
 
 type EventoDia = {
+  processoId: string;
   clienteId: string;
   nomeCliente: string;
   tipo: 'audiencia' | 'prazo';
@@ -77,7 +79,7 @@ function EventoChip({
     e.stopPropagation();
     setDeleting(true);
     try {
-      await fetch(`/api/clientes/${evento.clienteId}/agenda`, {
+      await fetch(`/api/processos/${evento.processoId}/agenda`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -158,8 +160,8 @@ export function CalendarioSemanal() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offset]);
 
-  function removerEvento(clienteId: string) {
-    setEventos((prev) => prev.filter((ev) => ev.id !== clienteId));
+  function removerEvento(processoId: string) {
+    setEventos((prev) => prev.filter((ev) => ev.id !== processoId));
   }
 
   function eventosNoDia(dia: Date): EventoDia[] {
@@ -168,7 +170,8 @@ export function CalendarioSemanal() {
     for (const ev of eventos) {
       if (ev.data_proxima_audiencia === diaStr) {
         resultado.push({
-          clienteId: ev.id,
+          processoId: ev.id,
+          clienteId: ev.cliente_id,
           nomeCliente: ev.nome_completo,
           tipo: 'audiencia',
           tipoEvento: ev.tipo_evento,
@@ -178,7 +181,8 @@ export function CalendarioSemanal() {
       }
       if (ev.data_prazo === diaStr && ev.data_prazo !== ev.data_proxima_audiencia) {
         resultado.push({
-          clienteId: ev.id,
+          processoId: ev.id,
+          clienteId: ev.cliente_id,
           nomeCliente: ev.nome_completo,
           tipo: 'prazo',
           tipoEvento: 'prazo',
@@ -194,7 +198,6 @@ export function CalendarioSemanal() {
 
   return (
     <div className="bg-card rounded-2xl border border-border shadow-sm shadow-[0_2px_8px_rgba(166,102,138,0.06)]">
-      {/* Cabeçalho de navegação */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-border">
         <span className="text-sm font-medium text-foreground capitalize">{labelSemana}</span>
         <div className="flex items-center gap-1">
@@ -225,46 +228,45 @@ export function CalendarioSemanal() {
         </div>
       </div>
 
-      {/* Grade semanal — scroll horizontal em mobile */}
       <div className="overflow-x-auto">
-      <div className="grid grid-cols-7 divide-x divide-border min-w-[420px]">
-        {dias.map((dia) => {
-          const ehHoje = isToday(dia);
-          const evsDia = eventosNoDia(dia);
-          const nomeDia = format(dia, 'EEE', { locale: ptBR });
-          const numDia = format(dia, 'd');
+        <div className="grid grid-cols-7 divide-x divide-border min-w-[420px]">
+          {dias.map((dia) => {
+            const ehHoje = isToday(dia);
+            const evsDia = eventosNoDia(dia);
+            const nomeDia = format(dia, 'EEE', { locale: ptBR });
+            const numDia = format(dia, 'd');
 
-          return (
-            <div key={dia.toISOString()} className="flex flex-col min-h-[120px]">
-              <div className={`px-2 py-2 text-center border-b border-border ${ehHoje ? 'bg-primary/5' : ''}`}>
-                <p className={`text-[10px] font-semibold uppercase tracking-widest ${ehHoje ? 'text-primary' : 'text-muted-foreground'}`}>
-                  {nomeDia}
-                </p>
-                <div className={`text-sm font-bold mt-0.5 leading-none ${
-                  ehHoje
-                    ? 'w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto text-xs'
-                    : 'text-foreground'
-                }`}>
-                  {numDia}
+            return (
+              <div key={dia.toISOString()} className="flex flex-col min-h-[120px]">
+                <div className={`px-2 py-2 text-center border-b border-border ${ehHoje ? 'bg-primary/5' : ''}`}>
+                  <p className={`text-[10px] font-semibold uppercase tracking-widest ${ehHoje ? 'text-primary' : 'text-muted-foreground'}`}>
+                    {nomeDia}
+                  </p>
+                  <div className={`text-sm font-bold mt-0.5 leading-none ${
+                    ehHoje
+                      ? 'w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto text-xs'
+                      : 'text-foreground'
+                  }`}>
+                    {numDia}
+                  </div>
+                </div>
+
+                <div className="flex-1 p-1.5 space-y-1">
+                  {loading
+                    ? [1, 2].map((k) => <SkeletonChip key={k} />)
+                    : evsDia.map((ev, i) => (
+                        <EventoChip
+                          key={`${ev.processoId}-${ev.tipo}-${i}`}
+                          evento={ev}
+                          onDelete={() => removerEvento(ev.processoId)}
+                        />
+                      ))
+                  }
                 </div>
               </div>
-
-              <div className="flex-1 p-1.5 space-y-1">
-                {loading
-                  ? [1, 2].map((k) => <SkeletonChip key={k} />)
-                  : evsDia.map((ev, i) => (
-                      <EventoChip
-                        key={`${ev.clienteId}-${ev.tipo}-${i}`}
-                        evento={ev}
-                        onDelete={() => removerEvento(ev.clienteId)}
-                      />
-                    ))
-                }
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
       </div>
 
       {!loading && !temEventos && (

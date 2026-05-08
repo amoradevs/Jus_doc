@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
-import { labelTipoPedido } from '@/lib/processo';
+import { labelTipoBeneficio, labelStatusResultado } from '@/lib/processo';
 
 const ETAPA_LABEL: Record<string, string> = {
   triagem: 'Triagem',
@@ -12,11 +12,6 @@ const ETAPA_LABEL: Record<string, string> = {
   judicial: 'Judicial',
   concedido: 'Concedido',
   encerrado: 'Encerrado',
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  deferido: 'Deferido',
-  indeferido: 'Indeferido',
 };
 
 function csvCell(val: unknown): string {
@@ -30,6 +25,40 @@ function fmtDate(iso: string | null | undefined): string {
   const d = new Date(iso.length === 10 ? iso + 'T12:00:00' : iso);
   return d.toLocaleDateString('pt-BR');
 }
+
+type ClientRow = {
+  id: string;
+  nome_completo: string;
+  cpf: string;
+  data_nascimento: string;
+  genero: string;
+  estado_civil: string | null;
+  nacionalidade: string | null;
+  telefone: string | null;
+  rg: string | null;
+  rg_orgao_emissor: string | null;
+  nome_mae: string | null;
+  nome_pai: string | null;
+  endereco_logradouro: string;
+  endereco_numero: string;
+  endereco_complemento: string | null;
+  endereco_bairro: string;
+  endereco_cidade: string;
+  endereco_uf: string;
+  endereco_cep: string;
+  criado_em: string;
+};
+
+type ProcessoRow = {
+  cliente_id: string;
+  numero_interno: string;
+  tipo_beneficio: string | null;
+  status_resultado: string;
+  etapa_pipeline: string;
+  data_entrada: string | null;
+  data_proxima_audiencia: string | null;
+  data_prazo: string | null;
+};
 
 export async function GET(req: Request) {
   let user;
@@ -47,10 +76,10 @@ export async function GET(req: Request) {
   let query = db
     .from('clients')
     .select(
-      'nome_completo,cpf,data_nascimento,genero,estado_civil,nacionalidade,' +
+      'id,nome_completo,cpf,data_nascimento,genero,estado_civil,nacionalidade,' +
       'telefone,rg,rg_orgao_emissor,nome_mae,nome_pai,' +
       'endereco_logradouro,endereco_numero,endereco_complemento,endereco_bairro,endereco_cidade,endereco_uf,endereco_cep,' +
-      'tipo_pedido,status_pedido,etapa_pipeline,data_entrada_pedido,data_proxima_audiencia,data_prazo,criado_em'
+      'criado_em'
     )
     .eq('tenant_id', user.tenantId)
     .is('deletado_em', null)
@@ -81,45 +110,38 @@ export async function GET(req: Request) {
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const rows = ((data ?? []) as unknown) as {
-    nome_completo: string;
-    cpf: string;
-    data_nascimento: string;
-    genero: string;
-    estado_civil: string | null;
-    nacionalidade: string | null;
-    telefone: string | null;
-    rg: string | null;
-    rg_orgao_emissor: string | null;
-    nome_mae: string | null;
-    nome_pai: string | null;
-    endereco_logradouro: string;
-    endereco_numero: string;
-    endereco_complemento: string | null;
-    endereco_bairro: string;
-    endereco_cidade: string;
-    endereco_uf: string;
-    endereco_cep: string;
-    tipo_pedido: string | null;
-    status_pedido: string | null;
-    etapa_pipeline: string | null;
-    data_entrada_pedido: string | null;
-    data_proxima_audiencia: string | null;
-    data_prazo: string | null;
-    criado_em: string;
-  }[];
+  const rows = (data ?? []) as unknown as ClientRow[];
+
+  // Busca processos de todos os clientes retornados (join em memória)
+  let processoMap = new Map<string, ProcessoRow[]>();
+  if (rows.length > 0) {
+    const ids = rows.map((r) => r.id);
+    const { data: processoData } = await db
+      .from('processos')
+      .select('cliente_id,numero_interno,tipo_beneficio,status_resultado,etapa_pipeline,data_entrada,data_proxima_audiencia,data_prazo')
+      .eq('tenant_id', user.tenantId)
+      .in('cliente_id', ids);
+
+    for (const p of (processoData ?? []) as ProcessoRow[]) {
+      const list = processoMap.get(p.cliente_id) ?? [];
+      list.push(p);
+      processoMap.set(p.cliente_id, list);
+    }
+  }
 
   const headers = [
     'Nome Completo', 'CPF', 'Data de Nascimento', 'Gênero', 'Estado Civil', 'Nacionalidade',
     'Telefone', 'RG', 'Órgão Emissor', 'Nome da Mãe', 'Nome do Pai',
     'Endereço', 'Bairro', 'Cidade', 'UF', 'CEP',
-    'Tipo de Benefício', 'Status', 'Etapa Pipeline',
+    'Nº Processo', 'Tipo de Benefício', 'Status', 'Etapa Pipeline',
     'Data de Entrada', 'Próxima Audiência', 'Prazo', 'Cadastrado em',
   ];
 
-  const lines: string[] = [
-    '﻿' + headers.join(';'),
-    ...rows.map((r) => [
+  // Uma linha por processo; se cliente não tem processo, uma linha com campos vazios
+  const csvRows: string[] = [];
+  for (const r of rows) {
+    const processos = processoMap.get(r.id) ?? [];
+    const commonCells = [
       csvCell(r.nome_completo),
       csvCell(r.cpf),
       csvCell(fmtDate(r.data_nascimento)),
@@ -136,17 +158,28 @@ export async function GET(req: Request) {
       csvCell(r.endereco_cidade),
       csvCell(r.endereco_uf),
       csvCell(r.endereco_cep),
-      csvCell(labelTipoPedido(r.tipo_pedido)),
-      csvCell(r.status_pedido ? (STATUS_LABEL[r.status_pedido] ?? r.status_pedido) : 'Em andamento'),
-      csvCell(r.etapa_pipeline ? (ETAPA_LABEL[r.etapa_pipeline] ?? r.etapa_pipeline) : ''),
-      csvCell(fmtDate(r.data_entrada_pedido)),
-      csvCell(fmtDate(r.data_proxima_audiencia)),
-      csvCell(fmtDate(r.data_prazo)),
-      csvCell(fmtDate(r.criado_em)),
-    ].join(';')),
-  ];
+    ];
 
-  const csv = lines.join('\r\n');
+    if (processos.length === 0) {
+      csvRows.push([...commonCells, '', '', '', '', '', '', '', csvCell(fmtDate(r.criado_em))].join(';'));
+    } else {
+      for (const p of processos) {
+        csvRows.push([
+          ...commonCells,
+          csvCell(p.numero_interno),
+          csvCell(labelTipoBeneficio(p.tipo_beneficio)),
+          csvCell(labelStatusResultado(p.status_resultado)),
+          csvCell(ETAPA_LABEL[p.etapa_pipeline] ?? p.etapa_pipeline),
+          csvCell(fmtDate(p.data_entrada)),
+          csvCell(fmtDate(p.data_proxima_audiencia)),
+          csvCell(fmtDate(p.data_prazo)),
+          csvCell(fmtDate(r.criado_em)),
+        ].join(';'));
+      }
+    }
+  }
+
+  const csv = ['﻿' + headers.join(';'), ...csvRows].join('\r\n');
   const hoje = agora.toLocaleDateString('pt-BR').replace(/\//g, '-');
   const filename = `clientes-${hoje}.csv`;
 
