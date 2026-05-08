@@ -80,14 +80,9 @@ export function ClientForm({ mode, clientId, defaultValues }: Props) {
     } else {
       const err = await res.json();
       if (err?.error?.code === 'CPF_ALREADY_EXISTS') {
-        toast.error(
-          <span>
-            Este CPF já está cadastrado.{' '}
-            <Link href={`/clientes/${err.error.existing_client_id}`} className="underline">
-              Ver cliente
-            </Link>
-          </span>
-        );
+        // Banner inline já aparece via onChange — não duplicar com toast
+        setCpfCheck({ exists: true, id: err.error.existing_client_id, nome: err.error.nome ?? 'Cliente existente' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         toast.error(err?.error?.message ?? 'Erro ao salvar cliente.');
       }
@@ -120,9 +115,11 @@ export function ClientForm({ mode, clientId, defaultValues }: Props) {
                 onChange={(e) => {
                   const masked = maskCPF(e.target.value);
                   setValue('cpf', masked);
-                  setCpfCheck(null);
+                  // Limpa resultado anterior ao editar
+                  if (cpfCheck) setCpfCheck(null);
+                  // Dispara check assim que os 11 dígitos estão completos (14 chars mascarados)
+                  if (masked.length === 14) checkCpf(masked);
                 }}
-                onBlur={(e) => checkCpf(e.target.value)}
                 className={cpfCheck?.exists ? 'border-amber-400 focus-visible:ring-amber-400/30' : ''}
               />
               {cpfChecking && (

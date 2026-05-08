@@ -40,14 +40,20 @@ export async function POST(req: Request) {
 
   const { data: existing } = await db
     .from('clients')
-    .select('id')
+    .select('id, nome_completo')
     .eq('cpf', parsed.data.cpf)
     .eq('tenant_id', user.tenantId)
     .is('deletado_em', null)
     .limit(1);
 
   if (existing && existing.length > 0) {
-    return NextResponse.json({ error: { code: 'CPF_ALREADY_EXISTS', existing_client_id: existing[0].id } }, { status: 409 });
+    return NextResponse.json({
+      error: {
+        code: 'CPF_ALREADY_EXISTS',
+        existing_client_id: existing[0].id,
+        nome: existing[0].nome_completo,
+      },
+    }, { status: 409 });
   }
 
   const { data: client, error } = await db
