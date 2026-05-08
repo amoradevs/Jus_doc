@@ -453,7 +453,7 @@ function PrazoBadge({ proximo_prazo }: { proximo_prazo: NonNullable<ProcessoCard
 
   return (
     <div className="mt-2 flex items-center gap-1.5 text-[10px]">
-      {dl <= hoje && <span className="text-destructive">⚠</span>}
+      {dl < hoje && <span className="text-destructive">⚠</span>}
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${style?.dot ?? 'bg-primary/60'}`} />
       <span className="text-muted-foreground truncate max-w-[90px]">{proximo_prazo.tipo}</span>
       <span className={`font-medium ${urgClass}`}>{dataFmt}</span>

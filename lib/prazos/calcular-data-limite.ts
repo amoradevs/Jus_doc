@@ -101,18 +101,22 @@ export function diasRestantes(dataLimite: string, hoje?: string, diasUteis = fal
     return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
   }
 
-  // Conta dias úteis entre hoje e data limite
-  let count = 0;
-  const sinal = limiteDate >= hojeDate ? 1 : -1;
-  let cursor = new Date(hojeDate);
+  // Conta dias úteis entre hoje e data limite (funciona para datas passadas e futuras)
+  if (toIso(hojeDate) === toIso(limiteDate)) return 0;
 
-  while (toIso(cursor) !== toIso(limiteDate)) {
+  const isPositive = limiteDate > hojeDate;
+  const start = isPositive ? hojeDate : limiteDate;
+  const end   = isPositive ? limiteDate : hojeDate;
+
+  let count = 0;
+  let cursor = new Date(start);
+  while (toIso(cursor) !== toIso(end)) {
     cursor = addDay(cursor);
     if (esDiaUtil(cursor)) count++;
     if (count > 5000) break; // safety
   }
 
-  return sinal * count;
+  return isPositive ? count : -count;
 }
 
 // Exporta helpers para uso nos testes

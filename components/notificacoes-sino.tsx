@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { CATEGORIA_STYLE, labelCategoria, type CategoriaPrazo } from '@/lib/prazos/categorias';
+import { CATEGORIA_STYLE, type CategoriaPrazo } from '@/lib/prazos/categorias';
 
 type PrazoUrgente = {
   id: string;
