@@ -100,6 +100,7 @@ export function ListaPrazos({ processoId }: { processoId: string }) {
       if (res.ok) {
         toast.success('Prazo cancelado.');
         await carregar();
+        window.dispatchEvent(new CustomEvent('prazo-updated'));
       } else {
         const err = await res.json();
         toast.error(err?.error ?? 'Erro ao cancelar prazo.');

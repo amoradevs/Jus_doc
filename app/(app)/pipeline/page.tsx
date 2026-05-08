@@ -65,6 +65,34 @@ export default async function PipelinePage() {
     }
   }
 
+  // Buscar prazos pendentes de todos os processos
+  const processoIds = processos.map((p) => p.id);
+  let prazosMap: Record<string, { data_limite: string; categoria: string; tipo: string; vencido: boolean }> = {};
+
+  if (processoIds.length > 0) {
+    const hoje = new Date().toISOString().slice(0, 10);
+    const { data: prazosData } = await db
+      .from('prazos')
+      .select('id, processo_id, categoria, tipo, data_limite')
+      .eq('tenant_id', user.tenantId)
+      .eq('status', 'pendente')
+      .in('processo_id', processoIds)
+      .order('data_limite', { ascending: true });
+
+    if (prazosData) {
+      for (const pz of prazosData as { id: string; processo_id: string; categoria: string; tipo: string; data_limite: string }[]) {
+        if (!prazosMap[pz.processo_id]) {
+          prazosMap[pz.processo_id] = {
+            data_limite: pz.data_limite,
+            categoria: pz.categoria,
+            tipo: pz.tipo,
+            vencido: pz.data_limite < hoje,
+          };
+        }
+      }
+    }
+  }
+
   const enrichedProcessos = processos.map((p) => ({
     id: p.id,
     numero_interno: p.numero_interno,
@@ -79,6 +107,8 @@ export default async function PipelinePage() {
     data_proxima_audiencia: p.data_proxima_audiencia ?? null,
     data_prazo: p.data_prazo ?? null,
     tipo_evento: p.tipo_evento ?? null,
+    proximo_prazo: prazosMap[p.id] ?? null,
+    tem_prazo_vencido: prazosMap[p.id]?.vencido ?? false,
   }));
 
   return (

@@ -15,6 +15,11 @@ type EventoAgenda = {
   data_prazo: string | null;
   tipo_evento: string | null;
   descricao_evento: string | null;
+  // campos de prazo estruturado (podem ser null para itens legados)
+  prazo_id: string | null;
+  prazo_categoria: string | null;
+  prazo_tipo: string | null;
+  numero_interno: string | null;
 };
 
 type EventoDia = {
@@ -25,6 +30,9 @@ type EventoDia = {
   tipoEvento: string | null;
   descricao: string | null;
   etapa: string;
+  prazoId: string | null;
+  prazoCategoria: string | null;
+  numeroInterno: string | null;
 };
 
 const EVENTO_CHIP: Record<string, { bg: string; text: string; dot: string; hoverX: string }> = {
@@ -54,7 +62,13 @@ const TIPO_LABEL: Record<string, string> = {
   outro: 'Outro',
 };
 
-function chipStyle(tipoEvento: string | null, etapa: string) {
+const PRAZO_CATEGORIA_CHIP: Record<string, { bg: string; text: string; dot: string; hoverX: string }> = {
+  evento:            { bg: 'bg-teal-100 dark:bg-teal-900/30', text: 'text-teal-700 dark:text-teal-400', dot: 'bg-teal-500', hoverX: 'hover:bg-teal-200' },
+  comercial_interno: { bg: 'bg-indigo-100 dark:bg-indigo-900/30', text: 'text-indigo-700 dark:text-indigo-400', dot: 'bg-indigo-500', hoverX: 'hover:bg-indigo-200' },
+};
+
+function chipStyle(tipoEvento: string | null, etapa: string, prazoCategoria: string | null) {
+  if (prazoCategoria && PRAZO_CATEGORIA_CHIP[prazoCategoria]) return PRAZO_CATEGORIA_CHIP[prazoCategoria];
   return EVENTO_CHIP[tipoEvento ?? ''] ?? ETAPA_CHIP[etapa] ?? EVENTO_CHIP['outro'];
 }
 
@@ -66,13 +80,20 @@ function EventoChip({
   onDelete: () => void;
 }) {
   const [deleting, setDeleting] = useState(false);
-  const style = chipStyle(evento.tipoEvento, evento.etapa);
+  const isPrazoEstruturado = Boolean(evento.prazoId);
+  const style = chipStyle(evento.tipoEvento, evento.etapa, evento.prazoCategoria);
 
-  const label = evento.tipo === 'prazo'
+  const label = isPrazoEstruturado
+    ? evento.descricao ?? 'Prazo'
+    : evento.tipo === 'prazo'
     ? 'Prazo'
     : evento.tipoEvento === 'outro' && evento.descricao
     ? evento.descricao
     : (TIPO_LABEL[evento.tipoEvento ?? ''] ?? 'Evento');
+
+  const href = isPrazoEstruturado && evento.numeroInterno
+    ? `/processos/${evento.numeroInterno}?tab=prazos`
+    : `/clientes/${evento.clienteId}`;
 
   async function handleDelete(e: React.MouseEvent) {
     e.preventDefault();
@@ -98,7 +119,7 @@ function EventoChip({
   return (
     <div className={`group/chip relative flex items-center gap-1.5 rounded-lg px-2 py-1 ${style.bg} ${style.text}`}>
       <Link
-        href={`/clientes/${evento.clienteId}`}
+        href={href}
         className="flex items-center gap-1.5 flex-1 min-w-0 hover:opacity-80 transition-opacity"
       >
         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${style.dot}`} />
@@ -106,22 +127,24 @@ function EventoChip({
           {label} · {evento.nomeCliente.split(' ')[0]}
         </span>
       </Link>
-      <button
-        onClick={handleDelete}
-        disabled={deleting}
-        className={`shrink-0 rounded p-0.5 opacity-0 group-hover/chip:opacity-100 transition-opacity ${style.hoverX} disabled:opacity-40`}
-        title="Excluir agendamento"
-      >
-        {deleting ? (
-          <svg className="animate-spin" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-          </svg>
-        ) : (
-          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-            <path d="M18 6 6 18M6 6l12 12" strokeLinecap="round"/>
-          </svg>
-        )}
-      </button>
+      {!isPrazoEstruturado && (
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          className={`shrink-0 rounded p-0.5 opacity-0 group-hover/chip:opacity-100 transition-opacity ${style.hoverX} disabled:opacity-40`}
+          title="Excluir agendamento"
+        >
+          {deleting ? (
+            <svg className="animate-spin" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+            </svg>
+          ) : (
+            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+              <path d="M18 6 6 18M6 6l12 12" strokeLinecap="round"/>
+            </svg>
+          )}
+        </button>
+      )}
     </div>
   );
 }
@@ -177,6 +200,9 @@ export function CalendarioSemanal() {
           tipoEvento: ev.tipo_evento,
           descricao: ev.descricao_evento,
           etapa: ev.etapa_pipeline,
+          prazoId: ev.prazo_id ?? null,
+          prazoCategoria: ev.prazo_categoria ?? null,
+          numeroInterno: ev.numero_interno ?? null,
         });
       }
       if (ev.data_prazo === diaStr && ev.data_prazo !== ev.data_proxima_audiencia) {
@@ -188,6 +214,9 @@ export function CalendarioSemanal() {
           tipoEvento: 'prazo',
           descricao: null,
           etapa: ev.etapa_pipeline,
+          prazoId: null,
+          prazoCategoria: null,
+          numeroInterno: null,
         });
       }
     }

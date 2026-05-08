@@ -47,8 +47,8 @@ export async function GET(req: Request) {
     clients: { nome_completo: string } | null;
   };
 
-  // Flatten para manter compatibilidade com CalendarioSemanal
-  const resultado = (data as unknown as AgendaRow[] ?? []).map((p) => ({
+  // Flatten legado (processos com eventos agendados)
+  const legado = (data as unknown as AgendaRow[] ?? []).map((p) => ({
     id: p.id,
     cliente_id: p.cliente_id,
     nome_completo: p.clients?.nome_completo ?? '',
@@ -58,7 +58,62 @@ export async function GET(req: Request) {
     data_prazo: p.data_prazo,
     tipo_evento: p.tipo_evento,
     descricao_evento: p.descricao_evento,
+    // campos de prazo estruturado (ausentes nos itens legados)
+    prazo_id: null as string | null,
+    prazo_categoria: null as string | null,
+    prazo_tipo: null as string | null,
+    numero_interno: null as string | null,
   }));
 
-  return NextResponse.json(resultado);
+  // Prazos categoria evento ou comercial_interno no período
+  const { data: prazosData } = await db
+    .from('prazos')
+    .select(`
+      id,
+      categoria,
+      tipo,
+      data_limite,
+      processos!inner(
+        id,
+        numero_interno,
+        cliente_id,
+        clients(nome_completo)
+      )
+    `)
+    .eq('tenant_id', user.tenantId)
+    .eq('status', 'pendente')
+    .in('categoria', ['evento', 'comercial_interno'])
+    .gte('data_limite', start)
+    .lte('data_limite', end);
+
+  type PrazoAgendaRow = {
+    id: string;
+    categoria: string;
+    tipo: string;
+    data_limite: string;
+    processos: {
+      id: string;
+      numero_interno: string;
+      cliente_id: string;
+      clients: { nome_completo: string } | null;
+    };
+  };
+
+  const prazosAgenda = ((prazosData ?? []) as unknown as PrazoAgendaRow[]).map((pz) => ({
+    id: pz.processos.id,
+    cliente_id: pz.processos.cliente_id,
+    nome_completo: pz.processos.clients?.nome_completo ?? '',
+    tipo_pedido: null,
+    etapa_pipeline: '',
+    data_proxima_audiencia: pz.data_limite,
+    data_prazo: null,
+    tipo_evento: pz.categoria,
+    descricao_evento: pz.tipo,
+    prazo_id: pz.id,
+    prazo_categoria: pz.categoria,
+    prazo_tipo: pz.tipo,
+    numero_interno: pz.processos.numero_interno,
+  }));
+
+  return NextResponse.json([...legado, ...prazosAgenda]);
 }

@@ -50,6 +50,7 @@ export function CumprirModal({ prazoId, tipoPrazo, onCumprido }: Props) {
       reset({ data_cumprimento: toIsoToday() });
       setOpen(false);
       onCumprido();
+      window.dispatchEvent(new CustomEvent('prazo-updated'));
     } else {
       const err = await res.json();
       toast.error(err?.error ?? 'Erro ao marcar prazo.');

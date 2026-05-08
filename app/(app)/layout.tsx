@@ -8,6 +8,7 @@ import { UserMenu } from '@/components/user-menu';
 import { SignOutForm } from '@/components/sign-out-form';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { FontSizeControl } from '@/components/font-size-control';
+import { NotificacoesSino } from '@/components/notificacoes-sino';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
@@ -45,6 +46,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <FontSizeControl />
             </div>
             <ThemeToggle />
+            <NotificacoesSino />
           </div>
 
           <div className="hidden sm:block w-px h-5 bg-border/60 shrink-0" />

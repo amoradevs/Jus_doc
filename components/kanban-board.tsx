@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ETAPAS_PIPELINE } from '@/lib/pipeline';
 import { labelTipoBeneficio } from '@/lib/processo';
 import { moverEtapa } from '@/app/(app)/pipeline/actions';
+import { CATEGORIA_STYLE, type CategoriaPrazo } from '@/lib/prazos/categorias';
 
 type ProcessoCard = {
   id: string;
@@ -20,6 +21,8 @@ type ProcessoCard = {
   data_proxima_audiencia?: string | null;
   data_prazo?: string | null;
   tipo_evento?: string | null;
+  proximo_prazo?: { data_limite: string; categoria: string; tipo: string; vencido: boolean } | null;
+  tem_prazo_vencido?: boolean;
 };
 
 interface KanbanBoardProps {
@@ -417,6 +420,47 @@ export function KanbanBoard({ processos }: KanbanBoardProps) {
   );
 }
 
+type PrazoUrgencia = 'vencido' | 'hoje' | 'urgente' | 'proximo' | 'normal' | null;
+
+function getPrazoUrgencia(proximo_prazo: ProcessoCard['proximo_prazo']): PrazoUrgencia {
+  if (!proximo_prazo) return null;
+  const hoje = new Date().toISOString().slice(0, 10);
+  const dl = proximo_prazo.data_limite;
+  if (dl < hoje) return 'vencido';
+  if (dl === hoje) return 'hoje';
+  const diff = Math.ceil((new Date(dl + 'T12:00:00').getTime() - new Date(hoje + 'T12:00:00').getTime()) / 86400000);
+  if (diff <= 3) return 'urgente';
+  if (diff <= 7) return 'proximo';
+  return 'normal';
+}
+
+function PrazoBadge({ proximo_prazo }: { proximo_prazo: NonNullable<ProcessoCard['proximo_prazo']> }) {
+  const hoje = new Date().toISOString().slice(0, 10);
+  const dl = proximo_prazo.data_limite;
+  const [, m, d] = dl.split('-');
+  const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const dataFmt = `${parseInt(d)} ${meses[parseInt(m) - 1]}`;
+
+  const style = CATEGORIA_STYLE[proximo_prazo.categoria as CategoriaPrazo];
+  const diff = Math.ceil((new Date(dl + 'T12:00:00').getTime() - new Date(hoje + 'T12:00:00').getTime()) / 86400000);
+
+  const urgClass =
+    dl < hoje ? 'text-destructive' :
+    dl === hoje ? 'text-destructive font-bold' :
+    diff <= 3 ? 'text-orange-600 dark:text-orange-400' :
+    diff <= 7 ? 'text-amber-600 dark:text-amber-400' :
+    'text-muted-foreground';
+
+  return (
+    <div className="mt-2 flex items-center gap-1.5 text-[10px]">
+      {dl <= hoje && <span className="text-destructive">⚠</span>}
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${style?.dot ?? 'bg-primary/60'}`} />
+      <span className="text-muted-foreground truncate max-w-[90px]">{proximo_prazo.tipo}</span>
+      <span className={`font-medium ${urgClass}`}>{dataFmt}</span>
+    </div>
+  );
+}
+
 function ProcessoKanbanCard({
   processo,
   isDragging,
@@ -434,6 +478,15 @@ function ProcessoKanbanCard({
   const [dataAud, setDataAud] = useState(processo.data_proxima_audiencia ?? null);
   const [dataPraz, setDataPraz] = useState(processo.data_prazo ?? null);
   const [tipoEv, setTipoEv] = useState(processo.tipo_evento ?? null);
+
+  const urgencia = getPrazoUrgencia(processo.proximo_prazo);
+  const borderLeftClass =
+    urgencia === 'vencido' ? 'border-l-[3px] border-l-destructive' :
+    urgencia === 'hoje'    ? 'border-l-[3px] border-l-destructive' :
+    urgencia === 'urgente' ? 'border-l-[3px] border-l-orange-400' :
+    urgencia === 'proximo' ? 'border-l-[3px] border-l-amber-400' : '';
+  const bgTintClass =
+    urgencia === 'hoje' || urgencia === 'vencido' ? 'bg-destructive/[0.02]' : 'bg-card';
 
   const docsProgress = processo.docs_total > 0
     ? Math.round((processo.docs_recebidos / processo.docs_total) * 100)
@@ -456,7 +509,7 @@ function ProcessoKanbanCard({
         draggable
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
-        className={`bg-card rounded-xl border border-border p-3 cursor-grab active:cursor-grabbing transition-all duration-150 hover:shadow-md hover:border-primary/30 group select-none ${
+        className={`${bgTintClass} rounded-xl border border-border p-3 cursor-grab active:cursor-grabbing transition-all duration-150 hover:shadow-md hover:border-primary/30 group select-none ${borderLeftClass} ${
           isDragging ? 'opacity-40 scale-95 rotate-1' : 'opacity-100'
         }`}
       >
@@ -483,7 +536,7 @@ function ProcessoKanbanCard({
           </div>
         </div>
 
-        {/* Badge de evento agendado */}
+        {/* Badge de evento agendado (legado) */}
         {dataAud && (
           <div className="mt-2 flex items-center gap-1 text-[10px] text-primary font-medium">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -495,6 +548,11 @@ function ProcessoKanbanCard({
               <span className="text-muted-foreground ml-1">· prazo {fmtData(dataPraz)}</span>
             )}
           </div>
+        )}
+
+        {/* Badge de prazo estruturado */}
+        {processo.proximo_prazo && (
+          <PrazoBadge proximo_prazo={processo.proximo_prazo} />
         )}
 
         {/* Barra de progresso dos documentos */}
