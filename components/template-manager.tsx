@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Trash2, Pencil, Check, Plus } from 'lucide-react';
+import { Trash2, Pencil, Check, Plus, Upload } from 'lucide-react';
 
 type Template = {
   id: string;
@@ -43,6 +43,9 @@ export function TemplateManager({ templates: initial }: { templates: Template[] 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editNome, setEditNome] = useState('');
   const [editFamilia, setEditFamilia] = useState('');
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const replacingIdRef = useRef<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Modo seleção para exclusão em massa
   const [selecting, setSelecting] = useState(false);
@@ -103,10 +106,57 @@ export function TemplateManager({ templates: initial }: { templates: Template[] 
     toast.success('Template atualizado');
   }
 
+  function abrirSubstituicao(id: string) {
+    replacingIdRef.current = id;
+    fileInputRef.current?.click();
+  }
+
+  async function handleSubstituir(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    const id = replacingIdRef.current;
+    if (!file || !id) return;
+
+    // Reset input para permitir selecionar o mesmo arquivo novamente
+    e.target.value = '';
+
+    setUploadingId(id);
+    try {
+      const form = new FormData();
+      form.append('arquivo', file);
+
+      const res = await fetch(`/api/configuracoes/templates/${id}`, {
+        method: 'PUT',
+        body: form,
+      });
+      const json = await res.json();
+
+      if (!res.ok) {
+        toast.error(json.error ?? 'Erro ao substituir arquivo.');
+        return;
+      }
+
+      setTemplates((prev) => prev.map((t) => (t.id === id ? { ...t, ...json } : t)));
+      toast.success('Arquivo substituído com sucesso.');
+    } catch {
+      toast.error('Erro de conexão. Tente novamente.');
+    } finally {
+      setUploadingId(null);
+      replacingIdRef.current = null;
+    }
+  }
+
   const allSelected = templates.length > 0 && selected.size === templates.length;
 
   return (
     <div className="space-y-4">
+      {/* Input de arquivo oculto — compartilhado entre todos os templates */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".docx,.pdf"
+        className="hidden"
+        onChange={handleSubstituir}
+      />
 
       {/* Barra de ações */}
       <div className="flex items-center justify-between gap-3">
@@ -239,6 +289,18 @@ export function TemplateManager({ templates: initial }: { templates: Template[] 
                         className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                       >
                         <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => abrirSubstituicao(t.id)}
+                        disabled={uploadingId === t.id}
+                        title="Substituir arquivo"
+                        className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
+                      >
+                        {uploadingId === t.id ? (
+                          <div className="w-3.5 h-3.5 border-2 border-primary/40 border-t-primary rounded-full animate-spin" />
+                        ) : (
+                          <Upload className="w-3.5 h-3.5" />
+                        )}
                       </button>
                       <button
                         onClick={() => {
