@@ -408,6 +408,7 @@ export function KanbanBoard({ processos, mostrarEncerrados = false }: KanbanBoar
                   onDragStart={(e) => handleDragStart(e, processo.id)}
                   onDragEnd={handleDragEnd}
                   onMove={(etapa) => handleMove(processo.id, etapa)}
+                  etapasDisponiveis={etapasVisiveis}
                 />
               ))}
             </div>
@@ -472,12 +473,14 @@ function ProcessoKanbanCard({
   onDragStart,
   onDragEnd,
   onMove,
+  etapasDisponiveis,
 }: {
   processo: ProcessoCard;
   isDragging: boolean;
   onDragStart: (e: React.DragEvent) => void;
   onDragEnd: () => void;
   onMove: (etapa: string) => void;
+  etapasDisponiveis: ReadonlyArray<(typeof ETAPAS_PIPELINE)[number]>;
 }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dataAud, setDataAud] = useState(processo.data_proxima_audiencia ?? null);
@@ -618,7 +621,7 @@ function ProcessoKanbanCard({
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               >
                 <option value="" disabled></option>
-                {etapasVisiveis.filter((e) => e.value !== processo.etapa_pipeline).map((etapa) => (
+                {etapasDisponiveis.filter((e) => e.value !== processo.etapa_pipeline).map((etapa) => (
                   <option key={etapa.value} value={etapa.value}>{etapa.label}</option>
                 ))}
               </select>
