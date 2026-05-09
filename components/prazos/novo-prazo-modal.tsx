@@ -103,12 +103,13 @@ export function NovoPrazoModal({ processoId, onCriado }: Props) {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg flex flex-col max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Novo prazo</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+        <div className="flex-1 overflow-y-auto space-y-5 pr-1">
 
           {/* Categoria */}
           <div className="space-y-2">
@@ -228,7 +229,9 @@ export function NovoPrazoModal({ processoId, onCriado }: Props) {
             />
           </div>
 
-          <DialogFooter>
+          </div>{/* fim scroll */}
+
+          <DialogFooter className="pt-4 shrink-0">
             <Button type="button" variant="outline" className="rounded-xl" onClick={() => setOpen(false)}>
               Cancelar
             </Button>

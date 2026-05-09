@@ -266,6 +266,15 @@ export default function ResultadoPage() {
   const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
   const [previewing, setPreviewing] = useState<Doc | null>(null);
 
+  // Intercepta botão Voltar do browser quando o viewer está aberto
+  useEffect(() => {
+    if (!previewing) return;
+    history.pushState({ viewerOpen: true }, '');
+    function handlePopState() { setPreviewing(null); }
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [previewing]);
+
   function gerar() {
     setStatus('loading');
     fetch('/api/geracao', {
@@ -328,7 +337,7 @@ export default function ResultadoPage() {
         doc={previewing}
         packageId={packageId}
         clientId={id}
-        onClose={() => setPreviewing(null)}
+        onClose={() => history.back()}
       />
     );
   }
