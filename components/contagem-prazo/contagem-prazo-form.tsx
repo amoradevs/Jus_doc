@@ -75,10 +75,10 @@ function BadgeElegivel({ ok }: { ok: boolean }) {
 
 // ─── Etapa 1 ──────────────────────────────────────────────────────────────────
 
-function Etapa1({ onNext }: { onNext: (d: Etapa1) => void }) {
+function Etapa1({ onNext, defaultValues }: { onNext: (d: Etapa1) => void; defaultValues?: Partial<Etapa1> }) {
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<Etapa1>({
     resolver: zodResolver(etapa1Schema),
-    defaultValues: { filiadoAntesDaReforma: true },
+    defaultValues: { filiadoAntesDaReforma: true, ...defaultValues },
   });
 
   return (
@@ -98,7 +98,7 @@ function Etapa1({ onNext }: { onNext: (d: Etapa1) => void }) {
 
         <div className="space-y-1.5">
           <Label>Sexo</Label>
-          <Select onValueChange={(v) => setValue('sexo', v as 'M' | 'F')}>
+          <Select defaultValue={defaultValues?.sexo} onValueChange={(v) => setValue('sexo', v as 'M' | 'F')}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
@@ -578,7 +578,14 @@ const ETAPAS = [
   { label: 'Resultado', desc: 'Planejamento' },
 ];
 
-export function ContagemPrazoForm() {
+type ClienteInicial = {
+  nome: string;
+  cpf: string;
+  dataNascimento: string;
+  sexo: 'M' | 'F';
+} | null;
+
+export function ContagemPrazoForm({ clienteInicial }: { clienteInicial?: ClienteInicial }) {
   const [etapa, setEtapa] = useState(0);
   const [etapa1, setEtapa1] = useState<Etapa1 | null>(null);
   const [etapa2, setEtapa2] = useState<Etapa2 | null>(null);
@@ -672,7 +679,7 @@ export function ContagemPrazoForm() {
 
       {/* Conteúdo da etapa */}
       <div className="bg-card rounded-2xl border border-border p-6 sm:p-8">
-        {etapa === 0 && <Etapa1 onNext={handleEtapa1} />}
+        {etapa === 0 && <Etapa1 onNext={handleEtapa1} defaultValues={clienteInicial ?? undefined} />}
         {etapa === 1 && <Etapa2 onNext={handleEtapa2} onBack={() => setEtapa(0)} />}
         {etapa === 2 && (
           <>
