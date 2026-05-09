@@ -8,6 +8,7 @@ import { labelTipoBeneficio, labelStatusResultado } from '@/lib/processo';
 import { labelEtapa } from '@/lib/pipeline';
 import { MoverEtapaSelect } from '@/components/mover-etapa-select';
 import { ListaPrazos } from '@/components/prazos/lista-prazos';
+import { EncerrarProcessoButton } from '@/components/encerrar-processo-button';
 
 type Props = {
   params: Promise<{ numero_interno: string }>;
@@ -202,18 +203,34 @@ export default async function ProcessoPage({ params, searchParams }: Props) {
           </div>
 
           {/* Ações */}
-          <div className="flex flex-wrap gap-3">
-            <Button asChild className="rounded-xl">
-              <Link href={`/clientes/${processo.cliente_id}/gerar`}>
-                Gerar documentos
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="rounded-xl border-border">
-              <Link href={`/clientes/${processo.cliente_id}`}>
-                Ver dados do cliente
-              </Link>
-            </Button>
-          </div>
+          {processo.etapa_pipeline === 'encerrado' ? (
+            <div className="flex items-center gap-3 p-4 rounded-2xl border border-border bg-secondary/40">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground shrink-0">
+                <path d="M18 6 6 18M6 6l12 12"/>
+              </svg>
+              <p className="flex-1 text-sm text-muted-foreground">
+                Este processo está encerrado e não aparece no pipeline.
+                Para reativá-lo, mude a etapa acima.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-3">
+              <Button asChild className="rounded-xl">
+                <Link href={`/clientes/${processo.cliente_id}/gerar`}>
+                  Gerar documentos
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="rounded-xl border-border">
+                <Link href={`/clientes/${processo.cliente_id}`}>
+                  Ver dados do cliente
+                </Link>
+              </Button>
+              <EncerrarProcessoButton
+                processoId={processo.id}
+                numeroInterno={processo.numero_interno}
+              />
+            </div>
+          )}
         </div>
       )}
 

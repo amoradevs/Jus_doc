@@ -27,6 +27,7 @@ type ProcessoCard = {
 
 interface KanbanBoardProps {
   processos: ProcessoCard[];
+  mostrarEncerrados?: boolean;
 }
 
 const ETAPA_COLORS: Record<string, string> = {
@@ -265,7 +266,7 @@ function AgendarDialog({
   );
 }
 
-export function KanbanBoard({ processos }: KanbanBoardProps) {
+export function KanbanBoard({ processos, mostrarEncerrados = false }: KanbanBoardProps) {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverEtapa, setDragOverEtapa] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -273,6 +274,10 @@ export function KanbanBoard({ processos }: KanbanBoardProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const mouseXRef = useRef(0);
   const isScrollingRef = useRef(false);
+
+  const etapasVisiveis = mostrarEncerrados
+    ? ETAPAS_PIPELINE
+    : ETAPAS_PIPELINE.filter((e) => e.value !== 'encerrado');
 
   const processosByEtapa = (etapa: string) =>
     processos.filter((p) => (p.etapa_pipeline || 'triagem') === etapa);
@@ -356,7 +361,7 @@ export function KanbanBoard({ processos }: KanbanBoardProps) {
       ref={scrollRef}
       className="flex gap-3 overflow-x-auto pb-4 min-h-[calc(100vh-220px)]"
     >
-      {ETAPAS_PIPELINE.map((etapa) => {
+      {etapasVisiveis.map((etapa) => {
         const cards = processosByEtapa(etapa.value);
         const isOver = dragOverEtapa === etapa.value;
 
@@ -613,7 +618,7 @@ function ProcessoKanbanCard({
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               >
                 <option value="" disabled></option>
-                {ETAPAS_PIPELINE.filter((e) => e.value !== processo.etapa_pipeline).map((etapa) => (
+                {etapasVisiveis.filter((e) => e.value !== processo.etapa_pipeline).map((etapa) => (
                   <option key={etapa.value} value={etapa.value}>{etapa.label}</option>
                 ))}
               </select>

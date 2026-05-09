@@ -4,11 +4,17 @@ import { KanbanBoard } from '@/components/kanban-board';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
-export default async function PipelinePage() {
+export default async function PipelinePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ encerrados?: string }>;
+}) {
   const user = await getCurrentUser();
+  const { encerrados } = await searchParams;
+  const mostrarEncerrados = encerrados === '1';
 
-  // Buscar todos os processos ativos com dados do cliente
-  const { data: processoRows } = await db
+  // Buscar processos (encerrados ocultos por padrão)
+  let query = db
     .from('processos')
     .select(`
       id,
@@ -26,6 +32,12 @@ export default async function PipelinePage() {
     `)
     .eq('tenant_id', user.tenantId)
     .order('updated_at', { ascending: false });
+
+  if (!mostrarEncerrados) {
+    query = query.neq('etapa_pipeline', 'encerrado');
+  }
+
+  const { data: processoRows } = await query;
 
   type ProcessoRow = {
     id: string;
@@ -120,9 +132,17 @@ export default async function PipelinePage() {
             Arraste os cards para mover entre etapas
           </p>
         </div>
-        <Button asChild className="rounded-xl">
-          <Link href="/clientes/novo">+ Novo cliente</Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link
+            href={mostrarEncerrados ? '/pipeline' : '/pipeline?encerrados=1'}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-xl border border-border hover:bg-secondary/50"
+          >
+            {mostrarEncerrados ? 'Ocultar encerrados' : 'Ver encerrados'}
+          </Link>
+          <Button asChild className="rounded-xl">
+            <Link href="/clientes/novo">+ Novo cliente</Link>
+          </Button>
+        </div>
       </div>
 
       {/* Dica mobile */}
@@ -135,7 +155,7 @@ export default async function PipelinePage() {
         </p>
       </div>
 
-      <KanbanBoard processos={enrichedProcessos} />
+      <KanbanBoard processos={enrichedProcessos} mostrarEncerrados={mostrarEncerrados} />
     </div>
   );
 }

@@ -38,6 +38,24 @@ export async function atualizarObservacao(processoId: string, observacao: string
   revalidatePath('/pipeline');
 }
 
+// ── Encerrar processo ────────────────────────────────────────────────
+
+export async function encerrarProcesso(processoId: string) {
+  const user = await getCurrentUser();
+
+  await db
+    .from('processos')
+    .update({
+      etapa_pipeline: 'encerrado',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', processoId)
+    .eq('tenant_id', user.tenantId);
+
+  revalidatePath('/pipeline');
+  revalidatePath('/');
+}
+
 // ── Checklist de documentos ─────────────────────────────────────────
 
 export async function inicializarChecklist(clientId: string, tipoBeneficio: string | null) {
