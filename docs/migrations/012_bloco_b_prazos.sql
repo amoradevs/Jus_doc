@@ -59,8 +59,8 @@ CREATE TABLE IF NOT EXISTS prazos (
   data_cumprimento        DATE,
   anotacao_cumprimento    TEXT,
 
-  -- Auditoria
-  created_by      UUID        REFERENCES auth.users(id),
+  -- Auditoria (referencia tabela users do projeto, sem FK para auth.users)
+  created_by      UUID,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 
@@ -100,8 +100,8 @@ CREATE TABLE IF NOT EXISTS prazo_logs (
   status_anterior TEXT,
   status_novo     TEXT        NOT NULL,
 
-  -- Quem e quando
-  user_id         UUID        REFERENCES auth.users(id),
+  -- Quem e quando (referencia tabela users do projeto, sem FK para auth.users)
+  user_id         UUID,
   anotacao        TEXT,
 
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
