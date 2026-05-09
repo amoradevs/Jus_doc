@@ -47,7 +47,7 @@ export default async function GerarPage({ params }: { params: Promise<{ id: stri
       </Link>
 
       <h1 className="text-2xl font-bold text-foreground mb-1">Gerar documentos</h1>
-      <p className="text-muted-foreground text-sm mb-6">Monte o pacote de documentos para este cliente.</p>
+      <p className="text-muted-foreground text-sm mb-6">Busque um documento específico ou monte o pacote completo pelo assistente.</p>
       <GerarModo clientId={id} templates={templates ?? []} />
     </div>
   );
