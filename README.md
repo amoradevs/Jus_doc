@@ -4,7 +4,7 @@ Plataforma de automação documental para advocacia previdenciária.
 
 A advogada cadastra clientes e gera pacotes de documentos jurídicos preenchidos automaticamente, escolhendo livremente entre 15 templates (contratos, procurações, declarações e formulários INSS).
 
-**Deploy em produção:** https://jus-doc-eta.vercel.app
+**Deploy em produção:** https://www.gestorali.com.br
 
 ## Stack
 
@@ -58,14 +58,14 @@ vercel --prod        # deploy em produção
 > Não há scripts `db:generate`, `db:migrate` ou `db:seed` — o banco é configurado
 > diretamente via SQL Editor do Supabase (ver `docs/schema.sql` e `docs/seed.sql`).
 
-## Escopo do MVP
+## Módulos
 
-- Cadastro e edição de clientes com dados completos
-- CEP auto-complete via ViaCEP
-- Seleção livre dos 15 templates (sem kits fixos)
-- Preenchimento progressivo de campos contextuais
-- Geração de pacote ZIP com todos os PDFs
-- Histórico de pacotes gerados (download por 30 dias)
-- Configurações do escritório (dados das advogadas)
-
-**Fora do MVP:** WhatsApp, e-mail, assinatura digital, editor de templates, analytics.
+| Módulo | Descrição |
+|--------|-----------|
+| **Clientes** | Cadastro e edição com CEP auto-complete via ViaCEP |
+| **Pipeline** | Kanban de processos por etapa (Triagem → Concedido) |
+| **Geração documental** | 15 templates — contratos, procurações, formulários INSS |
+| **Prazos** | Controle de prazos por processo com alertas de vencimento |
+| **Planejamento Previdenciário** | Motor EC 103/2019 — 5 regras de transição, projeção de aposentadoria, geração de .docx |
+| **Ali** | Agente de IA especializada em BPC/LOAS e Direito Previdenciário |
+| **Configurações** | Dados do escritório, gestão de templates via upload |

@@ -26,7 +26,7 @@ Edite `.env.local` com suas credenciais:
 | Variável | Onde obter |
 |----------|-----------|
 | `NEXTAUTH_SECRET` | Rode `openssl rand -base64 32` |
-| `NEXTAUTH_URL` | `http://localhost:3000` em dev · URL do Vercel em prod |
+| `NEXTAUTH_URL` | `http://localhost:3000` em dev · `https://www.gestorali.com.br` em prod |
 | `SUPABASE_URL` | Supabase → Project Settings → API → Project URL |
 | `SUPABASE_SERVICE_KEY` | Supabase → Project Settings → API → `service_role` key |
 | `SUPABASE_STORAGE_BUCKET` | `documentos-gerados` |
@@ -111,7 +111,7 @@ vercel --prod
 
 Configure as mesmas variáveis de ambiente no painel da Vercel (Project → Settings → Environment Variables). O `NEXTAUTH_URL` deve ser a URL de produção.
 
-**URL de produção atual:** https://jus-doc-eta.vercel.app
+**URL de produção atual:** https://www.gestorali.com.br
 
 ## Variáveis no Vercel (estado atual)
 
