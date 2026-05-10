@@ -4,7 +4,6 @@ import path from 'path';
 import { getCurrentUser } from '@/lib/auth-helpers';
 import { renderDocxTemplate } from '@/lib/document-generation/docx-renderer';
 import { db } from '@/lib/db';
-import { formatDateExtenso } from '@/lib/format/date';
 import type { ResultadoCalculo, MelhorOpcao } from '@/lib/motor-previdenciario';
 
 const bodySchema = z.object({
@@ -37,6 +36,21 @@ function statusRegra(data: string | null): string {
   const ano = parseInt(data.split('-')[0]);
   const anoAtual = new Date().getFullYear();
   return ano <= anoAtual ? 'Já atingido' : `Projeção: ${formatarData(data)}`;
+}
+
+const TZ_BR = 'America/Sao_Paulo';
+
+function dataHojeBR(): string {
+  return new Date().toLocaleDateString('pt-BR', { timeZone: TZ_BR });
+}
+
+function dataHojeExtenso(): string {
+  return new Date().toLocaleDateString('pt-BR', {
+    timeZone: TZ_BR,
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 }
 
 function nomeRegraMelhorOpcao(opcao: MelhorOpcao): string {
@@ -77,8 +91,8 @@ function buildContext(
     segurado_nascimento: formatarData(entrada.dataNascimento),
     segurado_sexo: entrada.sexo === 'F' ? 'Feminino' : 'Masculino',
     der_formatada: formatarData(entrada.der),
-    data_calculo: formatarData(new Date().toISOString().split('T')[0]),
-    data_extenso: formatDateExtenso(new Date()),
+    data_calculo: dataHojeBR(),
+    data_extenso: dataHojeExtenso(),
     total_contributivo: res.totalContributivoFormatado,
 
     art15_status: statusRegra(res.art15Pontos.dataCumprimento),

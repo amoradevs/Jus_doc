@@ -246,11 +246,11 @@ function Etapa2({ onNext, onBack }: { onNext: (d: Etapa2) => void; onBack: () =>
 // ─── Etapa 3 ──────────────────────────────────────────────────────────────────
 
 function Etapa3({ onNext, onBack }: { onNext: (d: Etapa3) => void; onBack: () => void }) {
-  const [pular, setPular] = useState(false);
-  const { register, handleSubmit, control, formState: { errors } } = useForm<Etapa3>({
+  const { register, handleSubmit, control, watch, formState: { errors } } = useForm<Etapa3>({
     resolver: zodResolver(etapa3Schema),
     defaultValues: { salarios: [], pularSalarios: false },
   });
+  const pular = watch('pularSalarios') ?? false;
 
   const { fields, append, remove } = useFieldArray({ control, name: 'salarios' });
 
@@ -266,7 +266,6 @@ function Etapa3({ onNext, onBack }: { onNext: (d: Etapa3) => void; onBack: () =>
           type="checkbox"
           className="h-4 w-4 rounded border-input accent-primary"
           {...register('pularSalarios')}
-          onChange={(e) => setPular(e.target.checked)}
         />
         <Label htmlFor="pular" className="cursor-pointer">
           Pular — não calcular benefício agora
@@ -384,9 +383,11 @@ function Etapa4({
 }) {
   const [gerando, setGerando] = useState<'planejamento' | 'email' | null>(null);
   const [verInelegiveis, setVerInelegiveis] = useState(false);
+  const [erroGeracao, setErroGeracao] = useState('');
 
   async function gerarDocx(tipo: 'planejamento' | 'email') {
     setGerando(tipo);
+    setErroGeracao('');
     try {
       const res = await fetch('/api/contagem-prazo/gerar', {
         method: 'POST',
@@ -404,7 +405,10 @@ function Etapa4({
         }),
       });
 
-      if (!res.ok) throw new Error('Falha na geração');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error ?? 'Falha na geração');
+      }
 
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -415,8 +419,8 @@ function Etapa4({
         : `email_${etapa1.nome.replace(/\s+/g, '_')}.docx`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch {
-      alert('Erro ao gerar documento. Tente novamente.');
+    } catch (e) {
+      setErroGeracao(e instanceof Error ? e.message : 'Erro ao gerar documento. Tente novamente.');
     } finally {
       setGerando(null);
     }
@@ -485,14 +489,14 @@ function Etapa4({
         ];
 
         const elegiveis = regras
-          .filter((r) => r.resultado.elegivel)
+          .filter((r) => r.resultado.elegivel && r.resultado.dataCumprimento !== null)
           .sort((a, b) => {
             if (a.chave === m) return -1;
             if (b.chave === m) return 1;
             return 0;
           });
 
-        const inelegiveis = regras.filter((r) => !r.resultado.elegivel);
+        const inelegiveis = regras.filter((r) => !r.resultado.elegivel || r.resultado.dataCumprimento === null);
 
         return (
           <>
@@ -509,7 +513,7 @@ function Etapa4({
               ))}
 
               {/* Benefício */}
-              <div className="bg-card border border-border rounded-2xl p-5">
+              <div className={`bg-card border border-border rounded-2xl p-5${elegiveis.length === 0 ? ' sm:col-span-2' : ''}`}>
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Benefício estimado</p>
                 {resultado.salarioBeneficio > 0 ? (
                   <div className="space-y-2">
@@ -604,6 +608,12 @@ function Etapa4({
           {gerando === 'planejamento' ? 'Gerando…' : 'Baixar planejamento completo'}
         </Button>
       </div>
+
+      {erroGeracao && (
+        <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3">
+          <p className="text-sm text-destructive">{erroGeracao}</p>
+        </div>
+      )}
 
       <div className="flex justify-between pt-2">
         <Button type="button" variant="outline" onClick={onBack} className="rounded-xl text-sm">

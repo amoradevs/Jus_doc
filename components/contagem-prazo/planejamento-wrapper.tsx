@@ -42,7 +42,7 @@ export function PlanejamentoWrapper({ clientes }: { clientes: Cliente[] }) {
   function selecionar(c: Cliente) {
     setClienteSelecionado({
       nome: c.nome_completo,
-      cpf: c.cpf,
+      cpf: maskCPF(c.cpf),
       dataNascimento: c.data_nascimento ?? '',
       sexo: mapGenero(c.genero),
     });
