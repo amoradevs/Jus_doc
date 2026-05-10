@@ -113,7 +113,7 @@ export async function GET(req: Request) {
   const rows = (data ?? []) as unknown as ClientRow[];
 
   // Busca processos de todos os clientes retornados (join em memória)
-  let processoMap = new Map<string, ProcessoRow[]>();
+  const processoMap = new Map<string, ProcessoRow[]>();
   if (rows.length > 0) {
     const ids = rows.map((r) => r.id);
     const { data: processoData } = await db

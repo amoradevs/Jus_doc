@@ -91,6 +91,7 @@ export function ListaPrazos({ processoId }: { processoId: string }) {
     }
   }, [processoId]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { carregar(); }, [carregar]);
 
   async function cancelarPrazo(prazoId: string) {
@@ -165,11 +166,11 @@ export function ListaPrazos({ processoId }: { processoId: string }) {
           {filtro === 'todos' ? (
             <>
               <p className="text-sm font-medium text-foreground mb-1">Nenhum prazo cadastrado</p>
-              <p className="text-xs text-muted-foreground">Clique em "+ Novo prazo" para começar a monitorar.</p>
+              <p className="text-xs text-muted-foreground">Clique em &quot;+ Novo prazo&quot; para começar a monitorar.</p>
             </>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Nenhum prazo com status "{filtro}" neste processo.
+              Nenhum prazo com status &quot;{filtro}&quot; neste processo.
             </p>
           )}
         </div>

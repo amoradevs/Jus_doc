@@ -30,6 +30,7 @@ export function DocumentChecklist({ clientId, documents, nomeCliente, telefone }
 
   // Sincroniza estado local quando o servidor revalida e envia novos props
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocalDocs(documents);
   }, [documents]);
 

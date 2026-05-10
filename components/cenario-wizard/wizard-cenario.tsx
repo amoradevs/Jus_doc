@@ -25,6 +25,49 @@ const LABELS: Record<Step, string> = {
 
 type Props = { clientId: string };
 
+function StepIndicator({ step }: { step: Step }) {
+  return (
+    <div className="mb-6" aria-label="Progresso do wizard">
+      <div className="flex items-center justify-between">
+        {([1, 2, 3, 4] as Step[]).map((s, i) => (
+          <div key={s} className="flex flex-1 items-center">
+            <div className="flex flex-col items-center gap-1">
+              <div
+                className={cn(
+                  'flex size-7 items-center justify-center rounded-full text-xs font-semibold transition-all',
+                  step === s
+                    ? 'bg-primary text-primary-foreground'
+                    : s < step
+                    ? 'bg-primary/20 text-primary'
+                    : 'bg-secondary text-muted-foreground',
+                )}
+              >
+                {s < step ? (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                    <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                ) : s}
+              </div>
+              <span className={cn(
+                'hidden text-xs sm:block transition-colors',
+                step === s ? 'font-medium text-foreground' : 'text-muted-foreground',
+              )}>
+                {LABELS[s]}
+              </span>
+            </div>
+            {i < 3 && (
+              <div className={cn(
+                'mb-5 h-px flex-1 mx-2 transition-colors',
+                s < step ? 'bg-primary/30' : 'bg-border',
+              )} />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function WizardCenario({ clientId }: Props) {
   const [step, setStep] = useState<Step>(1);
   const [beneficio, setBeneficio] = useState<BeneficioId | null>(null);
@@ -78,54 +121,9 @@ export function WizardCenario({ clientId }: Props) {
     );
   }
 
-  // ── Indicador de passos ────────────────────────────────────────────────────
-
-  function StepIndicator() {
-    return (
-      <div className="mb-6" aria-label="Progresso do wizard">
-        <div className="flex items-center justify-between">
-          {([1, 2, 3, 4] as Step[]).map((s, i) => (
-            <div key={s} className="flex flex-1 items-center">
-              <div className="flex flex-col items-center gap-1">
-                <div
-                  className={cn(
-                    'flex size-7 items-center justify-center rounded-full text-xs font-semibold transition-all',
-                    step === s
-                      ? 'bg-primary text-primary-foreground'
-                      : s < step
-                      ? 'bg-primary/20 text-primary'
-                      : 'bg-secondary text-muted-foreground',
-                  )}
-                >
-                  {s < step ? (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                      <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  ) : s}
-                </div>
-                <span className={cn(
-                  'hidden text-xs sm:block transition-colors',
-                  step === s ? 'font-medium text-foreground' : 'text-muted-foreground',
-                )}>
-                  {LABELS[s]}
-                </span>
-              </div>
-              {i < 3 && (
-                <div className={cn(
-                  'mb-5 h-px flex-1 mx-2 transition-colors',
-                  s < step ? 'bg-primary/30' : 'bg-border',
-                )} />
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div>
-      <StepIndicator />
+      <StepIndicator step={step} />
 
       {step === 1 && (
         <StepBeneficio

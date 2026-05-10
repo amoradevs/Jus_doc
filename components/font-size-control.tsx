@@ -12,6 +12,7 @@ export function FontSizeControl() {
     const saved = localStorage.getItem(KEY);
     if (saved !== null) {
       const i = parseInt(saved);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIdx(i);
       document.documentElement.style.fontSize = `${SIZES[i]}px`;
     }

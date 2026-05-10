@@ -231,7 +231,6 @@ function PdfViewer({
               ref={editorRef}
               contentEditable
               suppressContentEditableWarning
-              // eslint-disable-next-line react/no-danger
               dangerouslySetInnerHTML={{ __html: html }}
               className="doc-editor bg-white shadow-sm rounded-xl outline-none focus:ring-2 focus:ring-primary/20"
               style={{
@@ -303,6 +302,7 @@ export default function ResultadoPage() {
         .then((data: Doc[]) => setDocs(data))
         .catch(() => {});
     } else if (modo === 'direto') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       gerar();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

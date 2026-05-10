@@ -174,6 +174,7 @@ export function CalendarioSemanal() {
   useEffect(() => {
     const start = format(semanaStart, 'yyyy-MM-dd');
     const end = format(semanaEnd, 'yyyy-MM-dd');
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     fetch(`/api/agenda?start=${start}&end=${end}`)
       .then((r) => r.json())

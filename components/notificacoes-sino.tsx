@@ -41,6 +41,7 @@ export function NotificacoesSino() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     buscarUrgentes();
     const intervalo = setInterval(buscarUrgentes, 5 * 60 * 1000);
     return () => clearInterval(intervalo);

@@ -17,7 +17,7 @@ type Props = {
   clienteNome: string;
 };
 
-export function ProcessoForm({ clienteId, clienteNome }: Props) {
+export function ProcessoForm({ clienteId }: Props) {
   const router = useRouter();
   const {
     register,

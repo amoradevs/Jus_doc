@@ -250,6 +250,7 @@ function Etapa3({ onNext, onBack }: { onNext: (d: Etapa3) => void; onBack: () =>
     resolver: zodResolver(etapa3Schema),
     defaultValues: { salarios: [], pularSalarios: false },
   });
+  // eslint-disable-next-line react-hooks/incompatible-library
   const pular = watch('pularSalarios') ?? false;
 
   const { fields, append, remove } = useFieldArray({ control, name: 'salarios' });

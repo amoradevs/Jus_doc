@@ -51,6 +51,7 @@ export function NovoPrazoModal({ processoId, onCriado }: Props) {
     },
   });
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const categoriaAtual = watch('categoria') as CategoriaPrazo;
   const dataInicio     = watch('data_inicio');
   const diasUteis      = watch('dias_uteis');

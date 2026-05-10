@@ -118,7 +118,7 @@ export default async function ClientesPage({ searchParams }: Props) {
   const noMatches = clientIdsFromStatus !== null && clientIdsFromStatus.length === 0;
 
   let lista: Client[] = [];
-  let processoMap = new Map<string, Processo[]>();
+  const processoMap = new Map<string, Processo[]>();
 
   if (!noMatches) {
     let query = db
@@ -199,6 +199,7 @@ export default async function ClientesPage({ searchParams }: Props) {
         </div>
       ) : (
         <div className="bg-card rounded-2xl border border-border overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-secondary/30">
@@ -208,13 +209,13 @@ export default async function ClientesPage({ searchParams }: Props) {
                 <th className="text-left px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   CPF
                 </th>
-                <th className="text-left px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <th className="hidden sm:table-cell text-left px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Cidade
                 </th>
                 <th className="text-left px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Processos
                 </th>
-                <th className="text-left px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <th className="hidden sm:table-cell text-left px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Cadastro
                 </th>
                 <th className="px-5 py-3.5" />
@@ -234,13 +235,13 @@ export default async function ClientesPage({ searchParams }: Props) {
                   <td className="px-5 py-3.5 text-muted-foreground font-mono text-xs">
                     {maskCPF(c.cpf)}
                   </td>
-                  <td className="px-5 py-3.5 text-muted-foreground">
+                  <td className="hidden sm:table-cell px-5 py-3.5 text-muted-foreground">
                     {c.endereco_cidade} / {c.endereco_uf}
                   </td>
                   <td className="px-5 py-3.5">
                     <ProcessosBadge processos={processoMap.get(c.id) ?? []} />
                   </td>
-                  <td className="px-5 py-3.5 text-muted-foreground">
+                  <td className="hidden sm:table-cell px-5 py-3.5 text-muted-foreground">
                     {new Date(c.criado_em).toLocaleDateString('pt-BR')}
                   </td>
                   <td className="px-5 py-3.5 text-right">
@@ -263,6 +264,7 @@ export default async function ClientesPage({ searchParams }: Props) {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

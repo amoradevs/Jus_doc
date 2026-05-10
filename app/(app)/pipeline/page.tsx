@@ -59,7 +59,7 @@ export default async function PipelinePage({
   // Buscar contagem de documentos por cliente (case_documents ainda é por cliente)
   const clientIds = [...new Set(processos.map((p) => p.cliente_id))];
 
-  let docsMap: Record<string, { total: number; recebidos: number }> = {};
+  const docsMap: Record<string, { total: number; recebidos: number }> = {};
 
   if (clientIds.length > 0) {
     const { data: docs } = await db
@@ -79,7 +79,7 @@ export default async function PipelinePage({
 
   // Buscar prazos pendentes de todos os processos
   const processoIds = processos.map((p) => p.id);
-  let prazosMap: Record<string, { data_limite: string; categoria: string; tipo: string; vencido: boolean }> = {};
+  const prazosMap: Record<string, { data_limite: string; categoria: string; tipo: string; vencido: boolean }> = {};
 
   if (processoIds.length > 0) {
     const hoje = new Date().toISOString().slice(0, 10);

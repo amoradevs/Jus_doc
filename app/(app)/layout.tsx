@@ -11,7 +11,7 @@ import { FontSizeControl } from '@/components/font-size-control';
 import { NotificacoesSino } from '@/components/notificacoes-sino';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser();
+  await getCurrentUser();
   const initials = 'R&A';
 
   return (

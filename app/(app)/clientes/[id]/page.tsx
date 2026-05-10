@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { maskCPF } from '@/lib/validators/cpf';
 import { calcularIdade } from '@/lib/format/age';
-import { labelTipoBeneficio, labelStatusResultado } from '@/lib/processo';
+import { labelTipoBeneficio } from '@/lib/processo';
 import { labelEtapa as labelEtapaPipeline } from '@/lib/pipeline';
 import { DocumentChecklist } from '@/components/document-checklist';
 import { InitChecklistButton } from '@/components/init-checklist-button';

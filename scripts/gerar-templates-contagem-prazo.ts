@@ -2,7 +2,6 @@
 // Execute com: npx tsx scripts/gerar-templates-contagem-prazo.ts
 
 import PizZip from 'pizzip';
-import Docxtemplater from 'docxtemplater';
 import * as fs from 'fs';
 import * as path from 'path';
 

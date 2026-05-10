@@ -86,7 +86,7 @@ export function GerarModo({ clientId, templates = [] }: Props) {
             <div className="rounded-2xl border border-border bg-card px-5 py-10 text-center">
               <p className="text-sm text-muted-foreground">
                 Nenhum documento encontrado para{' '}
-                <strong className="text-foreground">"{busca}"</strong>.
+                <strong className="text-foreground">&quot;{busca}&quot;</strong>.
               </p>
             </div>
           ) : (
