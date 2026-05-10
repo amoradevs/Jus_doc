@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GestorAli — Apresentação para Rocha &amp; Alencar Advocacia</title>
+<style>
+/* ─── RESET & BASE ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --rose:       #A6668A;
+  --rose-light: #C9A0BC;
+  --rose-dim:   rgba(166,102,138,.15);
+  --rose-glow:  rgba(166,102,138,.35);
+  --dark:       #1E1220;
+  --dark2:      #2B1D2A;
+  --dark3:      #3a2838;
+  --white:      #FFFFFF;
+  --off:        #FAF7F9;
+  --muted:      #9c7d96;
+  --border:     rgba(166,102,138,.2);
+  --green:      #10b981;
+  --green-dim:  rgba(16,185,129,.15);
+  --amber:      #f59e0b;
+  --blue:       #6366f1;
+  --blue-dim:   rgba(99,102,241,.15);
+  --slide-w:    100vw;
+  --slide-h:    100vh;
+}
+
+html, body { width: 100%; height: 100%; overflow: hidden; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--dark);
+  color: var(--white);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── SLIDE ENGINE ─── */
+.deck {
+  width: 100vw; height: 100vh;
+  position: relative; overflow: hidden;
+}
+
+.slide {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transform: translateX(60px);
+  transition: opacity .45s cubic-bezier(.4,0,.2,1),
+              transform .45s cubic-bezier(.4,0,.2,1);
+}
+
+.slide.active {
+  opacity: 1; pointer-events: all;
+  transform: translateX(0);
+}
+
+.slide.out-left {
+  opacity: 0; pointer-events: none;
+  transform: translateX(-60px);
+  transition: opacity .35s, transform .35s;
+}
+
+/* ─── NAV ─── */
+.nav {
+  position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 16px;
+  background: rgba(30,18,32,.8); backdrop-filter: blur(16px);
+  border: 1px solid var(--border); border-radius: 99px;
+  padding: 10px 20px; z-index: 100;
+}
+
+.nav-btn {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--rose-dim); border: 1px solid var(--border);
+  color: var(--rose-light); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s; font-size: 16px;
+}
+.nav-btn:hover { background: var(--rose); color: white; }
+.nav-btn:disabled { opacity: .3; cursor: not-allowed; }
+
+.nav-dots { display: flex; gap: 6px; align-items: center; }
+.nav-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--border); cursor: pointer;
+  transition: all .25s;
+}
+.nav-dot.active { width: 20px; border-radius: 3px; background: var(--rose); }
+
+.nav-counter {
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  min-width: 36px; text-align: center;
+}
+
+/* ─── PRINT HINT ─── */
+.print-hint {
+  position: fixed; top: 20px; right: 20px; z-index: 200;
+  background: rgba(30,18,32,.85); backdrop-filter: blur(12px);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 10px 16px; font-size: 12px; color: var(--muted);
+  display: flex; align-items: center; gap: 8px;
+}
+.print-hint kbd {
+  background: var(--rose-dim); border: 1px solid var(--border);
+  border-radius: 4px; padding: 2px 6px; font-size: 11px;
+  color: var(--rose-light); font-family: inherit;
+}
+
+/* ─── FULLSCREEN TOGGLE ─── */
+.fs-btn {
+  position: fixed; top: 20px; left: 20px; z-index: 200;
+  width: 36px; height: 36px; border-radius: 10px;
+  background: rgba(30,18,32,.7); backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  color: var(--muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; transition: all .2s;
+}
+.fs-btn:hover { color: var(--white); border-color: var(--rose); }
+
+/* ─── COMMON ELEMENTS ─── */
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; padding: 5px 14px; border-radius: 99px;
+  border: 1px solid;
+}
+.badge-rose { background: var(--rose-dim); border-color: var(--rose-glow); color: var(--rose-light); }
+.badge-green { background: var(--green-dim); border-color: rgba(16,185,129,.3); color: var(--green); }
+.badge-blue { background: var(--blue-dim); border-color: rgba(99,102,241,.3); color: #a5b4fc; }
+
+.slide-tag {
+  font-size: 10px; font-weight: 700; letter-spacing: 2.5px;
+  text-transform: uppercase; color: var(--rose-light);
+  margin-bottom: 12px; display: block;
+}
+
+h1.hero { font-size: clamp(36px,6vw,72px); font-weight: 900; line-height: 1.0; letter-spacing: -2.5px; }
+h2.title { font-size: clamp(24px,4vw,44px); font-weight: 800; line-height: 1.1; letter-spacing: -1.5px; }
+h3.subtitle { font-size: clamp(14px,2vw,20px); font-weight: 400; color: rgba(255,255,255,.55); line-height: 1.6; }
+
+.hl { color: var(--rose-light); }
+.hl-green { color: var(--green); }
+
+.glass {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 20px; backdrop-filter: blur(8px);
+}
+.glass-rose {
+  background: var(--rose-dim);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+}
+
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 99px; padding: 6px 14px;
+  font-size: 13px; font-weight: 500; color: rgba(255,255,255,.7);
+}
+.pill svg { opacity: .7; }
+
+/* orb decorations */
+.orb {
+  position: absolute; border-radius: 50%; pointer-events: none;
+  filter: blur(80px);
+}
+
+/* ═══════════════════════════════════════════
+   SLIDE 1 — CAPA
+═══════════════════════════════════════════ */
+#s1 { background: var(--dark); justify-content: space-between; }
+#s1 .orb1 { width: 500px; height: 500px; background: rgba(166,102,138,.18); top: -150px; right: -150px; }
+#s1 .orb2 { width: 300px; height: 300px; background: rgba(99,102,241,.08); bottom: 0; left: 0; }
+
+#s1 .inner {
+  flex: 1; display: flex; flex-direction: column;
+  justify-content: center; padding: 60px 80px;
+  position: relative; z-index: 1; max-width: 800px;
+}
+
+#s1 .logo-row {
+  display: flex; align-items: center; gap: 14px; margin-bottom: 56px;
+}
+#s1 .logo-mark {
+  width: 52px; height: 52px; border-radius: 14px;
+  background: var(--rose); display: flex; align-items: center; justify-content: center;
+}
+#s1 .logo-name { font-size: 26px; font-weight: 800; letter-spacing: -1px; }
+#s1 .logo-sub  { font-size: 12px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+
+#s1 .capa-url {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--rose-dim); border: 1px solid var(--border);
+  border-radius: 99px; padding: 8px 18px;
+  font-size: 14px; font-weight: 600; color: var(--rose-light);
+  margin-top: 36px; width: fit-content;
+}
+#s1 .capa-url::before {
+  content: ''; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green); box-shadow: 0 0 8px var(--green);
+}
+
+#s1 .footer {
+  padding: 28px 80px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  position: relative; z-index: 1;
+}
+#s1 .footer-dest { font-size: 14px; color: rgba(255,255,255,.4); }
+#s1 .footer-dest strong { color: rgba(255,255,255,.8); display: block; font-size: 16px; margin-bottom: 2px; }
+#s1 .footer-tag { font-size: 12px; color: var(--muted); text-align: right; }
+
+/* ═══════════════════════════════════════════
+   SLIDE 2 — O ESCRITÓRIO HOJE
+═══════════════════════════════════════════ */
+#s2 { background: var(--dark); }
+#s2 .orb1 { width: 400px; height: 400px; background: rgba(245,158,11,.06); top: -100px; left: -100px; }
+
+#s2 .inner {
+  flex: 1; display: flex; flex-direction: column;
+  padding: 56px 80px; position: relative; z-index: 1;
+}
+
+#s2 .pain-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  flex: 1; margin-top: 32px;
+}
+
+.pain-card {
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07);
+  border-radius: 18px; padding: 28px 24px;
+  border-left: 3px solid rgba(245,158,11,.4);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.pain-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: rgba(245,158,11,.1); display: flex; align-items: center; justify-content: center;
+}
+.pain-card h3 { font-size: 15px; font-weight: 700; }
+.pain-card p  { font-size: 13px; color: rgba(255,255,255,.5); line-height: 1.6; }
+
+#s2 .insight {
+  margin-top: 20px; padding: 16px 22px;
+  background: var(--rose-dim); border: 1px solid var(--border);
+  border-radius: 14px; font-size: 14px;
+  color: rgba(255,255,255,.65); line-height: 1.65;
+}
+#s2 .insight strong { color: var(--rose-light); }
+
+/* ═══════════════════════════════════════════
+   SLIDE 3 — GESTORALI
+═══════════════════════════════════════════ */
+#s3 { background: var(--dark2); }
+#s3 .orb1 { width: 600px; height: 600px; background: rgba(166,102,138,.12); top: -200px; right: -200px; }
+
+#s3 .inner {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 60px 80px; text-align: center; position: relative; z-index: 1; gap: 20px;
+}
+
+#s3 .big-logo {
+  width: 80px; height: 80px; border-radius: 22px;
+  background: var(--rose); display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 60px rgba(166,102,138,.5);
+}
+
+#s3 .modules-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+  width: 100%; max-width: 900px; margin-top: 8px;
+}
+.mod-card {
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 16px; padding: 20px 16px; text-align: center;
+  transition: all .3s; cursor: default;
+}
+.mod-card:hover { background: var(--rose-dim); border-color: var(--border); transform: translateY(-3px); }
+.mod-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: var(--rose-dim); display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 12px;
+}
+.mod-card h4 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.mod-card p  { font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+/* ═══════════════════════════════════════════
+   SLIDE 4 — CLIENTES + PIPELINE
+═══════════════════════════════════════════ */
+#s4 { background: var(--dark); }
+#s4 .orb1 { width: 350px; height: 350px; background: var(--blue-dim); bottom: -100px; right: -80px; }
+
+#s4 .inner {
+  flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+  position: relative; z-index: 1; overflow: hidden;
+}
+
+#s4 .half {
+  padding: 56px 52px; display: flex; flex-direction: column;
+}
+#s4 .half + .half { border-left: 1px solid var(--border); background: rgba(255,255,255,.02); }
+
+.feature-list { display: flex; flex-direction: column; gap: 12px; margin-top: 28px; flex: 1; }
+.feature-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 16px;
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07);
+  border-radius: 12px;
+}
+.feature-check {
+  width: 22px; height: 22px; border-radius: 6px;
+  background: var(--green-dim); border: 1px solid rgba(16,185,129,.3);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+.feature-item h4 { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+.feature-item p  { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+.kanban-mini {
+  display: flex; gap: 6px; margin-top: 20px; flex: 1;
+}
+.kanban-col {
+  flex: 1; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07);
+  border-radius: 10px; padding: 8px 6px;
+}
+.kanban-col-title {
+  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--muted); margin-bottom: 6px; text-align: center;
+}
+.kanban-card-mini {
+  background: rgba(255,255,255,.06); border-radius: 6px;
+  padding: 6px 7px; margin-bottom: 5px;
+  font-size: 10px; color: rgba(255,255,255,.6); line-height: 1.3;
+}
+.kanban-card-mini .name { font-weight: 700; color: white; font-size: 10px; }
+.kanban-tag {
+  display: inline-block; font-size: 9px; font-weight: 600;
+  padding: 1px 6px; border-radius: 99px; margin-top: 3px;
+}
+.kt-green { background: var(--green-dim); color: var(--green); }
+.kt-amber { background: rgba(245,158,11,.12); color: var(--amber); }
+.kt-rose  { background: var(--rose-dim); color: var(--rose-light); }
+
+/* ═══════════════════════════════════════════
+   SLIDE 5 — GERAÇÃO DE DOCUMENTOS
+═══════════════════════════════════════════ */
+#s5 { background: var(--dark2); }
+#s5 .orb1 { width: 500px; height: 500px; background: rgba(166,102,138,.1); top: -100px; left: -100px; }
+
+#s5 .inner {
+  flex: 1; display: flex; flex-direction: column;
+  padding: 56px 80px; position: relative; z-index: 1;
+}
+
+#s5 .flow-row {
+  display: flex; align-items: center; gap: 12px; margin: 32px 0;
+}
+.flow-step {
+  flex: 1; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 16px; padding: 20px 18px; text-align: center;
+}
+.flow-step .num {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--rose); font-size: 14px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 10px;
+}
+.flow-step h4 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.flow-step p  { font-size: 11px; color: var(--muted); }
+.flow-arrow   { color: var(--rose-light); font-size: 20px; flex-shrink: 0; }
+
+#s5 .templates-row {
+  display: flex; gap: 10px; flex-wrap: wrap;
+}
+.tpl-pill {
+  display: flex; align-items: center; gap: 7px;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 99px; padding: 7px 14px;
+  font-size: 12px; color: rgba(255,255,255,.65);
+}
+.tpl-pill-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--rose-light); flex-shrink: 0; }
+
+#s5 .result-box {
+  margin-top: 20px; padding: 18px 24px;
+  background: var(--green-dim); border: 1px solid rgba(16,185,129,.25);
+  border-radius: 16px; display: flex; align-items: center; gap: 16px;
+}
+#s5 .result-box .icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  background: rgba(16,185,129,.2); display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+#s5 .result-box h4 { font-size: 15px; font-weight: 700; color: var(--green); margin-bottom: 4px; }
+#s5 .result-box p  { font-size: 13px; color: rgba(255,255,255,.5); }
+
+/* ═══════════════════════════════════════════
+   SLIDE 6 — PLANEJAMENTO PREVIDENCIÁRIO
+═══════════════════════════════════════════ */
+#s6 { background: var(--dark); }
+#s6 .orb1 { width: 500px; height: 500px; background: rgba(99,102,241,.08); bottom: -150px; right: -100px; }
+
+#s6 .inner {
+  flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+  position: relative; z-index: 1; overflow: hidden;
+}
+
+#s6 .left  { padding: 56px 52px; display: flex; flex-direction: column; }
+#s6 .right { padding: 56px 52px; background: rgba(255,255,255,.02); border-left: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; gap: 14px; }
+
+.regra-card {
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px; padding: 16px 18px;
+  display: flex; align-items: center; gap: 14px;
+}
+.regra-num {
+  font-size: 10px; font-weight: 800; letter-spacing: 1px;
+  color: var(--muted); flex-shrink: 0; min-width: 36px;
+}
+.regra-info { flex: 1; }
+.regra-info h4 { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+.regra-info p  { font-size: 11px; color: var(--muted); }
+.regra-status {
+  font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 99px;
+}
+.rs-ok  { background: var(--green-dim); color: var(--green); }
+.rs-na  { background: rgba(255,255,255,.05); color: var(--muted); }
+
+#s6 .ec-badge {
+  margin-top: 24px; padding: 14px 18px;
+  background: var(--blue-dim); border: 1px solid rgba(99,102,241,.25);
+  border-radius: 14px; font-size: 13px; color: #c7d2fe; line-height: 1.6;
+}
+#s6 .ec-badge strong { color: #a5b4fc; }
+
+#s6 .output-box {
+  padding: 16px 18px;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+}
+#s6 .output-box h4 { font-size: 13px; font-weight: 700; margin-bottom: 12px; color: var(--rose-light); }
+.output-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.output-row:last-child { margin-bottom: 0; }
+.output-label { font-size: 12px; color: var(--muted); }
+.output-val   { font-size: 13px; font-weight: 700; }
+
+/* ═══════════════════════════════════════════
+   SLIDE 7 — ALI (IA)
+═══════════════════════════════════════════ */
+#s7 { background: var(--dark2); }
+#s7 .orb1 { width: 600px; height: 600px; background: rgba(166,102,138,.12); top: -200px; left: 50%; transform: translateX(-50%); }
+
+#s7 .inner {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 56px 80px; text-align: center; position: relative; z-index: 1; gap: 16px;
+}
+
+#s7 .ali-avatar {
+  width: 88px; height: 88px; border-radius: 28px;
+  background: linear-gradient(135deg, var(--rose) 0%, #7c3aed 100%);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 60px rgba(166,102,138,.4), 0 0 120px rgba(124,58,237,.2);
+  font-size: 36px;
+}
+
+.chat-bubbles { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 680px; margin-top: 8px; }
+.bubble {
+  border-radius: 18px; padding: 14px 20px; text-align: left;
+  font-size: 14px; line-height: 1.6; max-width: 85%;
+}
+.bubble-user {
+  background: var(--rose-dim); border: 1px solid var(--border);
+  color: rgba(255,255,255,.85); align-self: flex-end; border-bottom-right-radius: 6px;
+}
+.bubble-ali {
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+  color: rgba(255,255,255,.75); align-self: flex-start; border-bottom-left-radius: 6px;
+}
+.bubble-ali strong { color: white; }
+
+#s7 .ali-topics {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 4px;
+  max-width: 760px;
+}
+.ali-topic {
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 99px; padding: 6px 16px; font-size: 13px; color: rgba(255,255,255,.6);
+}
+
+/* ═══════════════════════════════════════════
+   SLIDE 8 — PRAZOS + SEGURANÇA
+═══════════════════════════════════════════ */
+#s8 { background: var(--dark); }
+#s8 .orb1 { width: 400px; height: 400px; background: rgba(16,185,129,.06); top: -100px; right: -100px; }
+
+#s8 .inner {
+  flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+  position: relative; z-index: 1; overflow: hidden;
+}
+#s8 .left  { padding: 56px 52px; display: flex; flex-direction: column; }
+#s8 .right { padding: 56px 52px; background: rgba(255,255,255,.02); border-left: 1px solid var(--border); display: flex; flex-direction: column; }
+
+.prazo-list { display: flex; flex-direction: column; gap: 10px; margin-top: 28px; }
+.prazo-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px;
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07);
+  border-radius: 12px;
+}
+.prazo-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.pd-green  { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.pd-amber  { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+.pd-red    { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+.prazo-item h4 { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+.prazo-item p  { font-size: 12px; color: var(--muted); }
+.prazo-dias { margin-left: auto; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.dias-green { color: var(--green); }
+.dias-amber { color: var(--amber); }
+.dias-red   { color: #ef4444; }
+
+.seg-list { display: flex; flex-direction: column; gap: 10px; margin-top: 28px; }
+.seg-item {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px 16px;
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07);
+  border-radius: 12px;
+}
+.seg-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: rgba(16,185,129,.1); display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.seg-item h4 { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+.seg-item p  { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+/* ═══════════════════════════════════════════
+   SLIDE 9 — IMPACTO (NÚMEROS)
+═══════════════════════════════════════════ */
+#s9 { background: var(--dark2); }
+#s9 .orb1 { width: 700px; height: 700px; background: rgba(166,102,138,.1); top: -300px; right: -200px; }
+
+#s9 .inner {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 56px 80px; text-align: center; position: relative; z-index: 1; gap: 20px;
+}
+
+#s9 .metrics-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+  width: 100%; max-width: 900px; margin-top: 12px;
+}
+.metric-card {
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 20px; padding: 30px 20px; text-align: center;
+}
+.metric-num {
+  font-size: clamp(32px,5vw,52px); font-weight: 900; letter-spacing: -2px;
+  color: var(--rose-light); line-height: 1; margin-bottom: 8px;
+}
+.metric-label { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+.metric-desc  { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+#s9 .quote {
+  max-width: 640px; font-size: 16px; line-height: 1.7;
+  color: rgba(255,255,255,.55); font-style: italic;
+}
+#s9 .quote strong { color: var(--rose-light); font-style: normal; }
+
+/* ═══════════════════════════════════════════
+   SLIDE 10 — PRÓXIMOS PASSOS (CTA)
+═══════════════════════════════════════════ */
+#s10 { background: var(--dark); }
+#s10 .orb1 { width: 600px; height: 600px; background: rgba(166,102,138,.15); bottom: -200px; right: -100px; }
+#s10 .orb2 { width: 300px; height: 300px; background: rgba(99,102,241,.07); top: -80px; left: -80px; }
+
+#s10 .inner {
+  flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+  position: relative; z-index: 1; overflow: hidden;
+}
+#s10 .left  { padding: 56px 52px; display: flex; flex-direction: column; justify-content: center; }
+#s10 .right { padding: 56px 52px; background: var(--dark2); border-left: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; gap: 16px; }
+
+#s10 .step-list { display: flex; flex-direction: column; gap: 16px; margin-top: 32px; }
+.step-item {
+  display: flex; align-items: flex-start; gap: 16px;
+}
+.step-num {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--rose); font-size: 14px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.step-item h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.step-item p  { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+.info-card {
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 16px; padding: 20px 22px;
+  display: flex; align-items: center; gap: 16px;
+}
+.info-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: var(--rose-dim); display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.info-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.info-val   { font-size: 15px; font-weight: 700; }
+
+#s10 .url-big {
+  background: var(--rose-dim); border: 1px solid var(--border);
+  border-radius: 18px; padding: 22px 26px;
+  display: flex; align-items: center; gap: 12px;
+}
+#s10 .url-big .dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--green); box-shadow: 0 0 12px var(--green); flex-shrink: 0;
+}
+#s10 .url-text { font-size: 22px; font-weight: 800; color: var(--rose-light); letter-spacing: -0.5px; }
+#s10 .url-sub  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* ─── ANIMATIONS ─── */
+.slide.active .hero,
+.slide.active .title,
+.slide.active .subtitle,
+.slide.active .badge,
+.slide.active .slide-tag,
+.slide.active .pain-card,
+.slide.active .mod-card,
+.slide.active .feature-item,
+.slide.active .flow-step,
+.slide.active .regra-card,
+.slide.active .bubble,
+.slide.active .prazo-item,
+.slide.active .seg-item,
+.slide.active .metric-card,
+.slide.active .step-item,
+.slide.active .info-card,
+.slide.active .kanban-col {
+  animation: fadeUp .5s ease both;
+}
+
+.slide.active .pain-card:nth-child(1) { animation-delay: .05s; }
+.slide.active .pain-card:nth-child(2) { animation-delay: .12s; }
+.slide.active .pain-card:nth-child(3) { animation-delay: .19s; }
+.slide.active .pain-card:nth-child(4) { animation-delay: .26s; }
+
+.slide.active .mod-card:nth-child(1) { animation-delay: .04s; }
+.slide.active .mod-card:nth-child(2) { animation-delay: .09s; }
+.slide.active .mod-card:nth-child(3) { animation-delay: .14s; }
+.slide.active .mod-card:nth-child(4) { animation-delay: .19s; }
+.slide.active .mod-card:nth-child(5) { animation-delay: .24s; }
+.slide.active .mod-card:nth-child(6) { animation-delay: .29s; }
+.slide.active .mod-card:nth-child(7) { animation-delay: .34s; }
+
+.slide.active .feature-item:nth-child(1) { animation-delay: .08s; }
+.slide.active .feature-item:nth-child(2) { animation-delay: .15s; }
+.slide.active .feature-item:nth-child(3) { animation-delay: .22s; }
+
+.slide.active .flow-step:nth-child(1) { animation-delay: .05s; }
+.slide.active .flow-step:nth-child(2) { animation-delay: .12s; }
+.slide.active .flow-step:nth-child(3) { animation-delay: .19s; }
+.slide.active .flow-step:nth-child(4) { animation-delay: .26s; }
+
+.slide.active .regra-card:nth-child(1) { animation-delay: .05s; }
+.slide.active .regra-card:nth-child(2) { animation-delay: .10s; }
+.slide.active .regra-card:nth-child(3) { animation-delay: .15s; }
+.slide.active .regra-card:nth-child(4) { animation-delay: .20s; }
+.slide.active .regra-card:nth-child(5) { animation-delay: .25s; }
+
+.slide.active .bubble:nth-child(1) { animation-delay: .05s; }
+.slide.active .bubble:nth-child(2) { animation-delay: .25s; }
+.slide.active .bubble:nth-child(3) { animation-delay: .45s; }
+
+.slide.active .prazo-item:nth-child(1) { animation-delay: .06s; }
+.slide.active .prazo-item:nth-child(2) { animation-delay: .14s; }
+.slide.active .prazo-item:nth-child(3) { animation-delay: .22s; }
+
+.slide.active .seg-item:nth-child(1) { animation-delay: .06s; }
+.slide.active .seg-item:nth-child(2) { animation-delay: .14s; }
+.slide.active .seg-item:nth-child(3) { animation-delay: .22s; }
+
+.slide.active .metric-card:nth-child(1) { animation-delay: .05s; }
+.slide.active .metric-card:nth-child(2) { animation-delay: .12s; }
+.slide.active .metric-card:nth-child(3) { animation-delay: .19s; }
+.slide.active .metric-card:nth-child(4) { animation-delay: .26s; }
+
+.slide.active .step-item:nth-child(1) { animation-delay: .05s; }
+.slide.active .step-item:nth-child(2) { animation-delay: .14s; }
+.slide.active .step-item:nth-child(3) { animation-delay: .23s; }
+
+.slide.active .info-card:nth-child(1) { animation-delay: .05s; }
+.slide.active .info-card:nth-child(2) { animation-delay: .14s; }
+.slide.active .info-card:nth-child(3) { animation-delay: .23s; }
+
+.slide.active .kanban-col:nth-child(1) { animation-delay: .04s; }
+.slide.active .kanban-col:nth-child(2) { animation-delay: .10s; }
+.slide.active .kanban-col:nth-child(3) { animation-delay: .16s; }
+.slide.active .kanban-col:nth-child(4) { animation-delay: .22s; }
+.slide.active .kanban-col:nth-child(5) { animation-delay: .28s; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── PRINT / PDF ─── */
+@media print {
+  body { overflow: visible; background: var(--dark); }
+  .deck { overflow: visible; height: auto; }
+  .slide {
+    position: relative; opacity: 1; transform: none; pointer-events: all;
+    page-break-after: always; break-after: page;
+    height: 100vh; min-height: 100vh;
+  }
+  .nav, .print-hint, .fs-btn { display: none !important; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+@page { size: landscape; margin: 0; }
+</style>
+</head>
+<body>
+
+<!-- FULLSCREEN BUTTON -->
+<button class="fs-btn" onclick="toggleFullscreen()" title="Tela cheia">⛶</button>
+
+<!-- PRINT HINT -->
+<div class="print-hint">
+  <span>Navegar:</span>
+  <kbd>←</kbd><kbd>→</kbd>
+  <span style="margin-left:8px">PDF:</span>
+  <kbd>⌘P</kbd>
+</div>
+
+<div class="deck" id="deck">
+
+<!-- ══════════════════════════════════════
+     SLIDE 1 — CAPA
+══════════════════════════════════════ -->
+<div class="slide active" id="s1">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="inner">
+    <div class="logo-row">
+      <div class="logo-mark">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-name">GestorAli</div>
+        <div class="logo-sub">Plataforma de Gestão Previdenciária</div>
+      </div>
+    </div>
+
+    <span class="badge badge-rose">Apresentação para o Escritório</span>
+
+    <h1 class="hero" style="margin-top:20px">
+      O sistema que<br>
+      cuida do <span class="hl">seu</span><br>
+      escritório.
+    </h1>
+
+    <h3 class="subtitle" style="margin-top:20px;max-width:520px">
+      Do cadastro do cliente à entrega do benefício — tudo em um único lugar, feito especificamente para advocacia previdenciária.
+    </h3>
+
+    <div class="capa-url" style="margin-top:36px">
+      gestorali.com.br — em produção agora
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-dest">
+      <strong>Rocha &amp; Alencar Advocacia</strong>
+      Dra. Lidiane Rocha Abreu · Direito Previdenciário
+    </div>
+    <div class="footer-tag">Maio de 2026</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SLIDE 2 — O ESCRITÓRIO HOJE
+══════════════════════════════════════ -->
+<div class="slide" id="s2">
+  <div class="orb orb1"></div>
+  <div class="inner">
+    <span class="slide-tag">O cenário atual</span>
+    <h2 class="title">O que acontece quando<br><span class="hl">não existe um sistema</span></h2>
+
+    <div class="pain-grid">
+      <div class="pain-card">
+        <div class="pain-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+        </div>
+        <h3>Documentos gerados um a um</h3>
+        <p>Cada processo exige até 15 documentos diferentes. Preenchidos à mão, copiando dados do cliente, com alto risco de erro e inconsistências.</p>
+      </div>
+      <div class="pain-card">
+        <div class="pain-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <h3>Prazos esquecidos geram prejuízo</h3>
+        <p>Uma data de recurso anotada num caderno. Uma audiência perdida por falta de alerta. Um benefício cancelado por prazo vencido.</p>
+      </div>
+      <div class="pain-card">
+        <div class="pain-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h3>Nenhuma visão do escritório</h3>
+        <p>Sem saber quantos processos estão em triagem, em perícia ou concedidos. Sem métricas. Sem dashboard. Sem controle real.</p>
+      </div>
+      <div class="pain-card">
+        <div class="pain-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <h3>Clientes sem histórico centralizado</h3>
+        <p>Dados espalhados em e-mails, WhatsApp e pastas físicas. A cada consulta, busca por informações que deveriam estar a um clique.</p>
+      </div>
+    </div>
+
+    <div class="insight">
+      <strong>O resultado:</strong> horas por semana gastas em tarefas administrativas — tempo que deveria estar sendo investido em novos casos e no atendimento qualificado aos clientes.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SLIDE 3 — O QUE É GESTORALI
+══════════════════════════════════════ -->
+<div class="slide" id="s3">
+  <div class="orb orb1"></div>
+  <div class="inner">
+    <div class="big-logo">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+    </div>
+
+    <span class="badge badge-rose">Em produção · gestorali.com.br</span>
+
+    <h2 class="title">7 módulos. <span class="hl">Um único sistema.</span></h2>
+    <h3 class="subtitle">Desenvolvido especificamente para escritórios de advocacia previdenciária.</h3>
+
+    <div class="modules-grid">
+      <div class="mod-card">
+        <div class="mod-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A0BC" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        </div>
+        <h4>Clientes</h4>
+        <p>Cadastro completo com CEP automático</p>
+      </div>
+      <div class="mod-card">
+        <div class="mod-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A0BC" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+        </div>
+        <h4>Pipeline</h4>
+        <p>Kanban visual de processos por etapa</p>
+      </div>
+      <div class="mod-card">
+        <div class="mod-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A0BC" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <h4>Documentos</h4>
+        <p>15 templates gerados automaticamente</p>
+      </div>
+      <div class="mod-card">
+        <div class="mod-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A0BC" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <h4>Prazos</h4>
+        <p>Controle com alertas de urgência</p>
+      </div>
+      <div class="mod-card">
+        <div class="mod-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A0BC" stroke-width="2" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        </div>
+        <h4>Planejamento</h4>
+        <p>Calculador EC 103/2019 — 5 regras</p>
+      </div>
+      <div class="mod-card">
+        <div class="mod-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A0BC" stroke-width="2" stroke-linecap="round"><path d="M12 2a9.96 9.96 0 0 0-4 .8V21l4-2 4 2V2.8A9.96 9.96 0 0 0 12 2z"/></svg>
+        </div>
+        <h4>Ali — IA</h4>
+        <p>Consultora jurídica com IA especializada</p>
+      </div>
+      <div class="mod-card">
+        <div class="mod-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A0BC" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M5.34 18.66l-1.41 1.41M20 12h2M2 12h2m15.07 7.07l-1.41-1.41M5.34 5.34L3.93 3.93M12 20v2M12 2v2"/></svg>
+        </div>
+        <h4>Ferramentas</h4>
+        <p>PDF compressor, e-mail temporário</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SLIDE 4 — CLIENTES + PIPELINE
+══════════════════════════════════════ -->
+<div class="slide" id="s4">
+  <div class="orb orb1"></div>
+  <div class="inner">
+
+    <div class="half">
+      <span class="slide-tag">Módulo 1</span>
+      <h2 class="title">Gestão de<br><span class="hl">Clientes</span></h2>
+
+      <div class="feature-list">
+        <div class="feature-item">
+          <div class="feature-check">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div>
+            <h4>Cadastro com CEP automático</h4>
+            <p>Digite o CEP, endereço completo é preenchido automaticamente via ViaCEP.</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-check">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div>
+            <h4>Checklist de documentos</h4>
+            <p>Controle o que já foi entregue. Marque recebido, adicione observações, inclua itens extras.</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-check">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div>
+            <h4>Histórico completo em um clique</h4>
+            <p>Processos, documentos gerados, senha INSS e todo o histórico do cliente reunidos.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="half">
+      <span class="slide-tag">Módulo 2</span>
+      <h2 class="title">Pipeline<br><span class="hl">Kanban</span></h2>
+
+      <div class="kanban-mini">
+        <div class="kanban-col">
+          <div class="kanban-col-title">Triagem</div>
+          <div class="kanban-card-mini">
+            <div class="name">Maria S.</div>
+            <span class="kanban-tag kt-amber">BPC</span>
+          </div>
+        </div>
+        <div class="kanban-col">
+          <div class="kanban-col-title">Documentos</div>
+          <div class="kanban-card-mini">
+            <div class="name">João P.</div>
+            <span class="kanban-tag kt-rose">Aposentadoria</span>
+          </div>
+          <div class="kanban-card-mini">
+            <div class="name">Ana L.</div>
+            <span class="kanban-tag kt-amber">BPC</span>
+          </div>
+        </div>
+        <div class="kanban-col">
+          <div class="kanban-col-title">Aguard. INSS</div>
+          <div class="kanban-card-mini">
+            <div class="name">Pedro M.</div>
+            <span class="kanban-tag kt-rose">Perícia</span>
+          </div>
+        </div>
+        <div class="kanban-col">
+          <div class="kanban-col-title">Concedido</div>
+          <div class="kanban-card-mini">
+            <div class="name">Lucia R.</div>
+            <span class="kanban-tag kt-green">Deferido</span>
+          </div>
+        </div>
+        <div class="kanban-col">
+          <div class="kanban-col-title">Judicial</div>
+          <div class="kanban-card-mini">
+            <div class="name">Carlos T.</div>
+            <span class="kanban-tag kt-amber">TRF</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;font-size:13px;color:var(--muted);line-height:1.6;">
+        Arraste os cards entre colunas (computador) ou toque nos 3 pontos para mover (celular). Cada card mostra tipo de benefício, próximo prazo e status dos documentos.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SLIDE 5 — GERAÇÃO DE DOCUMENTOS
+══════════════════════════════════════ -->
+<div class="slide" id="s5">
+  <div class="orb orb1"></div>
+  <div class="inner">
+    <span class="slide-tag">Módulo 3</span>
+    <h2 class="title">Geração de Documentos<br><span class="hl">em segundos</span></h2>
+
+    <div class="flow-row">
+      <div class="flow-step">
+        <div class="num">1</div>
+        <h4>Selecione o cliente</h4>
+        <p>Dados já preenchidos automaticamente</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="num">2</div>
+        <h4>Escolha os documentos</h4>
+        <p>O sistema sugere conforme o benefício</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="num">3</div>
+        <h4>Clique em Gerar</h4>
+        <p>Aguarde alguns segundos</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="num">4</div>
+        <h4>Baixe o ZIP</h4>
+        <p>Todos os documentos prontos</p>
+      </div>
+    </div>
+
+    <div class="templates-row">
+      <span class="tpl-pill"><span class="tpl-pill-dot"></span>Contrato de honorários (adulto)</span>
+      <span class="tpl-pill"><span class="tpl-pill-dot"></span>Contrato BPC/LOAS</span>
+      <span class="tpl-pill"><span class="tpl-pill-dot"></span>Contrato (menor)</span>
+      <span class="tpl-pill"><span class="tpl-pill-dot"></span>Procuração</span>
+      <span class="tpl-pill"><span class="tpl-pill-dot"></span>Declaração de renda familiar</span>
+      <span class="tpl-pill"><span class="tpl-pill-dot"></span>Declaração de convivência</span>
+      <span class="tpl-pill"><span class="tpl-pill-dot"></span>Formulário INSS</span>
+      <span class="tpl-pill" style="background:var(--rose-dim);border-color:var(--border);color:var(--rose-light)">+ 8 templates</span>
+    </div>
+
+    <div class="result-box">
+      <div class="icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </div>
+      <div>
+        <h4>Pacote pronto para download</h4>
+        <p>Todos os documentos preenchidos com os dados do cliente, disponíveis em ZIP por 30 dias. Histórico completo de pacotes gerados no perfil do cliente.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SLIDE 6 — PLANEJAMENTO PREVIDENCIÁRIO
+══════════════════════════════════════ -->
+<div class="slide" id="s6">
+  <div class="orb orb1"></div>
+  <div class="inner">
+
+    <div class="left">
+      <span class="slide-tag">Módulo 5</span>
+      <h2 class="title">Planejamento<br><span class="hl">Previdenciário</span></h2>
+
+      <div class="ec-badge">
+        Motor de cálculo EC 103/2019 — <strong>Reforma da Previdência</strong>.<br>
+        5 regras de transição analisadas simultaneamente, com a melhor data identificada automaticamente.
+      </div>
+
+      <div style="margin-top:20px;font-size:13px;color:var(--muted);line-height:1.7;">
+        Selecione o cliente, confirme os períodos contributivos do CNIS, e o sistema calcula quando e como ele pode se aposentar — gerando um documento Word (.docx) completo ou um resumo por e-mail para o segurado.
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="regra-card">
+        <div class="regra-num">Art. 15</div>
+        <div class="regra-info">
+          <h4>Sistema de Pontos</h4>
+          <p>Transição — pontos + tempo mín.</p>
+        </div>
+        <span class="regra-status rs-ok">Elegível</span>
+      </div>
+      <div class="regra-card">
+        <div class="regra-num">Art. 16</div>
+        <div class="regra-info">
+          <h4>Idade Progressiva</h4>
+          <p>Transição — idade crescente</p>
+        </div>
+        <span class="regra-status rs-ok">Elegível</span>
+      </div>
+      <div class="regra-card">
+        <div class="regra-num">Art. 17</div>
+        <div class="regra-info">
+          <h4>Pedágio 50%</h4>
+          <p>Transição — tempo restante</p>
+        </div>
+        <span class="regra-status rs-na">Não se aplica</span>
+      </div>
+      <div class="regra-card">
+        <div class="regra-num">Art. 18</div>
+        <div class="regra-info">
+          <h4>Aposentadoria por Idade</h4>
+          <p>Regra permanente</p>
+        </div>
+        <span class="regra-status rs-ok">Elegível</span>
+      </div>
+      <div class="regra-card">
+        <div class="regra-num">Art. 20</div>
+        <div class="regra-info">
+          <h4>Pedágio 100%</h4>
+          <p>Transição — dobro restante</p>
+        </div>
+        <span class="regra-status rs-na">Não se aplica</span>
+      </div>
+
+      <div class="output-box" style="margin-top:4px;">
+        <h4>Resultado do cálculo</h4>
+        <div class="output-row">
+          <span class="output-label">Melhor data</span>
+          <span class="output-val" style="color:var(--green)">Jan/2027</span>
+        </div>
+        <div class="output-row">
+          <span class="output-label">Regra mais vantajosa</span>
+          <span class="output-val" style="color:var(--rose-light)">Art. 15 — Pontos</span>
+        </div>
+        <div class="output-row">
+          <span class="output-label">Benefício estimado</span>
+          <span class="output-val">R$ 2.847,00 / mês</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SLIDE 7 — ALI
+══════════════════════════════════════ -->
+<div class="slide" id="s7">
+  <div class="orb orb1"></div>
+  <div class="inner">
+    <div class="ali-avatar">🤖</div>
+
+    <span class="badge badge-rose">Inteligência Artificial Jurídica</span>
+
+    <h2 class="title"><span class="hl">Ali</span> — sua consultora<br>jurídica disponível 24h</h2>
+
+    <div class="chat-bubbles">
+      <div class="bubble bubble-user">
+        Quais os requisitos para BPC/LOAS para pessoa com deficiência em 2025?
+      </div>
+      <div class="bubble bubble-ali">
+        <strong>Para BPC/LOAS por deficiência</strong>, são necessários: (1) deficiência de longo prazo que impeça participação plena na sociedade; (2) renda familiar per capita inferior a ¼ do salário mínimo; (3) não receber outro benefício da Seguridade Social; (4) não ter vínculo empregatício formal. A análise médica e social é realizada pelo INSS após agendamento.
+      </div>
+      <div class="bubble bubble-user">
+        Prazo para recurso de benefício indeferido?
+      </div>
+    </div>
+
+    <div class="ali-topics">
+      <span class="ali-topic">Requisitos BPC/LOAS</span>
+      <span class="ali-topic">Regras de transição EC 103</span>
+      <span class="ali-topic">Prazos e procedimentos INSS</span>
+      <span class="ali-topic">Jurisprudência previdenciária</span>
+      <span class="ali-topic">Recursos e impugnações</span>
+      <span class="ali-topic">Aposentadoria por invalidez</span>
+      <span class="ali-topic">Pensão por morte</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SLIDE 8 — PRAZOS + SEGURANÇA
+══════════════════════════════════════ -->
+<div class="slide" id="s8">
+  <div class="orb orb1"></div>
+  <div class="inner">
+
+    <div class="left">
+      <span class="slide-tag">Módulo 4</span>
+      <h2 class="title">Controle de<br><span class="hl">Prazos</span></h2>
+      <h3 class="subtitle" style="font-size:14px;margin-top:8px;">Nunca mais perca um prazo previdenciário.</h3>
+
+      <div class="prazo-list">
+        <div class="prazo-item">
+          <div class="prazo-dot pd-red"></div>
+          <div>
+            <h4>Recurso — Maria S.</h4>
+            <p>INSS · Administrativo</p>
+          </div>
+          <div class="prazo-dias dias-red">Vencido</div>
+        </div>
+        <div class="prazo-item">
+          <div class="prazo-dot pd-amber"></div>
+          <div>
+            <h4>Audiência — João P.</h4>
+            <p>TRF 1ª Região · Judicial</p>
+          </div>
+          <div class="prazo-dias dias-amber">2 dias</div>
+        </div>
+        <div class="prazo-item">
+          <div class="prazo-dot pd-green"></div>
+          <div>
+            <h4>Exigência — Ana L.</h4>
+            <p>INSS · Administrativo</p>
+          </div>
+          <div class="prazo-dias dias-green">14 dias</div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px 16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;font-size:13px;color:var(--muted);line-height:1.6;">
+        🔔 O sino no canto da tela exibe alertas em tempo real de prazos vencendo em até <strong style="color:white">3 dias</strong>. Atualização automática a cada 5 minutos.
+      </div>
+    </div>
+
+    <div class="right">
+      <span class="slide-tag">Segurança &amp; Acesso</span>
+      <h2 class="title">Dados<br><span class="hl">protegidos</span></h2>
+
+      <div class="seg-list">
+        <div class="seg-item">
+          <div class="seg-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div>
+            <h4>Login com senha individual</h4>
+            <p>Cada advogada tem seu próprio acesso. Sessão salva automaticamente no dispositivo.</p>
+          </div>
+        </div>
+        <div class="seg-item">
+          <div class="seg-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div>
+            <h4>Dados criptografados</h4>
+            <p>Banco de dados com criptografia de ponta a ponta. Nenhum dado de cliente exposto.</p>
+          </div>
+        </div>
+        <div class="seg-item">
+          <div class="seg-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          </div>
+          <div>
+            <h4>Funciona em qualquer dispositivo</h4>
+            <p>Computador, tablet ou celular. Sem instalar nada. Acesse por gestorali.com.br.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SLIDE 9 — IMPACTO (NÚMEROS)
+══════════════════════════════════════ -->
+<div class="slide" id="s9">
+  <div class="orb orb1"></div>
+  <div class="inner">
+    <span class="badge badge-green">O que muda na prática</span>
+
+    <h2 class="title">O impacto real<br>no seu <span class="hl">dia a dia</span></h2>
+
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-num">15</div>
+        <div class="metric-label">documentos gerados</div>
+        <div class="metric-desc">em um único clique, com os dados do cliente já preenchidos</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-num">0</div>
+        <div class="metric-label">prazos esquecidos</div>
+        <div class="metric-desc">alertas automáticos 3 dias antes de cada vencimento</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-num">5</div>
+        <div class="metric-label">regras EC 103</div>
+        <div class="metric-desc">calculadas simultaneamente para encontrar a melhor aposentadoria</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-num">24h</div>
+        <div class="metric-label">Ali disponível</div>
+        <div class="metric-desc">consultora IA especializada em previdenciário sempre pronta</div>
+      </div>
+    </div>
+
+    <p class="quote">
+      Cada hora recuperada do trabalho administrativo é uma hora que pode ser investida em <strong>novos clientes, atendimento de qualidade e crescimento do escritório.</strong>
+    </p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SLIDE 10 — PRÓXIMOS PASSOS
+══════════════════════════════════════ -->
+<div class="slide" id="s10">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="inner">
+
+    <div class="left">
+      <span class="slide-tag">Próximos passos</span>
+      <h2 class="title">Pronto para<br><span class="hl">começar</span></h2>
+      <h3 class="subtitle" style="font-size:14px;margin-top:10px;">O sistema já está no ar. Em 3 passos você começa a usar.</h3>
+
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div>
+            <h4>Acesse gestorali.com.br</h4>
+            <p>Entre com seu e-mail e senha. O sistema salva a sessão automaticamente.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div>
+            <h4>Configure os dados do escritório</h4>
+            <p>Em Configurações, preencha nome, OAB e endereço. São usados em todos os documentos.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div>
+            <h4>Cadastre o primeiro cliente</h4>
+            <p>Em Clientes → Novo cliente. E já pode gerar os primeiros documentos.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="url-big">
+        <div class="dot"></div>
+        <div>
+          <div class="url-text">gestorali.com.br</div>
+          <div class="url-sub">Sistema em produção · HTTPS · Acessível de qualquer dispositivo</div>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A0BC" stroke-width="2" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </div>
+        <div>
+          <div class="info-label">Desenvolvido por</div>
+          <div class="info-val">Renata Lima</div>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A0BC" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </div>
+        <div>
+          <div class="info-label">Manual do usuário disponível</div>
+          <div class="info-val" style="font-size:13px;">Guia completo com instruções passo a passo para todas as funcionalidades</div>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A0BC" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.1a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        </div>
+        <div>
+          <div class="info-label">Suporte direto</div>
+          <div class="info-val">jrenatalima@gmail.com</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- /.deck -->
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-btn" id="prev" onclick="goSlide(-1)" disabled>←</button>
+  <div class="nav-dots" id="dots"></div>
+  <div class="nav-counter" id="counter">1 / 10</div>
+  <button class="nav-btn" id="next" onclick="goSlide(1)">→</button>
+</nav>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const dotsEl = document.getElementById('dots');
+const counter = document.getElementById('counter');
+const prevBtn = document.getElementById('prev');
+const nextBtn = document.getElementById('next');
+const total = slides.length;
+let current = 0;
+
+// Build dots
+slides.forEach((_, i) => {
+  const d = document.createElement('div');
+  d.className = 'nav-dot' + (i === 0 ? ' active' : '');
+  d.onclick = () => goTo(i);
+  dotsEl.appendChild(d);
+});
+
+function goTo(idx) {
+  if (idx < 0 || idx >= total) return;
+  const prev = current;
+  slides[prev].classList.remove('active');
+  slides[prev].classList.add('out-left');
+  setTimeout(() => slides[prev].classList.remove('out-left'), 400);
+  current = idx;
+  slides[current].classList.add('active');
+  document.querySelectorAll('.nav-dot').forEach((d, i) => d.classList.toggle('active', i === current));
+  counter.textContent = (current + 1) + ' / ' + total;
+  prevBtn.disabled = current === 0;
+  nextBtn.disabled = current === total - 1;
+}
+
+function goSlide(dir) { goTo(current + dir); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); goSlide(1); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); goSlide(-1); }
+  if (e.key === 'Home') goTo(0);
+  if (e.key === 'End') goTo(total - 1);
+  if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+});
+
+// Touch/swipe
+let touchStartX = 0;
+document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(dx) > 50) goSlide(dx < 0 ? 1 : -1);
+}, { passive: true });
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+  else document.exitFullscreen?.();
+}
+</script>
+</body>
+</html>
