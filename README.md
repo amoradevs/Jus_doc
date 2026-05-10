@@ -37,6 +37,7 @@ Acesse: http://localhost:3000
 
 | Documento | Descrição |
 |-----------|-----------|
+| [docs/guides/manual-do-usuario.md](docs/guides/manual-do-usuario.md) | Manual de uso para as advogadas |
 | [docs/guides/setup.md](docs/guides/setup.md) | Guia completo de instalação e deploy |
 | [docs/guides/cep-autocomplete.md](docs/guides/cep-autocomplete.md) | Como funciona o auto-complete de CEP |
 | [docs/guides/document-generation.md](docs/guides/document-generation.md) | Fluxo de geração de documentos |
