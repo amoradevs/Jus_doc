@@ -383,6 +383,7 @@ function Etapa4({
   onNovo: () => void;
 }) {
   const [gerando, setGerando] = useState<'planejamento' | 'email' | null>(null);
+  const [verInelegiveis, setVerInelegiveis] = useState(false);
 
   async function gerarDocx(tipo: 'planejamento' | 'email') {
     setGerando(tipo);
@@ -453,90 +454,137 @@ function Etapa4({
       </div>
 
       {/* Cards das regras */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <CardRegra
-          artigo="EC 103/2019 — Art. 15"
-          titulo="Sistema de Pontos"
-          resultado={resultado.art15Pontos}
-          melhor={m === 'art15'}
-          extras={resultado.art15Pontos.elegivel && (
-            <div className="flex gap-4 text-xs text-muted-foreground mb-1">
-              <span>Pontos na DER: <strong className="text-foreground">{resultado.art15Pontos.pontosNaDer ?? '—'}</strong></span>
-              <span>Necessários: <strong className="text-foreground">{resultado.art15Pontos.pontosNecessariosNaDer ?? '—'}</strong></span>
-            </div>
-          )}
-        />
-
-        <CardRegra
-          artigo="EC 103/2019 — Art. 16"
-          titulo="Idade Progressiva"
-          resultado={resultado.art16IdadeProgressiva}
-          melhor={m === 'art16'}
-          extras={resultado.art16IdadeProgressiva.idadeNecessaria && (
-            <p className="text-xs text-muted-foreground mb-1">
-              Idade mínima: <strong className="text-foreground">{resultado.art16IdadeProgressiva.idadeNecessaria}</strong>
-            </p>
-          )}
-        />
-
-        <CardRegra
-          artigo="EC 103/2019 — Art. 17"
-          titulo="Pedágio 50%"
-          resultado={resultado.art17Pedagio50}
-          melhor={m === 'art17'}
-        />
-
-        <CardRegra
-          artigo="EC 103/2019 — Art. 18"
-          titulo="Aposentadoria por Idade"
-          resultado={resultado.art18AposIdade}
-          melhor={m === 'art18'}
-        />
-
-        <CardRegra
-          artigo="EC 103/2019 — Art. 20"
-          titulo="Pedágio 100%"
-          resultado={resultado.art20Pedagio100}
-          melhor={m === 'art20'}
-        />
-
-        {/* Benefício */}
-        <div className="bg-card border border-border rounded-2xl p-5">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Benefício estimado</p>
-          {resultado.salarioBeneficio > 0 ? (
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Salário de benefício</span>
-                <span className="font-mono">{formatarMoeda(resultado.salarioBeneficio)}</span>
+      {(() => {
+        const regras = [
+          {
+            chave: 'art15' as const,
+            titulo: 'Sistema de Pontos',
+            artigo: '15',
+            resultado: resultado.art15Pontos,
+            extras: resultado.art15Pontos.elegivel ? (
+              <div className="flex gap-4 text-xs text-muted-foreground mb-1">
+                <span>Pontos na DER: <strong className="text-foreground">{resultado.art15Pontos.pontosNaDer ?? '—'}</strong></span>
+                <span>Necessários: <strong className="text-foreground">{resultado.art15Pontos.pontosNecessariosNaDer ?? '—'}</strong></span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Coeficiente na aposentadoria</span>
-                <span className="font-mono">{(resultado.coeficienteNaAposentadoria * 100).toFixed(2)}%</span>
-              </div>
-              {resultado.coeficienteNaAposentadoria !== resultado.coeficienteEC103 && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Coeficiente atual (DER)</span>
-                  <span className="font-mono text-muted-foreground">{(resultado.coeficienteEC103 * 100).toFixed(2)}%</span>
-                </div>
-              )}
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Teto INSS</span>
-                <span className="font-mono">{formatarMoeda(resultado.tetoINSS)}</span>
-              </div>
-              <div className="h-px bg-border" />
-              <div className="flex justify-between">
-                <span className="font-semibold text-foreground">Benefício mensal</span>
-                <span className="font-bold font-mono text-primary text-lg">{formatarMoeda(resultado.beneficioMensal)}</span>
-              </div>
-              <p className="text-[10px] text-muted-foreground">
-                Estimativa projetada para a data da melhor aposentadoria. Valores sujeitos à portaria INSS vigente.
+            ) : null,
+          },
+          {
+            chave: 'art16' as const,
+            titulo: 'Idade Progressiva',
+            artigo: '16',
+            resultado: resultado.art16IdadeProgressiva,
+            extras: resultado.art16IdadeProgressiva.idadeNecessaria ? (
+              <p className="text-xs text-muted-foreground mb-1">
+                Idade mínima: <strong className="text-foreground">{resultado.art16IdadeProgressiva.idadeNecessaria}</strong>
               </p>
+            ) : null,
+          },
+          { chave: 'art17' as const, titulo: 'Pedágio 50%', artigo: '17', resultado: resultado.art17Pedagio50, extras: null },
+          { chave: 'art18' as const, titulo: 'Aposentadoria por Idade', artigo: '18', resultado: resultado.art18AposIdade, extras: null },
+          { chave: 'art20' as const, titulo: 'Pedágio 100%', artigo: '20', resultado: resultado.art20Pedagio100, extras: null },
+        ];
+
+        const elegiveis = regras
+          .filter((r) => r.resultado.elegivel)
+          .sort((a, b) => {
+            if (a.chave === m) return -1;
+            if (b.chave === m) return 1;
+            return 0;
+          });
+
+        const inelegiveis = regras.filter((r) => !r.resultado.elegivel);
+
+        return (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {elegiveis.map((r) => (
+                <CardRegra
+                  key={r.chave}
+                  artigo={`EC 103/2019 — Art. ${r.artigo}`}
+                  titulo={r.titulo}
+                  resultado={r.resultado}
+                  melhor={r.chave === m}
+                  extras={r.extras}
+                />
+              ))}
+
+              {/* Benefício */}
+              <div className="bg-card border border-border rounded-2xl p-5">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Benefício estimado</p>
+                {resultado.salarioBeneficio > 0 ? (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Salário de benefício</span>
+                      <span className="font-mono">{formatarMoeda(resultado.salarioBeneficio)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Coeficiente na aposentadoria</span>
+                      <span className="font-mono">{(resultado.coeficienteNaAposentadoria * 100).toFixed(2)}%</span>
+                    </div>
+                    {resultado.coeficienteNaAposentadoria !== resultado.coeficienteEC103 && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Coeficiente atual (DER)</span>
+                        <span className="font-mono text-muted-foreground">{(resultado.coeficienteEC103 * 100).toFixed(2)}%</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Teto INSS</span>
+                      <span className="font-mono">{formatarMoeda(resultado.tetoINSS)}</span>
+                    </div>
+                    <div className="h-px bg-border" />
+                    <div className="flex justify-between">
+                      <span className="font-semibold text-foreground">Benefício mensal</span>
+                      <span className="font-bold font-mono text-primary text-lg">{formatarMoeda(resultado.beneficioMensal)}</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
+                      Estimativa projetada para a data da melhor aposentadoria. Valores sujeitos à portaria INSS vigente.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Salários não informados — benefício não calculado.</p>
+                )}
+              </div>
             </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">Salários não informados — benefício não calculado.</p>
-          )}
-        </div>
-      </div>
+
+            {/* Acordeon: regras inelegíveis */}
+            {inelegiveis.length > 0 && (
+              <div className="mt-6">
+                <button
+                  type="button"
+                  onClick={() => setVerInelegiveis(!verInelegiveis)}
+                  className="w-full flex items-center justify-between px-5 py-3.5 rounded-2xl border border-border bg-muted/30 hover:bg-muted/60 transition-colors"
+                >
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Regras analisadas e não aplicáveis ({inelegiveis.length})
+                  </span>
+                  <svg
+                    width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2"
+                    className={`transition-transform ${verInelegiveis ? 'rotate-180' : ''}`}
+                  >
+                    <path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+                {verInelegiveis && (
+                  <div className="mt-3 space-y-2">
+                    {inelegiveis.map((r) => (
+                      <div key={r.chave} className="px-5 py-3 rounded-xl bg-card border border-border">
+                        <div className="flex items-baseline gap-2 mb-1">
+                          <span className="font-semibold text-foreground text-sm">{r.titulo}</span>
+                          <span className="text-xs text-muted-foreground">Art. {r.artigo}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground italic leading-relaxed">
+                          {r.resultado.observacao}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {/* Ações */}
       <div className="flex flex-col sm:flex-row gap-3 pt-2">

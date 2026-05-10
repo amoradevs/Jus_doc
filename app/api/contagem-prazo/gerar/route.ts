@@ -5,7 +5,7 @@ import { getCurrentUser } from '@/lib/auth-helpers';
 import { renderDocxTemplate } from '@/lib/document-generation/docx-renderer';
 import { db } from '@/lib/db';
 import { formatDateExtenso } from '@/lib/format/date';
-import type { ResultadoCalculo } from '@/lib/motor-previdenciario';
+import type { ResultadoCalculo, MelhorOpcao } from '@/lib/motor-previdenciario';
 
 const bodySchema = z.object({
   tipo: z.enum(['planejamento', 'email']),
@@ -37,6 +37,32 @@ function statusRegra(data: string | null): string {
   const ano = parseInt(data.split('-')[0]);
   const anoAtual = new Date().getFullYear();
   return ano <= anoAtual ? 'Já atingido' : `Projeção: ${formatarData(data)}`;
+}
+
+function nomeRegraMelhorOpcao(opcao: MelhorOpcao): string {
+  const map: Record<string, string> = {
+    art15: 'Sistema de Pontos',
+    art16: 'Idade Progressiva',
+    art17: 'Pedágio 50%',
+    art18: 'Aposentadoria por Idade',
+    art20: 'Pedágio 100%',
+  };
+  return opcao ? map[opcao] : '—';
+}
+
+function numeroArtigoMelhorOpcao(opcao: MelhorOpcao): string {
+  const map: Record<string, string> = {
+    art15: '15', art16: '16', art17: '17', art18: '18', art20: '20',
+  };
+  return opcao ? map[opcao] : '—';
+}
+
+function idadeNaMelhorData(dataMelhor: string | null, dataNasc: string): string {
+  if (!dataMelhor) return '—';
+  const nasc = new Date(dataNasc);
+  const meta = new Date(dataMelhor);
+  const anos = Math.floor((meta.getTime() - nasc.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+  return `${anos} anos`;
 }
 
 function buildContext(
@@ -91,6 +117,26 @@ function buildContext(
     escritorio_advogada: escritorio.advogada_principal_nome ?? '',
     escritorio_oab: escritorio.advogada_principal_oab ?? '',
     escritorio_cidade: escritorio.endereco_cidade ?? '',
+
+    // Booleanos para condicionais de filtragem no template
+    art15_elegivel_bool: res.art15Pontos.elegivel,
+    art16_elegivel_bool: res.art16IdadeProgressiva.elegivel,
+    art17_elegivel_bool: res.art17Pedagio50.elegivel,
+    art18_elegivel_bool: res.art18AposIdade.elegivel,
+    art20_elegivel_bool: res.art20Pedagio100.elegivel,
+
+    tem_inelegivel:
+      !res.art15Pontos.elegivel ||
+      !res.art16IdadeProgressiva.elegivel ||
+      !res.art17Pedagio50.elegivel ||
+      !res.art18AposIdade.elegivel ||
+      !res.art20Pedagio100.elegivel,
+
+    // Caixa de recomendação no topo do documento
+    melhor_artigo_titulo: nomeRegraMelhorOpcao(res.melhorOpcao),
+    melhor_artigo_numero: numeroArtigoMelhorOpcao(res.melhorOpcao),
+    melhor_data: res.dataMaisProxima ? formatarData(res.dataMaisProxima) : '—',
+    melhor_idade: idadeNaMelhorData(res.dataMaisProxima, entrada.dataNascimento),
   };
 }
 
