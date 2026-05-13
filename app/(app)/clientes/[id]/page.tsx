@@ -345,9 +345,14 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
                       Expirado
                     </span>
                   ) : (
-                    <Button asChild size="sm" variant="outline" className="rounded-lg border-border text-xs h-7">
-                      <Link href={`/api/download/${pkg.id}`}>Baixar</Link>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button asChild size="sm" variant="ghost" className="rounded-lg text-xs h-7">
+                        <Link href={`/clientes/${id}/gerar/resultado?packageId=${pkg.id}`}>Ver docs</Link>
+                      </Button>
+                      <Button asChild size="sm" variant="outline" className="rounded-lg border-border text-xs h-7">
+                        <Link href={`/api/download/${pkg.id}`}>Baixar ZIP</Link>
+                      </Button>
+                    </div>
                   )}
                 </div>
               );

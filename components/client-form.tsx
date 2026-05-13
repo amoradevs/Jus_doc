@@ -168,8 +168,8 @@ export function ClientForm({ mode, clientId, defaultValues }: Props) {
               </div>
             )}
           </div>
-          {field('rg', 'RG')}
-          {field('rg_orgao_emissor', 'Órgão emissor')}
+          {field('rg', 'RG (opcional)')}
+          {field('rg_orgao_emissor', 'Órgão emissor (opcional)')}
           {field('data_nascimento', 'Data de nascimento', 'date')}
           <div className="space-y-1">
             <Label htmlFor="genero">Gênero</Label>

@@ -29,8 +29,8 @@ export const clientSchema = z.object({
   estado_civil: z.enum(['solteiro', 'casado', 'separado', 'divorciado', 'viuvo', 'uniao_estavel'], { message: 'Selecione o estado civil' }),
   data_nascimento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida'),
   cpf: z.string().refine((v) => isValidCPF(v), 'CPF inválido'),
-  rg: z.string().min(3, 'RG obrigatório'),
-  rg_orgao_emissor: z.string().min(2, 'Órgão emissor obrigatório'),
+  rg: z.string().min(3).optional(),
+  rg_orgao_emissor: z.string().min(2).optional(),
   nome_mae: z.string().min(3, 'Nome da mãe obrigatório'),
   nome_pai: z.string().optional(),
   telefone: z.string().optional(),
@@ -49,7 +49,7 @@ export type ClientInput = z.infer<typeof clientSchema>;
 export const representanteLegalSchema = z.object({
   nome: z.string().min(3),
   cpf: z.string().refine(isValidCPF, 'CPF inválido'),
-  rg: z.string().min(3),
+  rg: z.string().min(3).optional(),
   parentesco: z.string().min(2),
   nome_mae: z.string().min(3),
 });

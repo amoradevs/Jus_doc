@@ -263,6 +263,7 @@ export default function ResultadoPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [downloadingZip, setDownloadingZip] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
+  const [downloadingDocx, setDownloadingDocx] = useState<string | null>(null);
   const [previewing, setPreviewing] = useState<Doc | null>(null);
 
   // Intercepta botão Voltar do browser quando o viewer está aberto
@@ -328,6 +329,17 @@ export default function ResultadoPage() {
       setErrorMsg('Erro ao baixar PDF.');
     }
     setDownloadingPdf(null);
+  }
+
+  async function baixarDocx(doc: Doc) {
+    setDownloadingDocx(doc.codigo);
+    try {
+      const blob = await fetchBlob(`/api/download/${packageId}/docx/${doc.codigo}`);
+      await triggerDownload(blob, doc.nome_arquivo.replace(/\.pdf$/, '.docx'));
+    } catch {
+      setErrorMsg('Erro ao baixar Word.');
+    }
+    setDownloadingDocx(null);
   }
 
   /* ── Visualizador / Editor fullscreen ── */
@@ -451,6 +463,16 @@ export default function ResultadoPage() {
                     ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     : <Download className="w-3.5 h-3.5" />}
                   PDF
+                </button>
+                <button
+                  onClick={() => baixarDocx(doc)}
+                  disabled={downloadingDocx === doc.codigo}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1 rounded-md hover:bg-secondary disabled:opacity-40"
+                >
+                  {downloadingDocx === doc.codigo
+                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    : <FileText className="w-3.5 h-3.5" />}
+                  Word
                 </button>
               </div>
             </div>

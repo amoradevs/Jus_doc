@@ -53,14 +53,15 @@ export async function buildDocumentPackage(
     .in('codigo', templateCodes);
 
   const zip = new JSZip();
-  const docs: Array<{ codigo: string; nome: string; nome_arquivo: string; buffer: Buffer }> = [];
+  const docs: Array<{ codigo: string; nome: string; nome_arquivo: string; buffer: Buffer; docxBuffer: Buffer | null }> = [];
 
   for (const template of templates ?? []) {
     let pdfBuffer: Buffer;
+    let docxBuffer: Buffer | null = null;
 
     if (template.formato === 'docx') {
       const templateBuffer = await getTemplateBuffer(template);
-      const docxBuffer = await renderDocxTemplate(templateBuffer, context);
+      docxBuffer = await renderDocxTemplate(templateBuffer, context);
       pdfBuffer = await convertDocxToPdf(docxBuffer);
     } else {
       const slug = path.basename(template.caminho_arquivo, '.pdf');
@@ -69,7 +70,7 @@ export async function buildDocumentPackage(
 
     const nomeArquivo = `${clientNameNorm}_${template.codigo}_${normalizeName(template.nome)}_${dateStr}.pdf`;
     zip.file(nomeArquivo, pdfBuffer);
-    docs.push({ codigo: template.codigo, nome: template.nome, nome_arquivo: nomeArquivo, buffer: pdfBuffer });
+    docs.push({ codigo: template.codigo, nome: template.nome, nome_arquivo: nomeArquivo, buffer: pdfBuffer, docxBuffer });
   }
 
   const zipBuffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
@@ -103,6 +104,15 @@ export async function buildDocumentPackage(
     await db.storage
       .from(process.env.SUPABASE_STORAGE_BUCKET!)
       .upload(docPath, doc.buffer, { contentType: 'application/pdf' });
+
+    if (doc.docxBuffer) {
+      const docxPath = docPath.replace(/\.pdf$/, '.docx');
+      await db.storage
+        .from(process.env.SUPABASE_STORAGE_BUCKET!)
+        .upload(docxPath, doc.docxBuffer, {
+          contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        });
+    }
 
     await db.from('generated_documents').insert({
       package_id: pkg.id,
