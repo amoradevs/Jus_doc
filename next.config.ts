@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  outputFileTracingIncludes: {
+    '/api/geracao': ['./templates/**/*'],
+    '/api/contagem-prazo': ['./templates/**/*'],
+  },
 };
 
 export default nextConfig;
