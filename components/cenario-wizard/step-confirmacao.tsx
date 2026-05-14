@@ -14,12 +14,12 @@ import { AlertaItem } from './alerta-item';
 import { CATALOGO_TEMPLATES } from '@/lib/document-generation/cadeia-documental';
 import type { PacoteDocumental, Alerta } from '@/lib/document-generation/cadeia-documental';
 
-type AdvogadasSelecionadas = 'ambas' | 'apenas_lidiane' | 'apenas_alcione';
+type AdvogadasSelecionadas = 'ambas' | 'lidiane' | 'alcione';
 
 const OPCOES_ADVOGADA: { value: AdvogadasSelecionadas; label: string; sub?: string }[] = [
-  { value: 'ambas',          label: 'Ambas',          sub: 'Lidiane e Alcione' },
-  { value: 'apenas_lidiane', label: 'Apenas Lidiane' },
-  { value: 'apenas_alcione', label: 'Apenas Alcione' },
+  { value: 'ambas',    label: 'Ambas',          sub: 'Lidiane e Alcione' },
+  { value: 'lidiane',  label: 'Apenas Lidiane' },
+  { value: 'alcione',  label: 'Apenas Alcione' },
 ];
 
 const NOMES = Object.fromEntries(CATALOGO_TEMPLATES.map((t) => [t.codigo, t.nome]));
