@@ -121,7 +121,7 @@ const doc = new Document({
 
       // ── Assinatura do segurado ───────────────────────────────────────────
       p('{doc.cidade_assinatura}, {doc.dia_assinatura}/{doc.mes_assinatura_numero}/{doc.ano_assinatura}'),
-      pAssin('_________________________', SP),
+      pAssin('_________________________', SP * 3),
       pAssin('Assinatura do(a) Representado(a)', 0),
 
       // ── Termo de Responsabilidade ────────────────────────────────────────
@@ -143,10 +143,10 @@ const doc = new Document({
         rows: [
           new TableRow({ children: [
             new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, borders: noBorders, children: [
-              new Paragraph({ children: [baseRun('_________________________')], spacing: { before: SP, after: 0, line: LINE, lineRule: 'auto' } }),
+              new Paragraph({ children: [baseRun('_________________________')], spacing: { before: SP * 3, after: 0, line: LINE, lineRule: 'auto' } }),
             ]}),
             new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, borders: noBorders, children: [
-              new Paragraph({ children: [baseRun('_________________________')], spacing: { before: SP, after: 0, line: LINE, lineRule: 'auto' } }),
+              new Paragraph({ children: [baseRun('_________________________')], spacing: { before: SP * 3, after: 0, line: LINE, lineRule: 'auto' } }),
             ]}),
           ]}),
           new TableRow({ children: [
@@ -172,12 +172,12 @@ const doc = new Document({
       // Apenas uma
       pTag('{^tem_duas_advogadas}'),
       pTag('{#mostrar_lidiane}'),
-      pAssin('_________________________', SP),
+      pAssin('_________________________', SP * 3),
       pAssin('{escritorio.adv1_nome}', 0),
       pAssin('OAB {escritorio.adv1_oab}', 0),
       pTag('{/mostrar_lidiane}'),
       pTag('{#mostrar_alcione}'),
-      pAssin('_________________________', SP),
+      pAssin('_________________________', SP * 3),
       pAssin('{escritorio.adv2_nome}', 0),
       pAssin('OAB {escritorio.adv2_oab}', 0),
       pTag('{/mostrar_alcione}'),
@@ -186,7 +186,7 @@ const doc = new Document({
       // ── Código Penal (compactado, 9pt) ────────────────────────────────────
       new Paragraph({
         children: [boldRun('CÓDIGO PENAL', SZ)],
-        spacing: { before: SP * 2, after: SP, line: LINE, lineRule: 'auto' },
+        spacing: { before: SP, after: SP, line: LINE, lineRule: 'auto' },
         alignment: AlignmentType.LEFT,
       }),
       new Paragraph({
