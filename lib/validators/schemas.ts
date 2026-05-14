@@ -5,10 +5,12 @@ import { isValidCNPJ } from './cnpj';
 export const officeSettingsSchema = z.object({
   advogada_principal_nome: z.string().min(3, 'Nome obrigatório'),
   advogada_principal_nome_curto: z.string().min(2, 'Nome curto obrigatório'),
+  advogada_principal_cpf: z.string().refine(isValidCPF, 'CPF inválido'),
   advogada_principal_oab: z.string().min(3, 'OAB obrigatória'),
   advogada_principal_email: z.string().email('E-mail inválido'),
   advogada_parceira_nome: z.string().min(3, 'Nome obrigatório'),
   advogada_parceira_nome_curto: z.string().min(2, 'Nome curto obrigatório'),
+  advogada_parceira_cpf: z.string().refine(isValidCPF, 'CPF inválido'),
   advogada_parceira_oab: z.string().min(3, 'OAB obrigatória'),
   advogada_parceira_email: z.string().email('E-mail inválido'),
   endereco_logradouro: z.string().min(3, 'Logradouro obrigatório'),
