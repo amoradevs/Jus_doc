@@ -2,11 +2,18 @@ import { getCurrentUser } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
 import { notFound, redirect } from 'next/navigation';
 import { GerarModo } from '@/components/cenario-wizard/gerar-modo';
+import { labelTipoBeneficio } from '@/lib/processo';
 import Link from 'next/link';
 
-export default async function GerarPage({ params }: { params: Promise<{ id: string }> }) {
+type Props = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ processoId?: string }>;
+};
+
+export default async function GerarPage({ params, searchParams }: Props) {
   const user = await getCurrentUser();
   const { id } = await params;
+  const { processoId: processoIdParam } = await searchParams;
 
   const { data: clientRows } = await db
     .from('clients')
@@ -31,10 +38,21 @@ export default async function GerarPage({ params }: { params: Promise<{ id: stri
 
   const [{ data: templates }, { data: processoRows }] = await Promise.all([
     db.from('document_templates').select('*').eq('ativo', 'true'),
-    db.from('processos').select('id').eq('cliente_id', id).limit(1),
+    db.from('processos').select('id, numero_interno, tipo_beneficio').eq('cliente_id', id).order('criado_em', { ascending: false }),
   ]);
 
-  const processoId = processoRows?.[0]?.id as string | undefined;
+  const processos = processoRows ?? [];
+
+  // Resolve qual processoId usar
+  let processoId: string | undefined;
+  if (processoIdParam && processos.some((p) => p.id === processoIdParam)) {
+    processoId = processoIdParam;
+  } else if (processos.length === 1) {
+    processoId = processos[0].id;
+  }
+  // Se múltiplos e nenhum selecionado → mostra seletor abaixo
+
+  const mostrarSeletor = processos.length > 1 && !processoId;
 
   return (
     <div>
@@ -49,8 +67,54 @@ export default async function GerarPage({ params }: { params: Promise<{ id: stri
       </Link>
 
       <h1 className="text-2xl font-bold text-foreground mb-1">Gerar documentos</h1>
-      <p className="text-muted-foreground text-sm mb-6">Busque um documento específico ou monte o pacote completo pelo assistente.</p>
-      <GerarModo clientId={id} templates={templates ?? []} processoId={processoId} />
+
+      {mostrarSeletor ? (
+        <>
+          <p className="text-muted-foreground text-sm mb-6">
+            Esta cliente tem mais de um processo. Selecione para qual deseja gerar os documentos.
+          </p>
+          <div className="space-y-2 max-w-xl">
+            {processos.map((p) => (
+              <Link
+                key={p.id}
+                href={`/clientes/${id}/gerar?processoId=${p.id}`}
+                className="block bg-card rounded-2xl border border-border p-4 hover:border-primary/40 hover:shadow-sm transition-all group"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-mono font-semibold text-primary mb-0.5">{p.numero_interno}</p>
+                    <p className="text-sm font-medium text-foreground">{labelTipoBeneficio(p.tipo_beneficio)}</p>
+                  </div>
+                  <svg
+                    width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                    className="text-muted-foreground/30 shrink-0 group-hover:text-primary/50 transition-colors"
+                  >
+                    <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          {processoId && processos.length > 1 && (
+            <div className="flex items-center gap-2 mb-4">
+              <p className="text-sm text-muted-foreground">
+                Processo:{' '}
+                <span className="font-medium text-foreground">
+                  {labelTipoBeneficio(processos.find((p) => p.id === processoId)?.tipo_beneficio ?? '')}
+                </span>
+              </p>
+              <Link href={`/clientes/${id}/gerar`} className="text-xs text-primary hover:underline">
+                Trocar
+              </Link>
+            </div>
+          )}
+          <p className="text-muted-foreground text-sm mb-6">Busque um documento específico ou monte o pacote completo pelo assistente.</p>
+          <GerarModo clientId={id} templates={templates ?? []} processoId={processoId} />
+        </>
+      )}
     </div>
   );
 }
