@@ -38,7 +38,7 @@ export default async function GerarPage({ params, searchParams }: Props) {
 
   const [{ data: templates }, { data: processoRows }] = await Promise.all([
     db.from('document_templates').select('*').eq('ativo', 'true'),
-    db.from('processos').select('id, numero_interno, tipo_beneficio').eq('cliente_id', id).order('criado_em', { ascending: false }),
+    db.from('processos').select('id, numero_interno, tipo_beneficio').eq('cliente_id', id).order('created_at', { ascending: false }),
   ]);
 
   const processos = processoRows ?? [];
