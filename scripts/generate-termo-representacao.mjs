@@ -66,9 +66,9 @@ const pBen = (text) => new Paragraph({
 });
 
 // Linha de assinatura
-const pAssin = (text, spBefore = SP) => new Paragraph({
+const pAssin = (text, spBefore = SP, spAfter = 0) => new Paragraph({
   children: [baseRun(text)],
-  spacing: { before: spBefore, after: 0, line: LINE, lineRule: 'auto' },
+  spacing: { before: spBefore, after: spAfter, line: LINE, lineRule: 'auto' },
   alignment: AlignmentType.LEFT,
 });
 
@@ -127,7 +127,7 @@ const doc = new Document({
       // ── Termo de Responsabilidade ────────────────────────────────────────
       new Paragraph({
         children: [boldRun('TERMO DE RESPONSABILIDADE', SZ)],
-        spacing: { before: SP * 2, after: SP, line: LINE, lineRule: 'auto' },
+        spacing: { before: SP * 2, after: SP * 2, line: LINE, lineRule: 'auto' },
         alignment: AlignmentType.LEFT,
       }),
       p('Por este Termo de Responsabilidade, comprometo-me a comunicar ao INSS qualquer evento que possa anular esta Procuração, no prazo de trinta dias, a contar da data que o mesmo ocorra, principalmente o óbito do segurado / pensionista, mediante apresentação da respectiva certidão. Estou ciente de que o descumprimento do compromisso ora assumido, além de obrigar a devolução de importâncias recebidas indevidamente, quando for o caso, sujeitar-me-á às penalidades previstas nos arts. 171 e 299, ambos do Código Penal.', SP, SP),
@@ -159,10 +159,10 @@ const doc = new Document({
           ]}),
           new TableRow({ children: [
             new TableCell({ borders: noBorders, children: [
-              new Paragraph({ children: [baseRun('OAB {escritorio.adv1_oab}')], spacing: { before: 0, after: SP, line: LINE, lineRule: 'auto' } }),
+              new Paragraph({ children: [baseRun('OAB {escritorio.adv1_oab}')], spacing: { before: 0, after: SP * 2, line: LINE, lineRule: 'auto' } }),
             ]}),
             new TableCell({ borders: noBorders, children: [
-              new Paragraph({ children: [baseRun('OAB {escritorio.adv2_oab}')], spacing: { before: 0, after: SP, line: LINE, lineRule: 'auto' } }),
+              new Paragraph({ children: [baseRun('OAB {escritorio.adv2_oab}')], spacing: { before: 0, after: SP * 2, line: LINE, lineRule: 'auto' } }),
             ]}),
           ]}),
         ],
@@ -174,12 +174,12 @@ const doc = new Document({
       pTag('{#mostrar_lidiane}'),
       pAssin('_________________________', SP * 3),
       pAssin('{escritorio.adv1_nome}', 0),
-      pAssin('OAB {escritorio.adv1_oab}', 0),
+      pAssin('OAB {escritorio.adv1_oab}', 0, SP * 2),
       pTag('{/mostrar_lidiane}'),
       pTag('{#mostrar_alcione}'),
       pAssin('_________________________', SP * 3),
       pAssin('{escritorio.adv2_nome}', 0),
-      pAssin('OAB {escritorio.adv2_oab}', 0),
+      pAssin('OAB {escritorio.adv2_oab}', 0, SP * 2),
       pTag('{/mostrar_alcione}'),
       pTag('{/tem_duas_advogadas}'),
 
