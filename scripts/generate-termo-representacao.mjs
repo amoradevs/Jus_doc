@@ -8,7 +8,7 @@
  * DocxTemplater tags embutidas para uso em produção
  */
 
-import { Document, Paragraph, TextRun, AlignmentType, Packer } from 'docx';
+import { Document, Paragraph, TextRun, AlignmentType, Packer, Table, TableRow, TableCell, WidthType, BorderStyle } from 'docx';
 import { writeFileSync, mkdirSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -28,6 +28,9 @@ const LINE = 276;
 // 4pt = 80 twips
 const SP = 80;
 const SP_NONE = 0;
+
+const NO_BORDER = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+const noBorders = { top: NO_BORDER, bottom: NO_BORDER, left: NO_BORDER, right: NO_BORDER };
 
 const baseRun = (text, extra = {}) => new TextRun({ text, font: FONT, size: SZ, ...extra });
 const boldRun = (text, sz = SZ) => new TextRun({ text, font: FONT, size: sz, bold: true });
@@ -132,11 +135,38 @@ const doc = new Document({
       // ── Assinatura do procurador (condicional) ────────────────────────────
       p('{doc.cidade_assinatura}, {doc.dia_assinatura}/{doc.mes_assinatura_numero}/{doc.ano_assinatura}'),
 
-      // Ambas: duas linhas de assinatura
+      // Ambas: tabela 2 colunas sem bordas
       pTag('{#tem_duas_advogadas}'),
-      pAssin('_________________________          _________________________', SP),
-      pAssin('{escritorio.adv1_nome}          {escritorio.adv2_nome}', 0),
-      pAssin('OAB {escritorio.adv1_oab}          OAB {escritorio.adv2_oab}', 0),
+      new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        borders: { top: NO_BORDER, bottom: NO_BORDER, left: NO_BORDER, right: NO_BORDER, insideH: NO_BORDER, insideV: NO_BORDER },
+        rows: [
+          new TableRow({ children: [
+            new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, borders: noBorders, children: [
+              new Paragraph({ children: [baseRun('_________________________')], spacing: { before: SP, after: 0, line: LINE, lineRule: 'auto' } }),
+            ]}),
+            new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, borders: noBorders, children: [
+              new Paragraph({ children: [baseRun('_________________________')], spacing: { before: SP, after: 0, line: LINE, lineRule: 'auto' } }),
+            ]}),
+          ]}),
+          new TableRow({ children: [
+            new TableCell({ borders: noBorders, children: [
+              new Paragraph({ children: [baseRun('{escritorio.adv1_nome}')], spacing: { before: 0, after: 0, line: LINE, lineRule: 'auto' } }),
+            ]}),
+            new TableCell({ borders: noBorders, children: [
+              new Paragraph({ children: [baseRun('{escritorio.adv2_nome}')], spacing: { before: 0, after: 0, line: LINE, lineRule: 'auto' } }),
+            ]}),
+          ]}),
+          new TableRow({ children: [
+            new TableCell({ borders: noBorders, children: [
+              new Paragraph({ children: [baseRun('OAB {escritorio.adv1_oab}')], spacing: { before: 0, after: SP, line: LINE, lineRule: 'auto' } }),
+            ]}),
+            new TableCell({ borders: noBorders, children: [
+              new Paragraph({ children: [baseRun('OAB {escritorio.adv2_oab}')], spacing: { before: 0, after: SP, line: LINE, lineRule: 'auto' } }),
+            ]}),
+          ]}),
+        ],
+      }),
       pTag('{/tem_duas_advogadas}'),
 
       // Apenas uma
