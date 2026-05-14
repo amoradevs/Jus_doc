@@ -53,7 +53,7 @@ export function OfficeSettingsForm({ defaultValues }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {field('advogada_principal_nome', 'Nome completo')}
           {field('advogada_principal_nome_curto', 'Nome curto (assinaturas)')}
-          {field('advogada_principal_cpf', 'CPF (somente números)')}
+          {field('advogada_principal_cpf', 'CPF')}
           {field('advogada_principal_oab', 'OAB')}
           {field('advogada_principal_email', 'E-mail', 'email')}
         </div>
@@ -64,7 +64,7 @@ export function OfficeSettingsForm({ defaultValues }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {field('advogada_parceira_nome', 'Nome completo')}
           {field('advogada_parceira_nome_curto', 'Nome curto (assinaturas)')}
-          {field('advogada_parceira_cpf', 'CPF (somente números)')}
+          {field('advogada_parceira_cpf', 'CPF')}
           {field('advogada_parceira_oab', 'OAB')}
           {field('advogada_parceira_email', 'E-mail', 'email')}
         </div>
