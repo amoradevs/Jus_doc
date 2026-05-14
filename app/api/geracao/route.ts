@@ -11,6 +11,7 @@ export async function POST(req: Request) {
   }
 
   try {
+    console.log('[geracao] processoId recebido:', processoId ?? 'AUSENTE');
     const result = await buildDocumentPackage(clientId, templateCodes, user.tenantId, cenario, advogadas_selecionadas ?? 'ambas', processoId ?? undefined);
     return NextResponse.json(result);
   } catch (err) {

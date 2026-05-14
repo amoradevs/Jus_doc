@@ -276,12 +276,15 @@ export async function buildTemplateContext(
 
   let tipoBeneficio = '';
   if (processoId) {
-    const { data: processoRows } = await db
+    const { data: processoRows, error: processoError } = await db
       .from('processos')
       .select('tipo_beneficio')
       .eq('id', processoId)
       .limit(1);
+    console.log('[template-context] processoId:', processoId, '| tipo_beneficio:', processoRows?.[0]?.tipo_beneficio ?? 'NÃO ENCONTRADO', '| erro:', processoError?.message ?? 'none');
     tipoBeneficio = processoRows?.[0]?.tipo_beneficio ?? '';
+  } else {
+    console.log('[template-context] processoId: NÃO FORNECIDO → checkboxes todos vazios');
   }
   const tipoInfo = TIPO_BENEFICIO_MAP[tipoBeneficio] ?? { descricao: '', objeto: '', marcados: [] };
   const bloco_paragrafos_recurso = tipoBeneficio !== 'mandado_seguranca';
