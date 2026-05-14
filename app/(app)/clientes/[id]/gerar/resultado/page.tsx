@@ -278,10 +278,12 @@ export default function ResultadoPage() {
 
   function gerar() {
     setStatus('loading');
+    // Lê processoId do URL no momento da chamada (evita problema de hydration com useSearchParams)
+    const pid = new URLSearchParams(window.location.search).get('processoId') ?? undefined;
     fetch('/api/geracao', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ clientId: id, templateCodes: codigos.split(',').filter(Boolean), processoId }),
+      body: JSON.stringify({ clientId: id, templateCodes: codigos.split(',').filter(Boolean), processoId: pid }),
     })
       .then((r) => r.json())
       .then((data) => {
