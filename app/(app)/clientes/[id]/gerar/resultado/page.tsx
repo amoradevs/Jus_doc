@@ -256,6 +256,7 @@ export default function ResultadoPage() {
   const codigos = searchParams.get('codigos') ?? '';
   const modo = searchParams.get('modo') ?? 'direto';
   const packageIdParam = searchParams.get('packageId') ?? '';
+  const processoId = searchParams.get('processoId') ?? undefined;
 
   const [status, setStatus] = useState<Status>(packageIdParam ? 'done' : 'idle');
   const [packageId, setPackageId] = useState(packageIdParam);
@@ -280,7 +281,7 @@ export default function ResultadoPage() {
     fetch('/api/geracao', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ clientId: id, templateCodes: codigos.split(',').filter(Boolean) }),
+      body: JSON.stringify({ clientId: id, templateCodes: codigos.split(',').filter(Boolean), processoId }),
     })
       .then((r) => r.json())
       .then((data) => {

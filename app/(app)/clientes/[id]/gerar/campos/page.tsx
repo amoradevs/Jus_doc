@@ -4,12 +4,12 @@ import { notFound, redirect } from 'next/navigation';
 import { getRequiredContextualGroups } from '@/lib/document-generation/contextual-fields-resolver';
 import { ContextualFieldsForm } from '@/components/contextual-fields-form';
 
-type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ codigos?: string; modo?: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ codigos?: string; modo?: string; processoId?: string }> };
 
 export default async function CamposPage({ params, searchParams }: Props) {
   const user = await getCurrentUser();
   const { id } = await params;
-  const { codigos = '', modo = 'direto' } = await searchParams;
+  const { codigos = '', modo = 'direto', processoId } = await searchParams;
   const templateCodes = codigos.split(',').filter(Boolean);
 
   if (templateCodes.length === 0) redirect(`/clientes/${id}/gerar`);
@@ -39,8 +39,10 @@ export default async function CamposPage({ params, searchParams }: Props) {
     return !val || Object.keys(val as object).length === 0;
   });
 
+  const pidParam = processoId ? `&processoId=${processoId}` : '';
+
   if (missing.length === 0) {
-    redirect(`/clientes/${id}/gerar/resultado?codigos=${codigos}&modo=${modo}`);
+    redirect(`/clientes/${id}/gerar/resultado?codigos=${codigos}&modo=${modo}${pidParam}`);
   }
 
   return (
@@ -49,7 +51,7 @@ export default async function CamposPage({ params, searchParams }: Props) {
       <p className="text-muted-foreground text-sm mb-6">
         Os documentos selecionados precisam dos dados abaixo para serem preenchidos.
       </p>
-      <ContextualFieldsForm clientId={id} missingGroups={missing} codigos={codigos} modo={modo} />
+      <ContextualFieldsForm clientId={id} missingGroups={missing} codigos={codigos} modo={modo} processoId={processoId} />
     </div>
   );
 }

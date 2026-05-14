@@ -44,8 +44,9 @@ export async function buildDocumentPackage(
   tenantId: string,
   cenario?: Cenario,
   advogadas: AdvogadasSelecionadas = 'ambas',
+  processoId?: string,
 ): Promise<PackageResult> {
-  const context = await buildTemplateContext(clientId, tenantId, cenario, advogadas);
+  const context = await buildTemplateContext(clientId, tenantId, cenario, advogadas, processoId);
   const clientNameNorm = normalizeName(context.cliente.nome_completo ?? 'CLIENTE');
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
 

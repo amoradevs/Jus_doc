@@ -15,7 +15,7 @@ type Template = {
   formato: string;
 };
 
-type Props = { clientId: string; templates?: Template[] };
+type Props = { clientId: string; templates?: Template[]; processoId?: string };
 
 const FAMILIA_LABEL: Record<string, string> = {
   contrato: 'Contrato',
@@ -25,7 +25,7 @@ const FAMILIA_LABEL: Record<string, string> = {
   outro: 'Outro',
 };
 
-export function GerarModo({ clientId, templates = [] }: Props) {
+export function GerarModo({ clientId, templates = [], processoId }: Props) {
   const router = useRouter();
   const [busca, setBusca] = useState('');
   const [selected, setSelected] = useState<string[]>([]);
@@ -54,7 +54,8 @@ export function GerarModo({ clientId, templates = [] }: Props) {
   function continuar(modo: 'direto' | 'revisar') {
     if (selected.length === 0 || loading) return;
     setLoading(modo);
-    router.push(`/clientes/${clientId}/gerar/campos?codigos=${selected.join(',')}&modo=${modo}`);
+    const pid = processoId ? `&processoId=${processoId}` : '';
+    router.push(`/clientes/${clientId}/gerar/campos?codigos=${selected.join(',')}&modo=${modo}${pid}`);
   }
 
   return (
@@ -159,7 +160,7 @@ export function GerarModo({ clientId, templates = [] }: Props) {
         </div>
       ) : (
         /* ── Wizard (padrão quando busca está vazia) ── */
-        <WizardCenario clientId={clientId} />
+        <WizardCenario clientId={clientId} processoId={processoId} />
       )}
 
     </div>

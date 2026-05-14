@@ -20,10 +20,11 @@ type Props = {
   codigosAtivos: string[];
   onToggleCodigo: (c: string) => void;
   clientId: string;
+  processoId?: string;
   onBack: () => void;
 };
 
-export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientId, onBack }: Props) {
+export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientId, processoId, onBack }: Props) {
   const router = useRouter();
   const [gerando, setGerando] = useState(false);
   const [dialogAberto, setDialogAberto] = useState(false);
@@ -63,6 +64,7 @@ export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientI
           clientId,
           templateCodes: codigosAtivos,
           cenario: pacote.cenario,
+          processoId: processoId ?? undefined,
         }),
       });
       const data = await res.json();

@@ -211,6 +211,11 @@ export function getCenarioContextOverrides(cenario: Cenario): Partial<TemplateCo
 
   const benInfo = BENEFICIO_ID_MAP[cenario.beneficio] ?? BENEFICIO_ID_MAP.bpc;
 
+  const checkboxCenario: Record<string, string> = {};
+  for (const opcao of TODAS_OPCOES_CHECKBOX) {
+    checkboxCenario[opcao] = benInfo.marcados.includes(opcao) ? '☑' : '☐';
+  }
+
   return {
     bloco_contratante_maior_capaz,
     bloco_contratante_a_rogo,
@@ -226,6 +231,7 @@ export function getCenarioContextOverrides(cenario: Cenario): Partial<TemplateCo
       tipo_beneficio_descricao: benInfo.descricao,
       objeto_procuracao: benInfo.objeto,
     },
+    checkbox: checkboxCenario,
   };
 }
 
@@ -238,6 +244,7 @@ export async function buildTemplateContext(
   tenantId: string,
   cenario?: Cenario,
   advogadas: AdvogadasSelecionadas = 'ambas',
+  processoId?: string,
 ): Promise<TemplateContext> {
   const { data: clientRows } = await db
     .from('clients')
@@ -267,7 +274,15 @@ export async function buildTemplateContext(
   const bloco_contratante_maior_capaz = !ehMenor && sabeAssinar;
   const bloco_contratante_a_rogo = !ehMenor && !sabeAssinar;
 
-  const tipoBeneficio: string = client.tipo_pedido ?? '';
+  let tipoBeneficio = '';
+  if (processoId) {
+    const { data: processoRows } = await db
+      .from('processos')
+      .select('tipo_beneficio')
+      .eq('id', processoId)
+      .limit(1);
+    tipoBeneficio = processoRows?.[0]?.tipo_beneficio ?? '';
+  }
   const tipoInfo = TIPO_BENEFICIO_MAP[tipoBeneficio] ?? { descricao: '', objeto: '', marcados: [] };
   const bloco_paragrafos_recurso = tipoBeneficio !== 'mandado_seguranca';
 

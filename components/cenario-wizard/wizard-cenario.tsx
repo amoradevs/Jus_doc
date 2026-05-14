@@ -23,7 +23,7 @@ const LABELS: Record<Step, string> = {
   4: 'Confirmação',
 };
 
-type Props = { clientId: string };
+type Props = { clientId: string; processoId?: string };
 
 function StepIndicator({ step }: { step: Step }) {
   return (
@@ -68,7 +68,7 @@ function StepIndicator({ step }: { step: Step }) {
   );
 }
 
-export function WizardCenario({ clientId }: Props) {
+export function WizardCenario({ clientId, processoId }: Props) {
   const [step, setStep] = useState<Step>(1);
   const [beneficio, setBeneficio] = useState<BeneficioId | null>(null);
   const [perfil, setPerfil] = useState<PerfilId | null>(null);
@@ -157,6 +157,7 @@ export function WizardCenario({ clientId }: Props) {
           codigosAtivos={codigosAtivos}
           onToggleCodigo={toggleCodigo}
           clientId={clientId}
+          processoId={processoId}
           onBack={() => irParaPasso(3)}
         />
       )}

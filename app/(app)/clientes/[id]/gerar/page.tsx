@@ -29,10 +29,12 @@ export default async function GerarPage({ params }: { params: Promise<{ id: stri
     redirect('/configuracoes?aviso=preencha-antes-de-gerar');
   }
 
-  const { data: templates } = await db
-    .from('document_templates')
-    .select('*')
-    .eq('ativo', 'true');
+  const [{ data: templates }, { data: processoRows }] = await Promise.all([
+    db.from('document_templates').select('*').eq('ativo', 'true'),
+    db.from('processos').select('id').eq('cliente_id', id).limit(1),
+  ]);
+
+  const processoId = processoRows?.[0]?.id as string | undefined;
 
   return (
     <div>
@@ -48,7 +50,7 @@ export default async function GerarPage({ params }: { params: Promise<{ id: stri
 
       <h1 className="text-2xl font-bold text-foreground mb-1">Gerar documentos</h1>
       <p className="text-muted-foreground text-sm mb-6">Busque um documento específico ou monte o pacote completo pelo assistente.</p>
-      <GerarModo clientId={id} templates={templates ?? []} />
+      <GerarModo clientId={id} templates={templates ?? []} processoId={processoId} />
     </div>
   );
 }
