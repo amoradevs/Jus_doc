@@ -9,9 +9,18 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
   DialogDescription, DialogFooter, DialogClose,
 } from '@/components/ui/dialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { AlertaItem } from './alerta-item';
 import { CATALOGO_TEMPLATES } from '@/lib/document-generation/cadeia-documental';
 import type { PacoteDocumental, Alerta } from '@/lib/document-generation/cadeia-documental';
+
+type AdvogadasSelecionadas = 'ambas' | 'apenas_lidiane' | 'apenas_alcione';
+
+const OPCOES_ADVOGADA: { value: AdvogadasSelecionadas; label: string; sub?: string }[] = [
+  { value: 'ambas',          label: 'Ambas',          sub: 'Lidiane e Alcione' },
+  { value: 'apenas_lidiane', label: 'Apenas Lidiane' },
+  { value: 'apenas_alcione', label: 'Apenas Alcione' },
+];
 
 const NOMES = Object.fromEntries(CATALOGO_TEMPLATES.map((t) => [t.codigo, t.nome]));
 
@@ -29,6 +38,8 @@ export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientI
   const [gerando, setGerando] = useState(false);
   const [dialogAberto, setDialogAberto] = useState(false);
   const [erroGeracao, setErroGeracao] = useState('');
+  const [modalAdvogadaAberto, setModalAdvogadaAberto] = useState(false);
+  const [advogadasSelecionadas, setAdvogadasSelecionadas] = useState<AdvogadasSelecionadas>('ambas');
 
   // Alertas dinâmicos por cadeia mínima desmarcada
   const alertasCadeiaMinima: Alerta[] = useMemo(() => {
@@ -65,6 +76,7 @@ export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientI
           templateCodes: codigosAtivos,
           cenario: pacote.cenario,
           processoId: processoId ?? undefined,
+          advogadas_selecionadas: advogadasSelecionadas,
         }),
       });
       const data = await res.json();
@@ -81,6 +93,11 @@ export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientI
   }
 
   function handleGerarClick() {
+    setModalAdvogadaAberto(true);
+  }
+
+  function handleConfirmarAdvogada() {
+    setModalAdvogadaAberto(false);
     if (temAviso) {
       setDialogAberto(true);
     } else {
@@ -180,6 +197,49 @@ export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientI
           </Button>
         </div>
       </div>
+
+      {/* Modal de seleção de advogada */}
+      <Dialog open={modalAdvogadaAberto} onOpenChange={setModalAdvogadaAberto}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Selecionar advogada(s)</DialogTitle>
+            <DialogDescription>
+              Escolha quem irá assinar os documentos deste pacote.
+            </DialogDescription>
+          </DialogHeader>
+          <RadioGroup
+            value={advogadasSelecionadas}
+            onValueChange={(v) => setAdvogadasSelecionadas(v as AdvogadasSelecionadas)}
+            className="gap-2 py-1"
+          >
+            {OPCOES_ADVOGADA.map((op) => (
+              <label
+                key={op.value}
+                htmlFor={`adv-${op.value}`}
+                className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition-colors ${
+                  advogadasSelecionadas === op.value
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:bg-accent/30'
+                }`}
+              >
+                <RadioGroupItem id={`adv-${op.value}`} value={op.value} />
+                <div>
+                  <p className="text-sm font-medium text-foreground">{op.label}</p>
+                  {op.sub && <p className="text-xs text-muted-foreground">{op.sub}</p>}
+                </div>
+              </label>
+            ))}
+          </RadioGroup>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" className="rounded-xl">Cancelar</Button>
+            </DialogClose>
+            <Button className="rounded-xl" onClick={handleConfirmarAdvogada}>
+              Confirmar e gerar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog de confirmação de avisos */}
       <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
