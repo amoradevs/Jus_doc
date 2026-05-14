@@ -368,7 +368,7 @@ export default function ResultadoPage() {
               <FileText className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <p className="font-semibold text-foreground group-hover:text-primary transition-colors">Gerar PDF direto</p>
+              <p className="font-semibold text-foreground group-hover:text-primary transition-colors">Gerar direto</p>
               <p className="text-sm text-muted-foreground mt-0.5">Gera e baixa os documentos imediatamente.</p>
             </div>
           </button>
@@ -378,7 +378,7 @@ export default function ResultadoPage() {
             </div>
             <div>
               <p className="font-semibold text-foreground group-hover:text-primary transition-colors">Revisar antes de gerar</p>
-              <p className="text-sm text-muted-foreground mt-0.5">Edite o conteúdo antes de gerar o PDF.</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Edite o conteúdo antes de gerar.</p>
             </div>
           </Link>
         </div>

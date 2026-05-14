@@ -151,7 +151,7 @@ export function GerarModo({ clientId, templates = [] }: Props) {
                   {loading === 'direto'
                     ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     : null}
-                  Gerar PDF
+                  Gerar Documento
                 </Button>
               </div>
             </>

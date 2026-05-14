@@ -288,7 +288,7 @@ export function TemplateSelector({ clientId, templates }: Props) {
                 <path d="M13 2v7h7" strokeLinecap="round"/>
               </svg>
             )}
-            Gerar PDF
+            Gerar Documento
           </Button>
         </div>
       </div>
