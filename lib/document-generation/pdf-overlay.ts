@@ -25,12 +25,7 @@ const FIELD_MAPS: Record<string, FieldMap[]> = {
     { value: (c) => c.separacao.data, page: 0, x: 280, y: 610, fontSize: 10 },
     { value: (c) => dataExtenso(c), page: 0, x: 110, y: 200, fontSize: 10 },
   ],
-  '14_termo_representacao_inss': [
-    { value: (c) => c.cliente.nome_completo, page: 0, x: 130, y: 560, fontSize: 10 },
-    { value: (c) => c.cliente.cpf, page: 0, x: 130, y: 540, fontSize: 10 },
-    { value: (c) => c.cliente.rg, page: 0, x: 340, y: 540, fontSize: 10 },
-    { value: (c) => dataExtenso(c), page: 0, x: 130, y: 180, fontSize: 10 },
-  ],
+  // 14_termo_representacao_inss migrado para DOCX em 13/05/2026 (Bloco 2)
   '15_termo_responsabilidade_inss': [
     { value: (c) => c.cliente.nome_completo, page: 0, x: 130, y: 560, fontSize: 10 },
     { value: (c) => c.cliente.cpf, page: 0, x: 130, y: 540, fontSize: 10 },

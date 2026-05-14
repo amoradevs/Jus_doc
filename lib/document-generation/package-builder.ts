@@ -4,6 +4,7 @@ import JSZip from 'jszip';
 import { createClient } from '@supabase/supabase-js';
 import { db } from '@/lib/db';
 import { buildTemplateContext } from './template-context';
+import type { AdvogadasSelecionadas } from './template-context';
 import type { Cenario } from './cadeia-documental';
 import { renderDocxTemplate } from './docx-renderer';
 import { convertDocxToPdf } from './pdf-converter';
@@ -42,8 +43,9 @@ export async function buildDocumentPackage(
   templateCodes: string[],
   tenantId: string,
   cenario?: Cenario,
+  advogadas: AdvogadasSelecionadas = 'ambas',
 ): Promise<PackageResult> {
-  const context = await buildTemplateContext(clientId, tenantId, cenario);
+  const context = await buildTemplateContext(clientId, tenantId, cenario, advogadas);
   const clientNameNorm = normalizeName(context.cliente.nome_completo ?? 'CLIENTE');
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
 

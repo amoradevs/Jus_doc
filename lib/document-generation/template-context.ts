@@ -91,6 +91,21 @@ const TIPO_BENEFICIO_MAP: Record<string, { descricao: string; objeto: string; ma
     objeto: 'ingressar com Pedido de BENEFÍCIO DE PRESTAÇÃO CONTINUADA EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
     marcados: ['bpc'],
   },
+  aposentadoria_tempo_contribuicao: {
+    descricao: 'BENEFÍCIO DE APOSENTADORIA POR TEMPO DE CONTRIBUIÇÃO',
+    objeto: 'ingressar com Pedido de BENEFÍCIO DE APOSENTADORIA POR TEMPO DE CONTRIBUIÇÃO EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
+    marcados: ['aposentadoria_tempo'],
+  },
+  aposentadoria_especial: {
+    descricao: 'BENEFÍCIO DE APOSENTADORIA ESPECIAL',
+    objeto: 'ingressar com Pedido de BENEFÍCIO DE APOSENTADORIA ESPECIAL EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
+    marcados: ['aposentadoria_especial'],
+  },
+  pensao_morte: {
+    descricao: 'BENEFÍCIO DE PENSÃO POR MORTE PREVIDENCIÁRIA',
+    objeto: 'ingressar com Pedido de BENEFÍCIO DE PENSÃO POR MORTE EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
+    marcados: ['pensao_morte'],
+  },
   mandado_seguranca: {
     descricao: 'IMPETRAÇÃO DE MANDADO DE SEGURANÇA',
     objeto: 'impetrar MANDADO DE SEGURANÇA em face do INSS (Instituto Nacional do Seguro Social)',
@@ -137,9 +152,14 @@ export type TemplateContext = {
   bloco_assinatura_a_rogo: boolean;          // adulto a rogo
   bloco_assinatura_menor: boolean;           // menor (representante assina)
 
+  // Seleção de advogada para geração (Bloco 2+)
+  mostrar_lidiane: boolean;
+  mostrar_alcione: boolean;
+  tem_duas_advogadas: boolean;
+
   honorarios: { qtd_salarios: number; qtd_salarios_extenso: string; percentual_padrao: number; percentual_padrao_extenso: string; percentual_recurso: number; percentual_recurso_extenso: string; valor_fixo: string; valor_fixo_extenso: string };
   multa: { qtd_salarios_minimos: number; qtd_salarios_minimos_extenso: string };
-  escritorio: { adv1_nome: string; adv1_oab: string; adv1_email: string; adv2_nome: string; adv2_oab: string; adv2_cpf: string; adv2_email: string; endereco_logradouro: string; endereco_numero: string; endereco_complemento: string; endereco_bairro: string; endereco_cidade: string; endereco_uf: string; endereco_cep: string; foro_eleito: string };
+  escritorio: { adv1_nome: string; adv1_cpf: string; adv1_oab: string; adv1_email: string; adv2_nome: string; adv2_oab: string; adv2_cpf: string; adv2_email: string; endereco_logradouro: string; endereco_numero: string; endereco_complemento: string; endereco_bairro: string; endereco_cidade: string; endereco_uf: string; endereco_cep: string; foro_eleito: string };
   doc: { cidade_assinatura: string; dia_assinatura: string; mes_assinatura_extenso: string; mes_assinatura_numero: string; ano_assinatura: string };
   checkbox: Record<string, string>;
 };
@@ -211,7 +231,14 @@ export function getCenarioContextOverrides(cenario: Cenario): Partial<TemplateCo
 
 // ─── Builder principal ────────────────────────────────────────────────────────
 
-export async function buildTemplateContext(clientId: string, tenantId: string, cenario?: Cenario): Promise<TemplateContext> {
+export type AdvogadasSelecionadas = 'lidiane' | 'alcione' | 'ambas';
+
+export async function buildTemplateContext(
+  clientId: string,
+  tenantId: string,
+  cenario?: Cenario,
+  advogadas: AdvogadasSelecionadas = 'ambas',
+): Promise<TemplateContext> {
   const { data: clientRows } = await db
     .from('clients')
     .select('*')
@@ -389,6 +416,7 @@ export async function buildTemplateContext(clientId: string, tenantId: string, c
     // Escritório
     escritorio: {
       adv1_nome: settings?.advogada_principal_nome ?? '',
+      adv1_cpf: settings?.advogada_principal_cpf ?? '',
       adv1_oab: settings?.advogada_principal_oab ?? '',
       adv1_email: settings?.advogada_principal_email ?? '',
       adv2_nome: settings?.advogada_parceira_nome ?? '',
@@ -416,6 +444,11 @@ export async function buildTemplateContext(clientId: string, tenantId: string, c
 
     // Checkboxes do Termo INSS
     checkbox,
+
+    // Seleção de advogada
+    mostrar_lidiane: advogadas === 'lidiane' || advogadas === 'ambas',
+    mostrar_alcione: advogadas === 'alcione' || advogadas === 'ambas',
+    tem_duas_advogadas: advogadas === 'ambas',
   };
 
   if (!cenario) return baseContext;
