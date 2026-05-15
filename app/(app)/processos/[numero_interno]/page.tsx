@@ -7,6 +7,7 @@ import { maskCPF } from '@/lib/validators/cpf';
 import { labelTipoBeneficio, labelStatusResultado } from '@/lib/processo';
 import { labelEtapa } from '@/lib/pipeline';
 import { MoverEtapaSelect } from '@/components/mover-etapa-select';
+import { AlterarStatusSelect } from '@/components/alterar-status-select';
 import { ListaPrazos } from '@/components/prazos/lista-prazos';
 import { EncerrarProcessoButton } from '@/components/encerrar-processo-button';
 
@@ -200,6 +201,17 @@ export default async function ProcessoPage({ params, searchParams }: Props) {
               <div className="text-sm text-foreground font-medium">{labelEtapa(processo.etapa_pipeline)}</div>
               <MoverEtapaSelect processoId={processo.id} etapaAtual={processo.etapa_pipeline} />
             </div>
+          </div>
+
+          {/* Status do Resultado */}
+          <div className="bg-card rounded-2xl border border-border p-5">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-1">
+              Status do resultado
+            </h2>
+            <p className="text-xs text-muted-foreground mb-4">
+              Registre o resultado atual para atualizar o dashboard e os relatórios.
+            </p>
+            <AlterarStatusSelect processoId={processo.id} statusAtual={processo.status_resultado} />
           </div>
 
           {/* Ações */}
