@@ -40,6 +40,9 @@ export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientI
   const [erroGeracao, setErroGeracao] = useState('');
   const [modalAdvogadaAberto, setModalAdvogadaAberto] = useState(false);
   const [advogadasSelecionadas, setAdvogadasSelecionadas] = useState<AdvogadasSelecionadas>('ambas');
+  const [incluirAssinaturaLidiane, setIncluirAssinaturaLidiane] = useState(true);
+
+  const lidianeSelecionada = advogadasSelecionadas === 'lidiane' || advogadasSelecionadas === 'ambas';
 
   // Alertas dinâmicos por cadeia mínima desmarcada
   const alertasCadeiaMinima: Alerta[] = useMemo(() => {
@@ -77,6 +80,7 @@ export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientI
           cenario: pacote.cenario,
           processoId: processoId ?? undefined,
           advogadas_selecionadas: advogadasSelecionadas,
+          incluir_assinatura_lidiane: incluirAssinaturaLidiane,
         }),
       });
       const data = await res.json();
@@ -230,6 +234,22 @@ export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientI
               </label>
             ))}
           </RadioGroup>
+
+          {lidianeSelecionada && (
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-secondary/40 px-4 py-3">
+              <Checkbox
+                id="incluir-assinatura-lidiane"
+                checked={incluirAssinaturaLidiane}
+                onCheckedChange={(v) => setIncluirAssinaturaLidiane(!!v)}
+                className="mt-0.5 shrink-0"
+              />
+              <div>
+                <p className="text-sm font-medium text-foreground">Incluir assinatura digital da Dra. Lidiane</p>
+                <p className="text-xs text-muted-foreground">Apenas no Termo de Representação INSS</p>
+              </div>
+            </label>
+          )}
+
           <DialogFooter>
             <DialogClose asChild>
               <Button variant="outline" className="rounded-xl">Cancelar</Button>

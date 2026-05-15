@@ -4,14 +4,14 @@ import { buildDocumentPackage } from '@/lib/document-generation/package-builder'
 
 export async function POST(req: Request) {
   const user = await getCurrentUser();
-  const { clientId, templateCodes, cenario, advogadas_selecionadas, processoId } = await req.json();
+  const { clientId, templateCodes, cenario, advogadas_selecionadas, processoId, incluir_assinatura_lidiane } = await req.json();
 
   if (!clientId || !Array.isArray(templateCodes) || templateCodes.length === 0) {
     return NextResponse.json({ error: { code: 'INVALID_INPUT' } }, { status: 400 });
   }
 
   try {
-    const result = await buildDocumentPackage(clientId, templateCodes, user.tenantId, cenario, advogadas_selecionadas ?? 'ambas', processoId ?? undefined);
+    const result = await buildDocumentPackage(clientId, templateCodes, user.tenantId, cenario, advogadas_selecionadas ?? 'ambas', processoId ?? undefined, incluir_assinatura_lidiane !== false);
     return NextResponse.json(result);
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Erro interno';

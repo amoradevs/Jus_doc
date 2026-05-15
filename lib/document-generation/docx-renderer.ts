@@ -4,12 +4,25 @@ import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const expressions = require('angular-expressions');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const ImageModule = require('docxtemplater-image-module-free');
 import type { TemplateContext } from './template-context';
 
 function angularParser(tag: string) {
   if (tag === '.') return { get: (scope: unknown) => scope };
   const expr = expressions.compile(tag.replace(/['']/g, "'").replace(/[""]/g, '"'));
   return { get: (scope: unknown) => expr(scope) };
+}
+
+function makeImageModule() {
+  return new ImageModule({
+    centered: false,
+    getImage: (tagValue: string) => {
+      const imgPath = path.resolve(process.cwd(), tagValue);
+      return fs.readFileSync(imgPath);
+    },
+    getSize: () => [180, 50],
+  });
 }
 
 export async function renderDocxTemplate(
@@ -26,6 +39,7 @@ export async function renderDocxTemplate(
     linebreaks: true,
     parser: angularParser,
     nullGetter: () => '',
+    modules: [makeImageModule()],
   });
 
   doc.render(context);

@@ -50,8 +50,8 @@ function sig2col(esqLinhas, dirLinhas) {
   const makeCell = (linhas) => new TableCell({
     width: { size: CELL_DXA, type: WidthType.DXA },
     borders: CELL_BORDERS,
-    children: linhas.map(text => new Paragraph({
-      children: [new TextRun({ text, font: FONT, size: SZ })],
+    children: linhas.map(item => item instanceof Paragraph ? item : new Paragraph({
+      children: [new TextRun({ text: item, font: FONT, size: SZ })],
       spacing: spacing(SP_NONE, SP_NONE),
       alignment: AlignmentType.LEFT,
     })),
@@ -89,6 +89,13 @@ const pTag = (tag) => new Paragraph({
 // Linha de benefício (sem espaçamento extra entre linhas da lista)
 const pBen = (text) => new Paragraph({
   children: [baseRun(text)],
+  spacing: spacing(SP_NONE, SP_NONE),
+  alignment: AlignmentType.LEFT,
+});
+
+// Parágrafo com tag de imagem docxtemplater (sintaxe {%tag})
+const pImg = (tag) => new Paragraph({
+  children: [new TextRun({ text: tag, font: FONT, size: SZ })],
   spacing: spacing(SP_NONE, SP_NONE),
   alignment: AlignmentType.LEFT,
 });
@@ -166,7 +173,17 @@ const doc = new Document({
       // Ambas: 2 colunas via Table sem bordas visíveis
       pTag('{#tem_duas_advogadas}'),
       sig2col(
-        ['_________________________', '{escritorio.adv1_nome}', 'OAB {escritorio.adv1_oab}'],
+        [
+          // Coluna Lidiane — assinatura digital condicional
+          pTag('{#incluir_assinatura_lidiane}'),
+          pImg('{%escritorio.adv1_assinatura_path}'),
+          pTag('{/incluir_assinatura_lidiane}'),
+          pTag('{^incluir_assinatura_lidiane}'),
+          pTag('_________________________'),
+          pTag('{/incluir_assinatura_lidiane}'),
+          pTag('{escritorio.adv1_nome}'),
+          pTag('OAB {escritorio.adv1_oab}'),
+        ],
         ['_________________________', '{escritorio.adv2_nome}', 'OAB {escritorio.adv2_oab}'],
       ),
       pTag('{/tem_duas_advogadas}'),
@@ -174,7 +191,12 @@ const doc = new Document({
       // Apenas uma
       pTag('{^tem_duas_advogadas}'),
       pTag('{#mostrar_lidiane}'),
+      pTag('{#incluir_assinatura_lidiane}'),
+      pImg('{%escritorio.adv1_assinatura_path}'),
+      pTag('{/incluir_assinatura_lidiane}'),
+      pTag('{^incluir_assinatura_lidiane}'),
       pAssin('_________________________', SP * 4),
+      pTag('{/incluir_assinatura_lidiane}'),
       pAssin('{escritorio.adv1_nome}', 0),
       pAssin('OAB {escritorio.adv1_oab}', 0, SP * 4),
       pTag('{/mostrar_lidiane}'),

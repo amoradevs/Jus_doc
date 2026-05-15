@@ -158,10 +158,11 @@ export type TemplateContext = {
   tem_duas_advogadas: boolean;
   apenas_lidiane: boolean;
   apenas_alcione: boolean;
+  incluir_assinatura_lidiane: boolean;
 
   honorarios: { qtd_salarios: number; qtd_salarios_extenso: string; percentual_padrao: number; percentual_padrao_extenso: string; percentual_recurso: number; percentual_recurso_extenso: string; valor_fixo: string; valor_fixo_extenso: string };
   multa: { qtd_salarios_minimos: number; qtd_salarios_minimos_extenso: string };
-  escritorio: { adv1_nome: string; adv1_cpf: string; adv1_oab: string; adv1_email: string; adv2_nome: string; adv2_oab: string; adv2_cpf: string; adv2_email: string; endereco_logradouro: string; endereco_numero: string; endereco_complemento: string; endereco_bairro: string; endereco_cidade: string; endereco_uf: string; endereco_cep: string; foro_eleito: string };
+  escritorio: { adv1_nome: string; adv1_cpf: string; adv1_oab: string; adv1_email: string; adv1_assinatura_path: string; adv2_nome: string; adv2_oab: string; adv2_cpf: string; adv2_email: string; endereco_logradouro: string; endereco_numero: string; endereco_complemento: string; endereco_bairro: string; endereco_cidade: string; endereco_uf: string; endereco_cep: string; foro_eleito: string };
   doc: { cidade_assinatura: string; dia_assinatura: string; mes_assinatura_extenso: string; mes_assinatura_numero: string; ano_assinatura: string };
   checkbox: Record<string, string>;
 };
@@ -247,6 +248,7 @@ export async function buildTemplateContext(
   cenario?: Cenario,
   advogadas: AdvogadasSelecionadas = 'ambas',
   processoId?: string,
+  incluirAssinaturaLidiane = true,
 ): Promise<TemplateContext> {
   const { data: clientRows } = await db
     .from('clients')
@@ -436,6 +438,7 @@ export async function buildTemplateContext(
       adv1_cpf: settings?.advogada_principal_cpf ?? '',
       adv1_oab: settings?.advogada_principal_oab ?? '',
       adv1_email: settings?.advogada_principal_email ?? '',
+      adv1_assinatura_path: 'templates/assinaturas/lidiane.png',
       adv2_nome: settings?.advogada_parceira_nome ?? '',
       adv2_oab: settings?.advogada_parceira_oab ?? '',
       adv2_cpf: settings?.advogada_parceira_cpf ?? '',
@@ -468,6 +471,7 @@ export async function buildTemplateContext(
     tem_duas_advogadas: advogadas === 'ambas',
     apenas_lidiane: advogadas === 'lidiane',
     apenas_alcione: advogadas === 'alcione',
+    incluir_assinatura_lidiane: incluirAssinaturaLidiane && (advogadas === 'lidiane' || advogadas === 'ambas'),
   };
 
   if (!cenario) return baseContext;

@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
     '/api/geracao': ['./templates/**/*'],
     '/api/contagem-prazo': ['./templates/**/*'],
   },
+  serverExternalPackages: ['docxtemplater-image-module-free'],
 };
 
 export default nextConfig;
