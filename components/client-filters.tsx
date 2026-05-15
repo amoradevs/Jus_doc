@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Search, X } from 'lucide-react';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'Todos' },
@@ -28,7 +29,6 @@ export function ClientFilters() {
 
   const [searchValue, setSearchValue] = useState(searchParam);
 
-  // Sync input when URL changes externally (e.g. back button)
   useEffect(() => {
     setSearchValue(searchParam);
   }, [searchParam]);
@@ -49,27 +49,44 @@ export function ClientFilters() {
   function handleSearchChange(value: string) {
     setSearchValue(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      push({ search: value });
-    }, 400);
+    debounceRef.current = setTimeout(() => push({ search: value }), 400);
+  }
+
+  function clearSearch() {
+    setSearchValue('');
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    push({ search: '' });
   }
 
   return (
     <div className="space-y-3 mb-5">
-      {/* Campo de busca por nome/CPF */}
-      <input
-        type="text"
-        value={searchValue}
-        onChange={(e) => handleSearchChange(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            if (debounceRef.current) clearTimeout(debounceRef.current);
-            push({ search: searchValue });
-          }
-        }}
-        placeholder="Buscar por nome ou CPF…"
-        className="w-full sm:w-80 bg-white border border-border rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-colors"
-      />
+      {/* Campo de busca por nome ou CPF */}
+      <div className="relative w-full sm:w-80">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+        <input
+          type="text"
+          value={searchValue}
+          onChange={(e) => handleSearchChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              if (debounceRef.current) clearTimeout(debounceRef.current);
+              push({ search: searchValue });
+            }
+          }}
+          placeholder="Buscar por nome ou CPF…"
+          className="w-full bg-white border border-border rounded-xl pl-9 pr-9 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-colors"
+        />
+        {searchValue && (
+          <button
+            type="button"
+            onClick={clearSearch}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Limpar busca"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
 
       {/* Filtros e ordenação */}
       <div className="flex flex-wrap items-center gap-2.5">

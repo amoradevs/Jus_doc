@@ -118,22 +118,34 @@ export default async function ClientesPage({ searchParams }: Props) {
   const noMatches = clientIdsFromStatus !== null && clientIdsFromStatus.length === 0;
 
   let lista: Client[] = [];
+  let totalCount = 0;
   const processoMap = new Map<string, Processo[]>();
 
   if (!noMatches) {
     let query = db
       .from('clients')
-      .select('id, nome_completo, cpf, criado_em, endereco_cidade, endereco_uf')
+      .select('id, nome_completo, cpf, criado_em, endereco_cidade, endereco_uf', { count: 'exact' })
       .eq('tenant_id', user.tenantId)
-      .is('deletado_em', null)
-      .range(offset, offset + limit - 1);
+      .is('deletado_em', null);
 
-    if (search) {
-      const term = unmaskCPF(search);
-      const orFilter = term.length > 0
-        ? `nome_completo.ilike.%${search}%,cpf.ilike.%${term}%`
-        : `nome_completo.ilike.%${search}%`;
-      query = query.or(orFilter);
+    if (search.trim()) {
+      const s = search.trim();
+      const digits = unmaskCPF(s); // somente dígitos do termo
+      const words = s.split(/\s+/).filter(Boolean);
+
+      if (digits.length > 0 && words.length === 1) {
+        // Entrada parece ser CPF (dígitos isolados, sem espaço) → OR entre nome e CPF
+        query = query.or(`nome_completo.ilike.%${s}%,cpf.ilike.%${digits}%`);
+      } else {
+        // Texto com uma ou mais palavras → cada palavra deve aparecer no nome (AND implícito)
+        for (const word of words) {
+          query = query.ilike('nome_completo', `%${word}%`);
+        }
+        // Se o texto também tiver dígitos (ex: "maria 930"), inclui busca por CPF
+        if (digits.length > 0) {
+          query = query.or(`cpf.ilike.%${digits}%`);
+        }
+      }
     }
 
     if (clientIdsFromStatus !== null) {
@@ -146,8 +158,9 @@ export default async function ClientesPage({ searchParams }: Props) {
     else if (sort === 'antigos') query = query.order('criado_em', { ascending: true });
     else query = query.order('criado_em', { ascending: false });
 
-    const { data: rows } = await query;
+    const { data: rows, count } = await query.range(offset, offset + limit - 1);
     lista = (rows ?? []) as Client[];
+    totalCount = count ?? 0;
 
     // Busca processos dos clientes listados e monta mapa cliente_id → processos
     if (lista.length > 0) {
@@ -183,9 +196,30 @@ export default async function ClientesPage({ searchParams }: Props) {
         <ClientFilters />
       </Suspense>
 
+      {/* Contagem de resultados */}
+      {(search.trim() || status || cidade) && !noMatches && lista.length > 0 && (
+        <p className="text-xs text-muted-foreground mb-3">
+          {totalCount === 1 ? '1 cliente encontrado' : `${totalCount} clientes encontrados`}
+          {search.trim() && (
+            <> para <span className="font-medium text-foreground">&quot;{search.trim()}&quot;</span></>
+          )}
+        </p>
+      )}
+
       {lista.length === 0 ? (
         <div className="bg-card rounded-2xl border border-border p-14 text-center">
-          <p className="text-muted-foreground text-sm">Nenhum cliente encontrado.</p>
+          {search.trim() ? (
+            <>
+              <p className="text-sm font-medium text-foreground mb-1">
+                Nenhum cliente encontrado para &quot;{search.trim()}&quot;
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Tente buscar por outra parte do nome ou pelo CPF sem formatação.
+              </p>
+            </>
+          ) : (
+            <p className="text-muted-foreground text-sm">Nenhum cliente encontrado.</p>
+          )}
         </div>
       ) : (
         <div className="bg-card rounded-2xl border border-border overflow-hidden">
