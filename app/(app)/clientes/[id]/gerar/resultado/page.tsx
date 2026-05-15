@@ -278,12 +278,21 @@ export default function ResultadoPage() {
 
   function gerar() {
     setStatus('loading');
-    // Lê processoId do URL no momento da chamada (evita problema de hydration com useSearchParams)
-    const pid = new URLSearchParams(window.location.search).get('processoId') ?? undefined;
+    // Lê parâmetros do URL no momento da chamada (evita problema de hydration com useSearchParams)
+    const params = new URLSearchParams(window.location.search);
+    const pid = params.get('processoId') ?? undefined;
+    const advogadas = params.get('advogadas') ?? 'ambas';
+    const assinatura = params.get('assinatura') !== '0';
     fetch('/api/geracao', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ clientId: id, templateCodes: codigos.split(',').filter(Boolean), processoId: pid }),
+      body: JSON.stringify({
+        clientId: id,
+        templateCodes: codigos.split(',').filter(Boolean),
+        processoId: pid,
+        advogadas_selecionadas: advogadas,
+        incluir_assinatura_lidiane: assinatura,
+      }),
     })
       .then((r) => r.json())
       .then((data) => {

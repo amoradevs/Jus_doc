@@ -5,6 +5,12 @@ import { useRouter } from 'next/navigation';
 import { Search, X, FileText, Check, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+  DialogDescription, DialogFooter, DialogClose,
+} from '@/components/ui/dialog';
 import { WizardCenario } from './wizard-cenario';
 
 type Template = {
@@ -16,6 +22,14 @@ type Template = {
 };
 
 type Props = { clientId: string; templates?: Template[]; processoId?: string };
+
+type AdvogadasSelecionadas = 'ambas' | 'lidiane' | 'alcione';
+
+const OPCOES_ADVOGADA: { value: AdvogadasSelecionadas; label: string; sub?: string }[] = [
+  { value: 'ambas',   label: 'Ambas',          sub: 'Lidiane e Alcione' },
+  { value: 'lidiane', label: 'Apenas Lidiane' },
+  { value: 'alcione', label: 'Apenas Alcione' },
+];
 
 const FAMILIA_LABEL: Record<string, string> = {
   contrato: 'Contrato',
@@ -30,6 +44,14 @@ export function GerarModo({ clientId, templates = [], processoId }: Props) {
   const [busca, setBusca] = useState('');
   const [selected, setSelected] = useState<string[]>([]);
   const [loading, setLoading] = useState<'direto' | 'revisar' | null>(null);
+
+  // Modal de seleção de advogada
+  const [modalAberto, setModalAberto] = useState(false);
+  const [pendingModo, setPendingModo] = useState<'direto' | 'revisar'>('direto');
+  const [advogadasSelecionadas, setAdvogadasSelecionadas] = useState<AdvogadasSelecionadas>('ambas');
+  const [incluirAssinaturaLidiane, setIncluirAssinaturaLidiane] = useState(true);
+
+  const lidianeSelecionada = advogadasSelecionadas === 'lidiane' || advogadasSelecionadas === 'ambas';
 
   const emBusca = busca.trim().length > 0;
 
@@ -53,9 +75,19 @@ export function GerarModo({ clientId, templates = [], processoId }: Props) {
 
   function continuar(modo: 'direto' | 'revisar') {
     if (selected.length === 0 || loading) return;
-    setLoading(modo);
+    setPendingModo(modo);
+    setModalAberto(true);
+  }
+
+  function confirmar() {
+    setModalAberto(false);
+    setLoading(pendingModo);
     const pid = processoId ? `&processoId=${processoId}` : '';
-    router.push(`/clientes/${clientId}/gerar/campos?codigos=${selected.join(',')}&modo=${modo}${pid}`);
+    const adv = `&advogadas=${advogadasSelecionadas}`;
+    const ass = `&assinatura=${incluirAssinaturaLidiane ? '1' : '0'}`;
+    router.push(
+      `/clientes/${clientId}/gerar/campos?codigos=${selected.join(',')}&modo=${pendingModo}${pid}${adv}${ass}`,
+    );
   }
 
   return (
@@ -139,9 +171,7 @@ export function GerarModo({ clientId, templates = [], processoId }: Props) {
                   disabled={selected.length === 0 || !!loading}
                   className="gap-2 rounded-xl"
                 >
-                  {loading === 'revisar'
-                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    : null}
+                  {loading === 'revisar' && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   Revisar antes
                 </Button>
                 <Button
@@ -149,9 +179,7 @@ export function GerarModo({ clientId, templates = [], processoId }: Props) {
                   disabled={selected.length === 0 || !!loading}
                   className="gap-2 rounded-xl"
                 >
-                  {loading === 'direto'
-                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    : null}
+                  {loading === 'direto' && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   Gerar Documento
                 </Button>
               </div>
@@ -162,6 +190,66 @@ export function GerarModo({ clientId, templates = [], processoId }: Props) {
         /* ── Wizard (padrão quando busca está vazia) ── */
         <WizardCenario clientId={clientId} processoId={processoId} />
       )}
+
+      {/* ── Modal de seleção de advogada ── */}
+      <Dialog open={modalAberto} onOpenChange={setModalAberto}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Selecionar advogada(s)</DialogTitle>
+            <DialogDescription>
+              Escolha quem irá assinar os documentos deste pacote.
+            </DialogDescription>
+          </DialogHeader>
+
+          <RadioGroup
+            value={advogadasSelecionadas}
+            onValueChange={(v) => setAdvogadasSelecionadas(v as AdvogadasSelecionadas)}
+            className="gap-2 py-1"
+          >
+            {OPCOES_ADVOGADA.map((op) => (
+              <label
+                key={op.value}
+                htmlFor={`adv-busca-${op.value}`}
+                className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition-colors ${
+                  advogadasSelecionadas === op.value
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:bg-accent/30'
+                }`}
+              >
+                <RadioGroupItem id={`adv-busca-${op.value}`} value={op.value} />
+                <div>
+                  <p className="text-sm font-medium text-foreground">{op.label}</p>
+                  {op.sub && <p className="text-xs text-muted-foreground">{op.sub}</p>}
+                </div>
+              </label>
+            ))}
+          </RadioGroup>
+
+          {lidianeSelecionada && (
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-secondary/40 px-4 py-3">
+              <Checkbox
+                id="incluir-assinatura-busca"
+                checked={incluirAssinaturaLidiane}
+                onCheckedChange={(v) => setIncluirAssinaturaLidiane(!!v)}
+                className="mt-0.5 shrink-0"
+              />
+              <div>
+                <p className="text-sm font-medium text-foreground">Incluir assinatura digital da Dra. Lidiane</p>
+                <p className="text-xs text-muted-foreground">Apenas no Termo de Representação INSS</p>
+              </div>
+            </label>
+          )}
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" className="rounded-xl">Cancelar</Button>
+            </DialogClose>
+            <Button className="rounded-xl" onClick={confirmar}>
+              Confirmar e gerar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );
