@@ -8,10 +8,14 @@
  * DocxTemplater tags embutidas para uso em produção
  */
 
-import { Document, Paragraph, TextRun, AlignmentType, Packer, Table, TableRow, TableCell, WidthType, BorderStyle } from 'docx';
-import { writeFileSync, mkdirSync } from 'fs';
+import {
+  Document, Paragraph, TextRun, AlignmentType, Packer,
+  Table, TableRow, TableCell, WidthType, BorderStyle, TableLayoutType,
+} from 'docx';
+import { writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import PizZip from 'pizzip';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT = resolve(__dirname, '../templates/14_termo_representacao_inss.docx');
@@ -29,13 +33,37 @@ const LINE = 276;
 const SP = 80;
 const SP_NONE = 0;
 
-const NO_BORDER = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
-const noBorders = { top: NO_BORDER, bottom: NO_BORDER, left: NO_BORDER, right: NO_BORDER };
-
 const baseRun = (text, extra = {}) => new TextRun({ text, font: FONT, size: SZ, ...extra });
 const boldRun = (text, sz = SZ) => new TextRun({ text, font: FONT, size: sz, bold: true });
 
 const spacing = (before = SP, after = SP) => ({ before, after, line: LINE, lineRule: 'auto' });
+
+// ── Tabela 2 colunas sem bordas (NIL + FFFFFF) ──────────────────────────────
+const NO_BORDER = { style: BorderStyle.NIL, size: 0, color: 'FFFFFF' };
+const CELL_BORDERS = { top: NO_BORDER, bottom: NO_BORDER, left: NO_BORDER, right: NO_BORDER };
+
+// A4 com margens 1,5cm sup/inf e 2cm laterais: 11906 - 1134 - 1134 = 9638 twips
+const CELL_DXA = 4819;
+const TABLE_DXA = 9638;
+
+function sig2col(esqLinhas, dirLinhas) {
+  const makeCell = (linhas) => new TableCell({
+    width: { size: CELL_DXA, type: WidthType.DXA },
+    borders: CELL_BORDERS,
+    children: linhas.map(text => new Paragraph({
+      children: [new TextRun({ text, font: FONT, size: SZ })],
+      spacing: spacing(SP_NONE, SP_NONE),
+      alignment: AlignmentType.LEFT,
+    })),
+  });
+  return new Table({
+    width: { size: TABLE_DXA, type: WidthType.DXA },
+    layout: TableLayoutType.FIXED,
+    rows: [new TableRow({
+      children: [makeCell(esqLinhas), makeCell(dirLinhas)],
+    })],
+  });
+}
 
 // Parágrafo de corpo (justificado)
 const p = (runs, spBefore = SP, spAfter = SP) => new Paragraph({
@@ -121,13 +149,13 @@ const doc = new Document({
 
       // ── Assinatura do segurado ───────────────────────────────────────────
       p('{doc.cidade_assinatura}, {doc.dia_assinatura}/{doc.mes_assinatura_numero}/{doc.ano_assinatura}'),
-      pAssin('_________________________', SP * 3),
-      pAssin('Assinatura do(a) Representado(a)', 0),
+      pAssin('_________________________', SP * 4),
+      pAssin('Assinatura do(a) Representado(a)', 0, SP * 2),
 
       // ── Termo de Responsabilidade ────────────────────────────────────────
       new Paragraph({
         children: [boldRun('TERMO DE RESPONSABILIDADE', SZ)],
-        spacing: { before: SP * 2, after: SP * 2, line: LINE, lineRule: 'auto' },
+        spacing: { before: SP * 2, after: SP * 4, line: LINE, lineRule: 'auto' },
         alignment: AlignmentType.LEFT,
       }),
       p('Por este Termo de Responsabilidade, comprometo-me a comunicar ao INSS qualquer evento que possa anular esta Procuração, no prazo de trinta dias, a contar da data que o mesmo ocorra, principalmente o óbito do segurado / pensionista, mediante apresentação da respectiva certidão. Estou ciente de que o descumprimento do compromisso ora assumido, além de obrigar a devolução de importâncias recebidas indevidamente, quando for o caso, sujeitar-me-á às penalidades previstas nos arts. 171 e 299, ambos do Código Penal.', SP, SP),
@@ -135,58 +163,32 @@ const doc = new Document({
       // ── Assinatura do procurador (condicional) ────────────────────────────
       p('{doc.cidade_assinatura}, {doc.dia_assinatura}/{doc.mes_assinatura_numero}/{doc.ano_assinatura}'),
 
-      // Ambas: tabela 2 colunas sem bordas
+      // Ambas: 2 colunas via Table sem bordas visíveis
       pTag('{#tem_duas_advogadas}'),
-      new Table({
-        width: { size: 100, type: WidthType.PERCENTAGE },
-        borders: { top: NO_BORDER, bottom: NO_BORDER, left: NO_BORDER, right: NO_BORDER, insideH: NO_BORDER, insideV: NO_BORDER },
-        rows: [
-          new TableRow({ children: [
-            new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, borders: noBorders, children: [
-              new Paragraph({ children: [baseRun('_________________________')], spacing: { before: SP * 3, after: 0, line: LINE, lineRule: 'auto' } }),
-            ]}),
-            new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, borders: noBorders, children: [
-              new Paragraph({ children: [baseRun('_________________________')], spacing: { before: SP * 3, after: 0, line: LINE, lineRule: 'auto' } }),
-            ]}),
-          ]}),
-          new TableRow({ children: [
-            new TableCell({ borders: noBorders, children: [
-              new Paragraph({ children: [baseRun('{escritorio.adv1_nome}')], spacing: { before: 0, after: 0, line: LINE, lineRule: 'auto' } }),
-            ]}),
-            new TableCell({ borders: noBorders, children: [
-              new Paragraph({ children: [baseRun('{escritorio.adv2_nome}')], spacing: { before: 0, after: 0, line: LINE, lineRule: 'auto' } }),
-            ]}),
-          ]}),
-          new TableRow({ children: [
-            new TableCell({ borders: noBorders, children: [
-              new Paragraph({ children: [baseRun('OAB {escritorio.adv1_oab}')], spacing: { before: 0, after: SP * 2, line: LINE, lineRule: 'auto' } }),
-            ]}),
-            new TableCell({ borders: noBorders, children: [
-              new Paragraph({ children: [baseRun('OAB {escritorio.adv2_oab}')], spacing: { before: 0, after: SP * 2, line: LINE, lineRule: 'auto' } }),
-            ]}),
-          ]}),
-        ],
-      }),
+      sig2col(
+        ['_________________________', '{escritorio.adv1_nome}', 'OAB {escritorio.adv1_oab}'],
+        ['_________________________', '{escritorio.adv2_nome}', 'OAB {escritorio.adv2_oab}'],
+      ),
       pTag('{/tem_duas_advogadas}'),
 
       // Apenas uma
       pTag('{^tem_duas_advogadas}'),
       pTag('{#mostrar_lidiane}'),
-      pAssin('_________________________', SP * 3),
+      pAssin('_________________________', SP * 4),
       pAssin('{escritorio.adv1_nome}', 0),
-      pAssin('OAB {escritorio.adv1_oab}', 0, SP * 2),
+      pAssin('OAB {escritorio.adv1_oab}', 0, SP * 4),
       pTag('{/mostrar_lidiane}'),
       pTag('{#mostrar_alcione}'),
-      pAssin('_________________________', SP * 3),
+      pAssin('_________________________', SP * 4),
       pAssin('{escritorio.adv2_nome}', 0),
-      pAssin('OAB {escritorio.adv2_oab}', 0, SP * 2),
+      pAssin('OAB {escritorio.adv2_oab}', 0, SP * 4),
       pTag('{/mostrar_alcione}'),
       pTag('{/tem_duas_advogadas}'),
 
       // ── Código Penal (compactado, 9pt) ────────────────────────────────────
       new Paragraph({
         children: [boldRun('CÓDIGO PENAL', SZ)],
-        spacing: { before: SP, after: SP, line: LINE, lineRule: 'auto' },
+        spacing: { before: SP * 2, after: SP, line: LINE, lineRule: 'auto' },
         alignment: AlignmentType.LEFT,
       }),
       new Paragraph({
@@ -203,6 +205,30 @@ const doc = new Document({
   }],
 });
 
-const buf = await Packer.toBuffer(doc);
+const NO_TBL_BORDERS =
+  '<w:tblBorders>' +
+  '<w:top w:val="none" w:sz="0" w:space="0" w:color="auto"/>' +
+  '<w:left w:val="none" w:sz="0" w:space="0" w:color="auto"/>' +
+  '<w:bottom w:val="none" w:sz="0" w:space="0" w:color="auto"/>' +
+  '<w:right w:val="none" w:sz="0" w:space="0" w:color="auto"/>' +
+  '<w:insideH w:val="none" w:sz="0" w:space="0" w:color="auto"/>' +
+  '<w:insideV w:val="none" w:sz="0" w:space="0" w:color="auto"/>' +
+  '</w:tblBorders>';
+
+function fixDocx(buf) {
+  const zip = new PizZip(buf);
+  let xml = zip.file('word/document.xml').asText();
+  xml = xml.replace(/<w:tblGrid>[\s\S]*?<\/w:tblGrid>/g,
+    '<w:tblGrid><w:gridCol w:w="4819"/><w:gridCol w:w="4819"/></w:tblGrid>');
+  xml = xml.replace(/<w:tblW[^>]*>/g, '<w:tblW w:type="dxa" w:w="9638"/>');
+  xml = xml.replace(/<w:tcW[^>]*>/g,  '<w:tcW w:type="dxa" w:w="4819"/>');
+  xml = xml.replace(/<w:tcBorders>[\s\S]*?<\/w:tcBorders>/g, '');
+  xml = xml.replace(/<w:tblBorders>[\s\S]*?<\/w:tblBorders>/g, '');
+  xml = xml.replace(/<\/w:tblPr>/g, NO_TBL_BORDERS + '</w:tblPr>');
+  zip.file('word/document.xml', xml);
+  return zip.generate({ type: 'nodebuffer', compression: 'DEFLATE' });
+}
+
+const buf = fixDocx(await Packer.toBuffer(doc));
 writeFileSync(OUT, buf);
 console.log('✓ Gerado:', OUT);

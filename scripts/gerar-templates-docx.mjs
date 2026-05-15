@@ -7,7 +7,7 @@
 import {
   Document, Packer, Paragraph, TextRun,
   AlignmentType, Table, TableRow, TableCell,
-  WidthType, BorderStyle,
+  WidthType, BorderStyle, TableLayoutType,
 } from 'docx';
 import Docxtemplater from 'docxtemplater';
 import PizZip from 'pizzip';
@@ -107,36 +107,36 @@ function blocoTag(tag) { // tag docxtemplater em parágrafo próprio
   });
 }
 
-// ─── Helper de tabela 2 colunas sem bordas (assinaturas) ─────────────────────
-// Usa WidthType.DXA (twips absolutos) para garantir que o Word respeite as larguras.
+// ─── Helper de tabela 2 colunas sem bordas visíveis ──────────────────────────
+// BorderStyle.NIL + color FFFFFF: explicitamente sem borda E cor branca —
+// invisível mesmo que Word renderize pelo estilo padrão.
+// WidthType.PERCENTAGE: Word distribui espaço corretamente sem fixar twips.
+// Retorna Table — usar com ch.push(sig2col(...))
 
-function sig2col(esqLinhas, dirLinhas) {
-  const noBorder = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
-  const borders = {
-    top: noBorder, bottom: noBorder,
-    left: noBorder, right: noBorder,
-    insideH: noBorder, insideV: noBorder,
-  };
+const NO_BORDER = { style: BorderStyle.NIL, size: 0, color: 'FFFFFF' };
+const CELL_BORDERS = {
+  top: NO_BORDER, bottom: NO_BORDER,
+  left: NO_BORDER, right: NO_BORDER,
+};
 
-  const makeCell = (linhas, width) => new TableCell({
-    width: { size: width, type: WidthType.DXA },
-    borders,
-    children: linhas.map(l =>
-      typeof l === 'string'
-        ? pl(l)
-        : l // já é um Paragraph
-    ),
+// Largura do conteúdo A4 com margens 2cm: 11906 - 1134 - 1134 = 9638 twips
+// Cada célula = 9638 / 2 = 4819 twips (DXA evita o bug "50%" do docx lib)
+const CELL_DXA = 4819;
+const TABLE_DXA = 9638;
+
+function sig2col(esqLinhas, dirLinhas, spAfter = 80) {
+  const makeCell = (linhas) => new TableCell({
+    width: { size: CELL_DXA, type: WidthType.DXA },
+    borders: CELL_BORDERS,
+    children: linhas.map(l => typeof l === 'string'
+      ? new Paragraph({ children: [t(l)], alignment: AlignmentType.LEFT, spacing: { after: spAfter } })
+      : l),
   });
-
   return new Table({
-    width: { size: COL_W * 2 + GAP_W, type: WidthType.DXA },
-    borders,
+    width: { size: TABLE_DXA, type: WidthType.DXA },
+    layout: TableLayoutType.FIXED,
     rows: [new TableRow({
-      children: [
-        makeCell(esqLinhas, COL_W),
-        makeCell([''], GAP_W),
-        makeCell(dirLinhas, COL_W),
-      ],
+      children: [makeCell(esqLinhas), makeCell(dirLinhas)],
     })],
   });
 }
@@ -360,6 +360,12 @@ function qualificacaoContratante(ch) {
 // ─── Assinaturas contrato (bloco E — 3 variantes) ────────────────────────────
 
 function assinaturasContrato(ch) {
+  const pTeste = () => new Paragraph({
+    children: [t('Testemunhas:')],
+    alignment: AlignmentType.LEFT,
+    spacing: { before: 0, after: 240 }, // 1 linha de respiro antes da tabela
+  });
+
   // ── Adulto capaz ──
   ch.push(blocoTag('{#bloco_assinatura_adulto}'));
   ch.push(pl(LINHA_PLENA));
@@ -367,8 +373,8 @@ function assinaturasContrato(ch) {
   ch.push(pl('Contratante'));
   ch.push(esp(300));
   sigContratadas(ch);
-  ch.push(esp(300));
-  ch.push(pl('Testemunhas:'));
+  ch.push(esp(480)); // 2 linhas entre Contratadas e Testemunhas
+  ch.push(pTeste());
   ch.push(sig2col(
     [LINHA_COL, 'Nome:', 'CPF:'],
     [LINHA_COL, 'Nome:', 'CPF:'],
@@ -382,8 +388,8 @@ function assinaturasContrato(ch) {
   ch.push(pl('Contratante'));
   ch.push(esp(300));
   sigContratadas(ch);
-  ch.push(esp(300));
-  ch.push(pl('Testemunhas:'));
+  ch.push(esp(480)); // 2 linhas entre Contratadas e Testemunhas
+  ch.push(pTeste());
   ch.push(sig2col(
     [
       LINHA_COL,
@@ -413,8 +419,8 @@ function assinaturasContrato(ch) {
   ch.push(plr(t('CPF: '), v('{representante.cpf}')));
   ch.push(esp(300));
   sigContratadas(ch);
-  ch.push(esp(200));
-  ch.push(pl('Testemunhas:'));
+  ch.push(esp(480)); // 2 linhas entre Contratadas e Testemunhas
+  ch.push(pTeste());
   ch.push(sig2col([LINHA_COL], [LINHA_COL]));
   ch.push(blocoTag('{/bloco_assinatura_menor}'));
 }
@@ -596,7 +602,7 @@ function buildContrato() {
     v('{doc.mes_assinatura_extenso}'), t(' de '),
     v('{doc.ano_assinatura}'), t('.'),
   ));
-  ch.push(esp(400));
+  ch.push(esp(720)); // 3 linhas de respiro antes da assinatura do Contratante
 
   // Assinaturas (3 variantes)
   assinaturasContrato(ch);
@@ -790,6 +796,39 @@ function buildProcuracao() {
   });
 }
 
+// ─── Pós-processamento: remove bordas da tabela ───────────────────────────────
+// Replica exatamente o XML que o Word grava ao clicar "Sem bordas" na UI:
+// tblBorders com none+auto em todas as posições, e NENHUM tcBorders nas células.
+// Word ignora val="nil" em tcBorders (bug no macOS), mas respeita none+auto no tblPr.
+
+const NO_TBL_BORDERS =
+  '<w:tblBorders>' +
+  '<w:top w:val="none" w:sz="0" w:space="0" w:color="auto"/>' +
+  '<w:left w:val="none" w:sz="0" w:space="0" w:color="auto"/>' +
+  '<w:bottom w:val="none" w:sz="0" w:space="0" w:color="auto"/>' +
+  '<w:right w:val="none" w:sz="0" w:space="0" w:color="auto"/>' +
+  '<w:insideH w:val="none" w:sz="0" w:space="0" w:color="auto"/>' +
+  '<w:insideV w:val="none" w:sz="0" w:space="0" w:color="auto"/>' +
+  '</w:tblBorders>';
+
+function fixDocx(buf) {
+  const zip = new PizZip(buf);
+  let xml = zip.file('word/document.xml').asText();
+  // Corrigir tblGrid: a lib gera w="100" (placeholder) — Google Docs usa o grid para larguras
+  // 4819 twips = metade da área de conteúdo A4 (9638 / 2)
+  xml = xml.replace(/<w:tblGrid>[\s\S]*?<\/w:tblGrid>/g,
+    '<w:tblGrid><w:gridCol w:w="4819"/><w:gridCol w:w="4819"/></w:tblGrid>');
+  // Corrigir larguras da tabela e células em DXA absoluto
+  xml = xml.replace(/<w:tblW[^>]*>/g, '<w:tblW w:type="dxa" w:w="9638"/>');
+  xml = xml.replace(/<w:tcW[^>]*>/g,  '<w:tcW w:type="dxa" w:w="4819"/>');
+  // Remover tcBorders; substituir tblBorders pelo formato nativo do Word
+  xml = xml.replace(/<w:tcBorders>[\s\S]*?<\/w:tcBorders>/g, '');
+  xml = xml.replace(/<w:tblBorders>[\s\S]*?<\/w:tblBorders>/g, '');
+  xml = xml.replace(/<\/w:tblPr>/g, NO_TBL_BORDERS + '</w:tblPr>');
+  zip.file('word/document.xml', xml);
+  return zip.generate({ type: 'nodebuffer', compression: 'DEFLATE' });
+}
+
 // ─── Renderizar com docxtemplater ─────────────────────────────────────────────
 
 function renderizar(templateBuffer, contexto) {
@@ -848,8 +887,8 @@ console.log('Gerando templates DOCX de produção...\n');
 
 const contratoDoc  = buildContrato();
 const procuracaoDoc = buildProcuracao();
-const contratoBuf  = await Packer.toBuffer(contratoDoc);
-const procuracaoBuf = await Packer.toBuffer(procuracaoDoc);
+const contratoBuf  = fixDocx(await Packer.toBuffer(contratoDoc));
+const procuracaoBuf = fixDocx(await Packer.toBuffer(procuracaoDoc));
 
 // Gravar nos templates de produção (01-08)
 const TEMPLATES_DIR = path.join(__dirname, '../templates');

@@ -156,6 +156,8 @@ export type TemplateContext = {
   mostrar_lidiane: boolean;
   mostrar_alcione: boolean;
   tem_duas_advogadas: boolean;
+  apenas_lidiane: boolean;
+  apenas_alcione: boolean;
 
   honorarios: { qtd_salarios: number; qtd_salarios_extenso: string; percentual_padrao: number; percentual_padrao_extenso: string; percentual_recurso: number; percentual_recurso_extenso: string; valor_fixo: string; valor_fixo_extenso: string };
   multa: { qtd_salarios_minimos: number; qtd_salarios_minimos_extenso: string };
