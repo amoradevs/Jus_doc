@@ -54,7 +54,7 @@ export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientI
     return [{
       nivel: 'aviso' as const,
       codigo: 'CADEIA_MINIMA_DESMARCADA',
-      mensagem: `Você desmarcou ${desmarcados.length} ${plural} da cadeia mínima. Confirme se não são necessários antes de gerar.`,
+      mensagem: `Você desmarcou ${desmarcados.length} ${plural} essencial${desmarcados.length > 1 ? 'is' : ''}. Confirme se não são necessários antes de gerar.`,
     }];
   }, [pacote.codigos, pacote.fonte, codigosAtivos]);
 
@@ -153,13 +153,13 @@ export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientI
                     </span>
                     {isCadeiaMinima && (
                       <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
-                        cadeia mínima
+                        essencial
                       </span>
                     )}
                   </div>
                   {alertaCadeiaMinima && (
                     <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-400">
-                      Documento da cadeia mínima desmarcado — confirme se não é necessário.
+                      Documento essencial desmarcado — confirme se não é necessário.
                     </p>
                   )}
                 </div>
