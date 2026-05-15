@@ -175,20 +175,7 @@ export default async function ClientesPage({ searchParams }: Props) {
         </div>
       </div>
 
-      {/* Busca por nome/CPF */}
-      <form method="GET" className="mb-4">
-        <input
-          name="search"
-          defaultValue={search}
-          placeholder="Buscar por nome ou CPF…"
-          className="w-full sm:w-80 bg-white border border-border rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-colors"
-        />
-        {status && <input type="hidden" name="status" value={status} />}
-        {cidade && <input type="hidden" name="cidade" value={cidade} />}
-        {sort && <input type="hidden" name="sort" value={sort} />}
-      </form>
-
-      {/* Filtros e ordenação */}
+      {/* Busca + filtros (cliente) */}
       <Suspense>
         <ClientFilters />
       </Suspense>
