@@ -28,7 +28,7 @@ export const clientSchema = z.object({
   nome_completo: z.string().min(3, 'Nome obrigatório'),
   nacionalidade: z.string().min(2, 'Nacionalidade obrigatória'),
   genero: z.enum(['M', 'F'], { message: 'Selecione o gênero' }),
-  estado_civil: z.enum(['solteiro', 'casado', 'separado', 'divorciado', 'viuvo', 'uniao_estavel'], { message: 'Selecione o estado civil' }),
+  estado_civil: z.enum(['solteiro', 'casado', 'separado', 'divorciado', 'viuvo', 'uniao_estavel', 'companheiro'], { message: 'Selecione o estado civil' }),
   data_nascimento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida'),
   cpf: z.string().refine((v) => isValidCPF(v), 'CPF inválido'),
   rg: z.string().min(3).optional(),

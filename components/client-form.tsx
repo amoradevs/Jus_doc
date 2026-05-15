@@ -193,11 +193,25 @@ export function ClientForm({ mode, clientId, defaultValues }: Props) {
                 <SelectItem value="divorciado">Divorciado(a)</SelectItem>
                 <SelectItem value="viuvo">Viúvo(a)</SelectItem>
                 <SelectItem value="uniao_estavel">União estável</SelectItem>
+                <SelectItem value="companheiro">Companheiro(a)</SelectItem>
               </SelectContent>
             </Select>
             {errors.estado_civil && <p className="text-xs text-destructive">{errors.estado_civil.message}</p>}
           </div>
-          {field('nacionalidade', 'Nacionalidade')}
+          <div className="space-y-1">
+            <Label htmlFor="nacionalidade">Nacionalidade</Label>
+            <Select
+              onValueChange={(v) => setValue('nacionalidade', v)}
+              defaultValue={defaultValues?.nacionalidade ?? 'brasileiro'}
+            >
+              <SelectTrigger id="nacionalidade"><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="brasileiro">Brasileiro(a)</SelectItem>
+                <SelectItem value="outro">Outro(a)</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.nacionalidade && <p className="text-xs text-destructive">{errors.nacionalidade.message}</p>}
+          </div>
           {field('nome_mae', 'Nome da mãe')}
           {field('nome_pai', 'Nome do pai (opcional)')}
           {field('telefone', 'WhatsApp / telefone', 'tel')}

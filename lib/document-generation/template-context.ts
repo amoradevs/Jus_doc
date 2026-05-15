@@ -20,6 +20,7 @@ const ESTADO_CIVIL_NEUTRO: Record<string, string> = {
   divorciado:    'divorciado(a)',
   viuvo:         'viúvo(a)',
   uniao_estavel: 'em união estável',
+  companheiro:   'companheiro(a)',
 };
 
 function calcularIdade(dataIso: string): number {
