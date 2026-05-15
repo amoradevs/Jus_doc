@@ -464,6 +464,8 @@ export async function buildTemplateContext(
     mostrar_lidiane: advogadas === 'lidiane' || advogadas === 'ambas',
     mostrar_alcione: advogadas === 'alcione' || advogadas === 'ambas',
     tem_duas_advogadas: advogadas === 'ambas',
+    apenas_lidiane: advogadas === 'lidiane',
+    apenas_alcione: advogadas === 'alcione',
   };
 
   if (!cenario) return baseContext;

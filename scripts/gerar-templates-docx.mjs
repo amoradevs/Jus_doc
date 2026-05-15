@@ -141,6 +141,30 @@ function sig2col(esqLinhas, dirLinhas) {
   });
 }
 
+// ─── Bloco condicional de assinatura das contratadas ─────────────────────────
+// Insere {#tem_duas_advogadas} → tabela 2 colunas; {^} → linha única larga.
+
+function sigContratadas(ch) {
+  ch.push(blocoTag('{#tem_duas_advogadas}'));
+  ch.push(sig2col(
+    [LINHA_COL, '{escritorio.adv1_nome}', 'Contratada'],
+    [LINHA_COL, '{escritorio.adv2_nome}', 'Contratada'],
+  ));
+  ch.push(blocoTag('{/tem_duas_advogadas}'));
+  ch.push(blocoTag('{^tem_duas_advogadas}'));
+  ch.push(blocoTag('{#mostrar_lidiane}'));
+  ch.push(pl(LINHA_PLENA));
+  ch.push(plr(v('{escritorio.adv1_nome}')));
+  ch.push(pl('Contratada'));
+  ch.push(blocoTag('{/mostrar_lidiane}'));
+  ch.push(blocoTag('{#mostrar_alcione}'));
+  ch.push(pl(LINHA_PLENA));
+  ch.push(plr(v('{escritorio.adv2_nome}')));
+  ch.push(pl('Contratada'));
+  ch.push(blocoTag('{/mostrar_alcione}'));
+  ch.push(blocoTag('{/tem_duas_advogadas}'));
+}
+
 // ─── Contextos mock ───────────────────────────────────────────────────────────
 
 const ESCRITORIO = {
@@ -197,6 +221,11 @@ const CTX_ADULTO_BPC = {
   bloco_assinatura_adulto:             true,
   bloco_assinatura_a_rogo:             false,
   bloco_assinatura_menor:              false,
+  tem_duas_advogadas: true,
+  mostrar_lidiane:    true,
+  mostrar_alcione:    true,
+  apenas_lidiane:     false,
+  apenas_alcione:     false,
   cliente: {
     nome_completo: 'MARIA SILVA SANTOS',
     nacionalidade: 'brasileiro(a)',
@@ -333,16 +362,11 @@ function qualificacaoContratante(ch) {
 function assinaturasContrato(ch) {
   // ── Adulto capaz ──
   ch.push(blocoTag('{#bloco_assinatura_adulto}'));
-  // Contratante (linha única, largura plena)
   ch.push(pl(LINHA_PLENA));
   ch.push(plr(v('{cliente.nome_completo}')));
   ch.push(pl('Contratante'));
   ch.push(esp(300));
-  // Contratadas (2 colunas)
-  ch.push(sig2col(
-    [LINHA_COL, '{escritorio.adv1_nome}', 'Contratada'],
-    [LINHA_COL, '{escritorio.adv2_nome}', 'Contratada'],
-  ));
+  sigContratadas(ch);
   ch.push(esp(300));
   ch.push(pl('Testemunhas:'));
   ch.push(sig2col(
@@ -357,10 +381,7 @@ function assinaturasContrato(ch) {
   ch.push(plr(v('{cliente.nome_completo}')));
   ch.push(pl('Contratante'));
   ch.push(esp(300));
-  ch.push(sig2col(
-    [LINHA_COL, '{escritorio.adv1_nome}', 'Contratada'],
-    [LINHA_COL, '{escritorio.adv2_nome}', 'Contratada'],
-  ));
+  sigContratadas(ch);
   ch.push(esp(300));
   ch.push(pl('Testemunhas:'));
   ch.push(sig2col(
@@ -391,10 +412,7 @@ function assinaturasContrato(ch) {
   ch.push(plr(t('RG: '), v('{representante.rg}')));
   ch.push(plr(t('CPF: '), v('{representante.cpf}')));
   ch.push(esp(300));
-  ch.push(sig2col(
-    [LINHA_COL, '{escritorio.adv1_nome}', 'Contratada'],
-    [LINHA_COL, '{escritorio.adv2_nome}', 'Contratada'],
-  ));
+  sigContratadas(ch);
   ch.push(esp(200));
   ch.push(pl('Testemunhas:'));
   ch.push(sig2col([LINHA_COL], [LINHA_COL]));
@@ -414,11 +432,12 @@ function buildContrato() {
 
   ch.push(esp(100));
 
-  // CONTRATADA
+  // CONTRATADA — Ambas
+  ch.push(blocoTag('{#tem_duas_advogadas}'));
   ch.push(pj(
     b('CONTRATADA: '),
     v('{escritorio.adv1_nome}'), t(', Advogada, inscrita na Ordem dos Advogados do Brasil, sob nº '),
-    v('{escritorio.adv1_oab}'), t(' Email: '), v('{escritorio.adv1_email}'),
+    v('{escritorio.adv1_oab}'), t(', Email: '), v('{escritorio.adv1_email}'),
     t(' e '),
     v('{escritorio.adv2_nome}'), t(', inscrita na OAB sob nº '), v('{escritorio.adv2_oab}'),
     t(', com endereço na '), v('{escritorio.endereco_logradouro}'), t(', Nº '), v('{escritorio.endereco_numero}'),
@@ -428,6 +447,35 @@ function buildContrato() {
     t(', CEP: '), v('{escritorio.endereco_cep}'),
     t(', e-mail: '), v('{escritorio.adv2_email}'), t(';'),
   ));
+  ch.push(blocoTag('{/tem_duas_advogadas}'));
+  // CONTRATADA — Apenas Lidiane
+  ch.push(blocoTag('{^tem_duas_advogadas}'));
+  ch.push(blocoTag('{#mostrar_lidiane}'));
+  ch.push(pj(
+    b('CONTRATADA: '),
+    v('{escritorio.adv1_nome}'), t(', Advogada, inscrita na Ordem dos Advogados do Brasil, sob nº '),
+    v('{escritorio.adv1_oab}'), t(', Email: '), v('{escritorio.adv1_email}'),
+    t(', com endereço na '), v('{escritorio.endereco_logradouro}'), t(', Nº '), v('{escritorio.endereco_numero}'),
+    t(', '), v('{escritorio.endereco_complemento}'),
+    t(', Bairro: '), v('{escritorio.endereco_bairro}'),
+    t(', '), v('{escritorio.endereco_cidade}'), t(' – '), v('{escritorio.endereco_uf}'),
+    t(', CEP: '), v('{escritorio.endereco_cep}'), t(';'),
+  ));
+  ch.push(blocoTag('{/mostrar_lidiane}'));
+  // CONTRATADA — Apenas Alcione
+  ch.push(blocoTag('{#mostrar_alcione}'));
+  ch.push(pj(
+    b('CONTRATADA: '),
+    v('{escritorio.adv2_nome}'), t(', Advogada, inscrita na Ordem dos Advogados do Brasil, sob nº '),
+    v('{escritorio.adv2_oab}'), t(', Email: '), v('{escritorio.adv2_email}'),
+    t(', com endereço na '), v('{escritorio.endereco_logradouro}'), t(', Nº '), v('{escritorio.endereco_numero}'),
+    t(', '), v('{escritorio.endereco_complemento}'),
+    t(', Bairro: '), v('{escritorio.endereco_bairro}'),
+    t(', '), v('{escritorio.endereco_cidade}'), t(' – '), v('{escritorio.endereco_uf}'),
+    t(', CEP: '), v('{escritorio.endereco_cep}'), t(';'),
+  ));
+  ch.push(blocoTag('{/mostrar_alcione}'));
+  ch.push(blocoTag('{/tem_duas_advogadas}'));
 
   ch.push(esp(100));
   ch.push(pj('Tem, entre si, justo e acertado o presente Contrato de Prestação de Serviços Advocatícios, que será regido pelas cláusulas e condições descritas no presente;'));
@@ -568,8 +616,17 @@ function buildProcuracao() {
 
   const PODERES = 'conferindo-lhes amplos poderes para o foro em geral, com cláusula "ad-judicia et extra", podendo atuar em qualquer Juízo, Instância ou Tribunal, podendo propor contra quem de direito, as ações competentes e defendê-lo(a) nas contrárias, seguindo umas e outras, até final decisão, usando os recursos legais e acompanhando-os, conferindo-lhes ainda, poderes especiais para receber citação inicial, confessar, e conhecer a procedência do pedido, desistir, renunciar ao direito sobre o que se funda a ação, transigir, firmar compromissos ou acordos, receber e dar quitações, podendo agir em Juízo ou fora dele, assim como substabelecer esta a outrem, com ou sem reservas de iguais poderes, para agir em conjunto ou separadamente com o substabelecido.';
 
-  // Sufixo com advogadas + objeto + poderes (igual para os 3 perfis)
+  // Sufixo com advogadas + objeto + poderes — condicional por seleção de advogada
+  const enderecoAdv = [
+    v('{escritorio.endereco_logradouro}'), t(', Nº '), v('{escritorio.endereco_numero}'),
+    t(', '), v('{escritorio.endereco_complemento}'),
+    t(', Bairro: '), v('{escritorio.endereco_bairro}'),
+    t(', '), v('{escritorio.endereco_cidade}'), t(' – '), v('{escritorio.endereco_uf}'),
+    t(', CEP: '), v('{escritorio.endereco_cep}'),
+  ];
   const runsAdvogadasPoderes = [
+    // Ambas
+    v('{#tem_duas_advogadas}'),
     t('constitui suas bastante procuradoras as Advogadas '),
     v('{escritorio.adv1_nome}'),
     t(' (email: '), v('{escritorio.adv1_email}'), t('), OAB '), v('{escritorio.adv1_oab}'),
@@ -577,15 +634,33 @@ function buildProcuracao() {
     v('{escritorio.adv2_nome}'),
     t(' (email: '), v('{escritorio.adv2_email}'), t('), OAB '), v('{escritorio.adv2_oab}'),
     t(', ambas com endereço na '),
-    v('{escritorio.endereco_logradouro}'), t(', Nº '), v('{escritorio.endereco_numero}'),
-    t(', '), v('{escritorio.endereco_complemento}'),
-    t(', Bairro: '), v('{escritorio.endereco_bairro}'),
-    t(', '), v('{escritorio.endereco_cidade}'), t(' – '), v('{escritorio.endereco_uf}'),
-    t(', CEP: '), v('{escritorio.endereco_cep}'),
+    ...enderecoAdv,
     t(', conferindo-lhes poderes específicos para '),
     v('{processo.objeto_procuracao}'),
-    t(', '),
-    t(PODERES),
+    t(', '), t(PODERES),
+    v('{/tem_duas_advogadas}'),
+    // Apenas Lidiane
+    v('{#apenas_lidiane}'),
+    t('constitui sua bastante procuradora a Advogada '),
+    v('{escritorio.adv1_nome}'),
+    t(' (email: '), v('{escritorio.adv1_email}'), t('), OAB '), v('{escritorio.adv1_oab}'),
+    t(', com endereço na '),
+    ...enderecoAdv,
+    t(', conferindo-lhe poderes específicos para '),
+    v('{processo.objeto_procuracao}'),
+    t(', '), t(PODERES),
+    v('{/apenas_lidiane}'),
+    // Apenas Alcione
+    v('{#apenas_alcione}'),
+    t('constitui sua bastante procuradora a Advogada '),
+    v('{escritorio.adv2_nome}'),
+    t(' (email: '), v('{escritorio.adv2_email}'), t('), OAB '), v('{escritorio.adv2_oab}'),
+    t(', com endereço na '),
+    ...enderecoAdv,
+    t(', conferindo-lhe poderes específicos para '),
+    v('{processo.objeto_procuracao}'),
+    t(', '), t(PODERES),
+    v('{/apenas_alcione}'),
   ];
 
   ch.push(titulo('PROCURAÇÃO "AD JUDICIA E ET EXTRA"'));
@@ -776,20 +851,52 @@ const procuracaoDoc = buildProcuracao();
 const contratoBuf  = await Packer.toBuffer(contratoDoc);
 const procuracaoBuf = await Packer.toBuffer(procuracaoDoc);
 
+// Gravar nos templates de produção (01-08)
+const TEMPLATES_DIR = path.join(__dirname, '../templates');
+const templatesProd = [
+  ['01_contrato_bpc_adulto.docx',       contratoBuf],
+  ['02_contrato_bpc_a_rogo.docx',       contratoBuf],
+  ['03_contrato_bpc_menor_16.docx',     contratoBuf],
+  ['04_contrato_bpc_menor_16_a_18.docx',contratoBuf],
+  ['05_procuracao_bpc_adulto.docx',     procuracaoBuf],
+  ['06_procuracao_bpc_menor_16.docx',   procuracaoBuf],
+  ['07_procuracao_bpc_16_a_18.docx',    procuracaoBuf],
+  ['08_procuracao_mandado_seguranca.docx', procuracaoBuf],
+];
+for (const [nome, buf] of templatesProd) {
+  fs.writeFileSync(path.join(TEMPLATES_DIR, nome), buf);
+}
+console.log('✅ Templates de produção gravados em templates/ (01–08)\n');
+
+// Cópia na pasta de saída local (validação visual)
 fs.writeFileSync(path.join(OUTPUT_DIR, '01_contrato_honorarios.docx'), contratoBuf);
 fs.writeFileSync(path.join(OUTPUT_DIR, '02_procuracao.docx'), procuracaoBuf);
-console.log('✅ Templates de produção: 01_contrato_honorarios.docx, 02_procuracao.docx\n');
 
 console.log('Renderizando variantes de teste...');
 
+const CTX_ADULTO_BPC_LIDIANE = {
+  ...CTX_ADULTO_BPC,
+  tem_duas_advogadas: false, mostrar_lidiane: true, mostrar_alcione: false,
+  apenas_lidiane: true, apenas_alcione: false,
+};
+const CTX_ADULTO_BPC_ALCIONE = {
+  ...CTX_ADULTO_BPC,
+  tem_duas_advogadas: false, mostrar_lidiane: false, mostrar_alcione: true,
+  apenas_lidiane: false, apenas_alcione: true,
+};
+
 const cenarios = [
-  { nome: '01_contrato_ADULTO_BPC',  buf: contratoBuf,   ctx: CTX_ADULTO_BPC },
-  { nome: '01_contrato_MENOR_BPC',   buf: contratoBuf,   ctx: CTX_MENOR_BPC  },
-  { nome: '01_contrato_AROGO_BPC',   buf: contratoBuf,   ctx: CTX_AROGO_BPC  },
-  { nome: '01_contrato_ADULTO_MS',   buf: contratoBuf,   ctx: CTX_ADULTO_MS  },
-  { nome: '02_procuracao_ADULTO_BPC',buf: procuracaoBuf, ctx: CTX_ADULTO_BPC },
-  { nome: '02_procuracao_MENOR_BPC', buf: procuracaoBuf, ctx: CTX_MENOR_BPC  },
-  { nome: '02_procuracao_ADULTO_MS', buf: procuracaoBuf, ctx: CTX_ADULTO_MS  },
+  { nome: '01_contrato_ADULTO_BPC',          buf: contratoBuf,   ctx: CTX_ADULTO_BPC },
+  { nome: '01_contrato_ADULTO_BPC_LIDIANE',  buf: contratoBuf,   ctx: CTX_ADULTO_BPC_LIDIANE },
+  { nome: '01_contrato_ADULTO_BPC_ALCIONE',  buf: contratoBuf,   ctx: CTX_ADULTO_BPC_ALCIONE },
+  { nome: '01_contrato_MENOR_BPC',           buf: contratoBuf,   ctx: CTX_MENOR_BPC  },
+  { nome: '01_contrato_AROGO_BPC',           buf: contratoBuf,   ctx: CTX_AROGO_BPC  },
+  { nome: '01_contrato_ADULTO_MS',           buf: contratoBuf,   ctx: CTX_ADULTO_MS  },
+  { nome: '02_procuracao_ADULTO_BPC',        buf: procuracaoBuf, ctx: CTX_ADULTO_BPC },
+  { nome: '02_procuracao_ADULTO_BPC_LIDIANE',buf: procuracaoBuf, ctx: CTX_ADULTO_BPC_LIDIANE },
+  { nome: '02_procuracao_ADULTO_BPC_ALCIONE',buf: procuracaoBuf, ctx: CTX_ADULTO_BPC_ALCIONE },
+  { nome: '02_procuracao_MENOR_BPC',         buf: procuracaoBuf, ctx: CTX_MENOR_BPC  },
+  { nome: '02_procuracao_ADULTO_MS',         buf: procuracaoBuf, ctx: CTX_ADULTO_MS  },
 ];
 
 let totalOk = 0;
