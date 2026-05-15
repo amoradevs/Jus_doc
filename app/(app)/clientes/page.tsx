@@ -130,7 +130,10 @@ export default async function ClientesPage({ searchParams }: Props) {
 
     if (search) {
       const term = unmaskCPF(search);
-      query = query.or(`nome_completo.ilike.%${search}%,cpf.ilike.%${term}%`);
+      const orFilter = term.length > 0
+        ? `nome_completo.ilike.%${search}%,cpf.ilike.%${term}%`
+        : `nome_completo.ilike.%${search}%`;
+      query = query.or(orFilter);
     }
 
     if (clientIdsFromStatus !== null) {
