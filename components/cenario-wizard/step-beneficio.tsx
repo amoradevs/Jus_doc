@@ -1,7 +1,7 @@
 'use client';
 
 import { RadioGroup as RadioGroupPrimitive } from 'radix-ui';
-import { Briefcase, Scale, Shield } from 'lucide-react';
+import { Briefcase, Scale, Shield, HeartHandshake } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import type { BeneficioId } from '@/lib/document-generation/cadeia-documental';
@@ -24,6 +24,12 @@ const OPCOES: { value: BeneficioId; label: string; descricao: string; Icon: Reac
     label: 'Mandado de Segurança',
     descricao: 'Ação judicial para combater ato ilegal ou abusivo de autoridade — sem processo administrativo prévio.',
     Icon: Scale,
+  },
+  {
+    value: 'pensao_morte',
+    label: 'Pensão por Morte',
+    descricao: 'Benefício previdenciário devido aos dependentes do segurado falecido.',
+    Icon: HeartHandshake,
   },
 ];
 

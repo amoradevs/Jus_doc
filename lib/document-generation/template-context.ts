@@ -54,6 +54,30 @@ const MESES = [
   'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
 ];
 
+// ─── Pensão por morte: relação com instituidor e qualidade de representação ────
+
+const RELACAO_INSTITUIDOR_DESCRICAO: Record<string, string> = {
+  conjuge:                   'cônjuge supérstite',
+  companheiro:               'companheiro(a)',
+  filho_menor:               'filho(a) menor',
+  filho_invalido_maior:      'filho(a) inválido(a)',
+  filho_universitario_ate_24:'filho(a) universitário(a)',
+  pais:                      'pai/mãe',
+  irmao_menor:               'irmão/irmã menor',
+  irmao_invalido:            'irmão/irmã inválido(a)',
+};
+
+const QUALIDADE_REPRESENTACAO_DESCRICAO: Record<string, string> = {
+  tutor_nato:                  'tutor(a) nato(a)',
+  tutor_legal:                 'tutor(a) legal',
+  curador:                     'curador(a)',
+  responsavel_termo_guarda:    'responsável por termo de guarda',
+  administrador_provisorio:    'administrador(a) provisório(a)',
+  procurador:                  'procurador(a)',
+};
+
+const TODAS_QUALIDADES_REPRESENTACAO = Object.keys(QUALIDADE_REPRESENTACAO_DESCRICAO);
+
 // ─── Tipo de benefício → descrições e checkboxes ──────────────────────────────
 
 const TIPO_BENEFICIO_MAP: Record<string, { descricao: string; objeto: string; marcados: string[] }> = {
@@ -142,7 +166,17 @@ export type TemplateContext = {
   separacao: { data: string; recebe_pensao: boolean; valor_pensao: string };
   empresa: { cnpj: string; razao_social: string; cnae: string; ramo: string; data_abertura: string; data_inicio_inatividade: string };
   testemunhas: Array<{ tipo_label: string; nome_completo: string; cpf: string; rg: string; data_nascimento: string }>;
-  processo: { tipo_beneficio_descricao: string; objeto_procuracao: string };
+  processo: { tipo_beneficio_descricao: string; objeto_procuracao: string; eh_pensao_morte: boolean };
+  instituidor: { nome_completo: string; data_obito: string };
+  dependente_titular: { relacao_com_instituidor_descricao: string };
+  representacao_legal: {
+    representante_nome: string;
+    representante_cpf: string;
+    representante_rg: string;
+    qualidade_descricao: string;
+    beneficiarios_representados: Array<{ nome: string; cpf: string }>;
+  } | null;
+  checkbox_qualidade_representacao: Record<string, string>;
   // Blocos de honorários (exatamente um ativo por geração)
   bloco_honorarios_padrao: boolean;          // BPC adulto, Aposentadoria, qualquer adulto
   bloco_honorarios_menor: boolean;           // qualquer benefício + perfil menor
@@ -181,6 +215,11 @@ const BENEFICIO_ID_MAP: Record<string, { descricao: string; objeto: string; marc
     objeto: 'ingressar com Pedido de BENEFÍCIO DE APOSENTADORIA POR IDADE EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
     marcados: ['aposentadoria_idade'],
   },
+  pensao_morte: {
+    descricao: 'BENEFÍCIO DE PENSÃO POR MORTE PREVIDENCIÁRIA',
+    objeto: 'ingressar com Pedido de BENEFÍCIO DE PENSÃO POR MORTE EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
+    marcados: ['pensao_morte'],
+  },
   mandado_seguranca: {
     descricao: 'IMPETRAÇÃO DE MANDADO DE SEGURANÇA',
     objeto: 'impetrar MANDADO DE SEGURANÇA em face do INSS (Instituto Nacional do Seguro Social)',
@@ -198,6 +237,7 @@ export function getCenarioContextOverrides(cenario: Cenario): Partial<TemplateCo
   const ehMenor = PERFIS_MENORES_ID.has(cenario.perfil);
   const ehARogo = cenario.perfil === 'a_rogo';
   const ehMS = cenario.beneficio === 'mandado_seguranca';
+  const ehPensaoMorte = cenario.beneficio === 'pensao_morte';
 
   const bloco_contratante_menor = ehMenor;
   const bloco_contratante_a_rogo = !ehMenor && ehARogo;
@@ -220,6 +260,11 @@ export function getCenarioContextOverrides(cenario: Cenario): Partial<TemplateCo
     checkboxCenario[opcao] = benInfo.marcados.includes(opcao) ? '☑' : '☐';
   }
 
+  const checkboxQualidade: Record<string, string> = {};
+  for (const q of TODAS_QUALIDADES_REPRESENTACAO) {
+    checkboxQualidade[q] = '☐';
+  }
+
   return {
     bloco_contratante_maior_capaz,
     bloco_contratante_a_rogo,
@@ -234,8 +279,13 @@ export function getCenarioContextOverrides(cenario: Cenario): Partial<TemplateCo
     processo: {
       tipo_beneficio_descricao: benInfo.descricao,
       objeto_procuracao: benInfo.objeto,
+      eh_pensao_morte: ehPensaoMorte,
     },
     checkbox: checkboxCenario,
+    instituidor: { nome_completo: '', data_obito: '' },
+    dependente_titular: { relacao_com_instituidor_descricao: '' },
+    representacao_legal: null,
+    checkbox_qualidade_representacao: checkboxQualidade,
   };
 }
 
@@ -280,6 +330,14 @@ export async function buildTemplateContext(
   const bloco_contratante_a_rogo = !ehMenor && !sabeAssinar;
 
   let tipoBeneficio = '';
+  type InstituidorRow = { nome_completo: string; data_obito: string };
+  type DependenteRow = { relacao_com_instituidor: string };
+  type RepLegalRow = { representante_nome: string; representante_cpf: string; representante_rg: string | null; qualidade: string; beneficiarios_representados: Array<{ nome: string; cpf?: string }> };
+
+  let instituidorRow: InstituidorRow | null = null;
+  let dependenteTitularRow: DependenteRow | null = null;
+  let repLegalRow: RepLegalRow | null = null;
+
   if (processoId) {
     const { data: processoRows } = await db
       .from('processos')
@@ -287,7 +345,22 @@ export async function buildTemplateContext(
       .eq('id', processoId)
       .limit(1);
     tipoBeneficio = processoRows?.[0]?.tipo_beneficio ?? '';
+
+    const [{ data: instituidores }, { data: dependentes }, { data: repLegal }] = await Promise.all([
+      tipoBeneficio === 'pensao_morte'
+        ? db.from('instituidores').select('nome_completo, data_obito').eq('processo_id', processoId).is('archived_at', null).limit(1)
+        : Promise.resolve({ data: [] }),
+      tipoBeneficio === 'pensao_morte'
+        ? db.from('dependentes_habilitados').select('relacao_com_instituidor').eq('processo_id', processoId).eq('e_titular_no_sistema', true).is('archived_at', null).limit(1)
+        : Promise.resolve({ data: [] }),
+      db.from('representacoes_legais').select('representante_nome, representante_cpf, representante_rg, qualidade, beneficiarios_representados').eq('processo_id', processoId).is('archived_at', null).limit(1),
+    ]);
+
+    instituidorRow = (instituidores as InstituidorRow[] | null)?.[0] ?? null;
+    dependenteTitularRow = (dependentes as DependenteRow[] | null)?.[0] ?? null;
+    repLegalRow = (repLegal as RepLegalRow[] | null)?.[0] ?? null;
   }
+
   const tipoInfo = TIPO_BENEFICIO_MAP[tipoBeneficio] ?? { descricao: '', objeto: '', marcados: [] };
   const bloco_paragrafos_recurso = tipoBeneficio !== 'mandado_seguranca';
 
@@ -414,8 +487,40 @@ export async function buildTemplateContext(
     // Processo
     processo: {
       tipo_beneficio_descricao: tipoInfo.descricao,
-      objeto_procuracao: tipoInfo.objeto,
+      objeto_procuracao: (tipoBeneficio === 'pensao_morte' && instituidorRow?.nome_completo)
+        ? `ingressar com Pedido de BENEFÍCIO DE PENSÃO POR MORTE em decorrência do óbito de ${instituidorRow.nome_completo}, EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)`
+        : tipoInfo.objeto,
+      eh_pensao_morte: tipoBeneficio === 'pensao_morte',
     },
+
+    // Pensão por morte
+    instituidor: {
+      nome_completo: instituidorRow?.nome_completo ?? '',
+      data_obito: formatarData(instituidorRow?.data_obito ?? ''),
+    },
+    dependente_titular: {
+      relacao_com_instituidor_descricao:
+        RELACAO_INSTITUIDOR_DESCRICAO[dependenteTitularRow?.relacao_com_instituidor ?? ''] ?? '',
+    },
+    representacao_legal: repLegalRow
+      ? {
+          representante_nome: repLegalRow.representante_nome,
+          representante_cpf: formatarCPF(repLegalRow.representante_cpf),
+          representante_rg: repLegalRow.representante_rg ?? '',
+          qualidade_descricao:
+            QUALIDADE_REPRESENTACAO_DESCRICAO[repLegalRow.qualidade] ?? repLegalRow.qualidade,
+          beneficiarios_representados: (repLegalRow.beneficiarios_representados ?? []).map(
+            (b) => ({ nome: b.nome ?? '', cpf: formatarCPF(b.cpf ?? '') }),
+          ),
+        }
+      : null,
+    checkbox_qualidade_representacao: (() => {
+      const m: Record<string, string> = {};
+      for (const q of TODAS_QUALIDADES_REPRESENTACAO) {
+        m[q] = repLegalRow?.qualidade === q ? '☑' : '☐';
+      }
+      return m;
+    })(),
 
     // Honorários
     honorarios: {

@@ -7,7 +7,7 @@ import { buildTemplateContext } from './template-context';
 import type { AdvogadasSelecionadas } from './template-context';
 import type { Cenario } from './cadeia-documental';
 import { renderDocxTemplate } from './docx-renderer';
-import { convertDocxToPdf } from './pdf-converter';
+import { convertDocxToPdf, isPdfConverterAvailable } from './pdf-converter';
 import { renderPdfOverlay } from './pdf-overlay';
 
 const storage = createClient(
@@ -57,24 +57,38 @@ export async function buildDocumentPackage(
     .in('codigo', templateCodes);
 
   const zip = new JSZip();
-  const docs: Array<{ codigo: string; nome: string; nome_arquivo: string; buffer: Buffer; docxBuffer: Buffer | null }> = [];
+  const docs: Array<{ codigo: string; nome: string; nome_arquivo: string; buffer: Buffer; docxBuffer: Buffer | null; contentType: string }> = [];
+
+  const usarPdf = isPdfConverterAvailable();
 
   for (const template of templates ?? []) {
-    let pdfBuffer: Buffer;
+    let fileBuffer: Buffer;
     let docxBuffer: Buffer | null = null;
+    let extensao: string;
+    let contentType: string;
 
     if (template.formato === 'docx') {
       const templateBuffer = await getTemplateBuffer(template);
       docxBuffer = await renderDocxTemplate(templateBuffer, context);
-      pdfBuffer = await convertDocxToPdf(docxBuffer);
+      if (usarPdf) {
+        fileBuffer = await convertDocxToPdf(docxBuffer);
+        extensao = 'pdf';
+        contentType = 'application/pdf';
+      } else {
+        fileBuffer = docxBuffer;
+        extensao = 'docx';
+        contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      }
     } else {
       const slug = path.basename(template.caminho_arquivo, '.pdf');
-      pdfBuffer = await renderPdfOverlay(slug, context);
+      fileBuffer = await renderPdfOverlay(slug, context);
+      extensao = 'pdf';
+      contentType = 'application/pdf';
     }
 
-    const nomeArquivo = `${clientNameNorm}_${template.codigo}_${normalizeName(template.nome)}_${dateStr}.pdf`;
-    zip.file(nomeArquivo, pdfBuffer);
-    docs.push({ codigo: template.codigo, nome: template.nome, nome_arquivo: nomeArquivo, buffer: pdfBuffer, docxBuffer });
+    const nomeArquivo = `${clientNameNorm}_${template.codigo}_${normalizeName(template.nome)}_${dateStr}.${extensao}`;
+    zip.file(nomeArquivo, fileBuffer);
+    docs.push({ codigo: template.codigo, nome: template.nome, nome_arquivo: nomeArquivo, buffer: fileBuffer, docxBuffer, contentType });
   }
 
   const zipBuffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
@@ -107,7 +121,7 @@ export async function buildDocumentPackage(
     const docPath = `${tenantId}/${clientId}/${pkg.id}/${doc.nome_arquivo}`;
     await db.storage
       .from(process.env.SUPABASE_STORAGE_BUCKET!)
-      .upload(docPath, doc.buffer, { contentType: 'application/pdf' });
+      .upload(docPath, doc.buffer, { contentType: doc.contentType });
 
     if (doc.docxBuffer) {
       const docxPath = docPath.replace(/\.pdf$/, '.docx');

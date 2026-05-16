@@ -32,6 +32,7 @@ const LINE = 276;
 // 4pt = 80 twips
 const SP = 80;
 const SP_NONE = 0;
+const SP_SM = 40;   // 2pt
 
 const baseRun = (text, extra = {}) => new TextRun({ text, font: FONT, size: SZ, ...extra });
 const boldRun = (text, sz = SZ) => new TextRun({ text, font: FONT, size: sz, bold: true });
@@ -207,7 +208,7 @@ const doc = new Document({
       pTag('{/mostrar_alcione}'),
       pTag('{/tem_duas_advogadas}'),
 
-      // ── Código Penal (compactado, 9pt) ────────────────────────────────────
+      // ── Código Penal (itálico, 9pt) ───────────────────────────────────────
       new Paragraph({
         children: [boldRun('CÓDIGO PENAL', SZ)],
         spacing: { before: SP * 2, after: SP, line: LINE, lineRule: 'auto' },
@@ -215,9 +216,20 @@ const doc = new Document({
       }),
       new Paragraph({
         children: [new TextRun({
-          text: 'Art. 171. Obter, para si ou para outrem, vantagem ilícita, em prejuízo alheio, induzindo ou manter alguém em erro, mediante artifício, ardil ou qualquer outro meio fraudulento. Art. 299. Omitir, em documento público ou particular, declaração que devia constar, ou nele inserir ou fazer inserir declaração falsa ou diversa da que devia ser escrita, com o fim de prejudicar direito, criar, obrigação ou alterar a verdade sobre fato juridicamente relevante.',
+          text: 'Art. 171 - Obter, para si ou para outrem, vantagem ilícita, em prejuízo alheio, induzindo ou mantendo alguém em erro, mediante artifício, ardil, ou qualquer outro meio fraudulento.',
           font: FONT,
           size: SZ_CP,
+          italics: true,
+        })],
+        spacing: spacing(SP_NONE, SP_SM),
+        alignment: AlignmentType.JUSTIFIED,
+      }),
+      new Paragraph({
+        children: [new TextRun({
+          text: 'Art. 299 – Omitir, em documento público ou particular, declaração que devia constar, ou nele inserir ou fazer inserir declaração falsa ou diversa da que devia ser escrita, com o fim de prejudicar direito, criar, obrigação ou alterar a verdade sobre fato juridicamente relevante.',
+          font: FONT,
+          size: SZ_CP,
+          italics: true,
         })],
         spacing: spacing(SP_NONE, SP_NONE),
         alignment: AlignmentType.JUSTIFIED,

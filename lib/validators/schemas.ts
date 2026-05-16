@@ -83,6 +83,98 @@ export const imovelSchema = z.object({
   proprietario_nome: z.string().min(3),
 });
 
+// ── Frente 3: Pensão por Morte ────────────────────────────────────────────────
+
+export const instituidorSchema = z.object({
+  processo_id: z.string().uuid(),
+  nome_completo: z.string().min(3, 'Nome obrigatório'),
+  cpf: z.string().optional(),
+  rg: z.string().optional(),
+  data_nascimento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida').optional().or(z.literal('')),
+  data_obito: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data do óbito obrigatória'),
+  qualidade_previdenciaria: z.enum([
+    'segurado_ativo',
+    'aposentado',
+    'pensionista',
+    'segurado_em_periodo_graca',
+  ], { message: 'Selecione a qualidade previdenciária' }),
+  numero_beneficio_origem: z.string().optional(),
+  ultima_remuneracao: z.coerce.number().positive().optional(),
+  observacoes: z.string().optional(),
+});
+
+export type InstituidorInput = z.infer<typeof instituidorSchema>;
+
+export const dependenteHabilitadoSchema = z.object({
+  processo_id: z.string().uuid(),
+  cliente_id: z.string().uuid().optional(),
+  nome_completo: z.string().min(3, 'Nome obrigatório'),
+  cpf: z.string().optional(),
+  rg: z.string().optional(),
+  data_nascimento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data de nascimento obrigatória'),
+  relacao_com_instituidor: z.enum([
+    'conjuge',
+    'companheiro',
+    'filho_menor',
+    'filho_invalido_maior',
+    'filho_universitario_ate_24',
+    'pais',
+    'irmao_menor',
+    'irmao_invalido',
+  ], { message: 'Selecione a relação com o instituidor' }),
+  cota_parte_percentual: z.coerce.number().min(0).max(100).optional(),
+  e_titular_no_sistema: z.boolean().default(false),
+  observacoes: z.string().optional(),
+});
+
+export type DependenteHabilitadoInput = z.infer<typeof dependenteHabilitadoSchema>;
+
+export const documentoProcessoSchema = z.object({
+  processo_id: z.string().uuid(),
+  tipo: z.enum([
+    'certidao_obito',
+    'rg_instituidor',
+    'comprovante_dependencia',
+    'certidao_casamento',
+    'certidao_nascimento_filho',
+    'comprovante_uniao_estavel',
+    'laudo_pericial_invalidez',
+    'declaracao_dependencia_economica',
+    'outro',
+  ], { message: 'Tipo de documento inválido' }),
+  nome_arquivo: z.string().min(1, 'Nome do arquivo obrigatório'),
+  storage_path: z.string().min(1, 'Caminho no storage obrigatório'),
+  obrigatorio: z.boolean().default(false),
+  observacoes: z.string().optional(),
+});
+
+export type DocumentoProcessoInput = z.infer<typeof documentoProcessoSchema>;
+
+const beneficiarioRepresentadoSchema = z.object({
+  nome: z.string().min(3),
+  cpf: z.string().optional(),
+});
+
+export const representacaoLegalSchema = z.object({
+  processo_id: z.string().uuid(),
+  representante_nome: z.string().min(3, 'Nome do representante obrigatório'),
+  representante_cpf: z.string().refine(isValidCPF, 'CPF inválido'),
+  representante_rg: z.string().optional(),
+  qualidade: z.enum([
+    'tutor_nato',
+    'tutor_legal',
+    'curador',
+    'responsavel_termo_guarda',
+    'administrador_provisorio',
+    'procurador',
+  ], { message: 'Selecione a qualidade do representante' }),
+  beneficiarios_representados: z.array(beneficiarioRepresentadoSchema).min(1, 'Informe pelo menos um beneficiário representado').max(4),
+  documento_comprobatorio_tipo: z.string().optional(),
+  documento_comprobatorio_numero: z.string().optional(),
+});
+
+export type RepresentacaoLegalInput = z.infer<typeof representacaoLegalSchema>;
+
 export const processoSchema = z.object({
   tipo_beneficio: z.string().min(1, 'Selecione o tipo de benefício'),
   status_resultado: z.string().min(1, 'Selecione o status'),

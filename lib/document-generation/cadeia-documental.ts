@@ -3,7 +3,8 @@
 export type BeneficioId =
   | 'bpc'
   | 'aposentadoria_idade'
-  | 'mandado_seguranca';
+  | 'mandado_seguranca'
+  | 'pensao_morte';
 
 export type PerfilId =
   | 'adulto_capaz'
@@ -15,7 +16,8 @@ export type PerfilId =
 export type GatilhoId =
   | 'imovel_terceiro'
   | 'mei_inativo'
-  | 'separado_de_fato';
+  | 'separado_de_fato'
+  | 'tem_representacao_legal';
 
 export type NivelAlerta = 'erro' | 'aviso' | 'info';
 
@@ -70,7 +72,7 @@ export const CATALOGO_TEMPLATES: TemplateMetadata[] = [
     codigo: '01',
     categoria: 'contrato',
     nome: 'Contrato de Honorários',
-    beneficios: ['bpc', 'aposentadoria_idade', 'mandado_seguranca'],
+    beneficios: ['bpc', 'aposentadoria_idade', 'mandado_seguranca', 'pensao_morte'],
     perfis: [],
     gatilhos: [],
     obrigatorio: true,
@@ -80,7 +82,7 @@ export const CATALOGO_TEMPLATES: TemplateMetadata[] = [
     codigo: '02',
     categoria: 'procuracao',
     nome: 'Procuração',
-    beneficios: ['bpc', 'aposentadoria_idade', 'mandado_seguranca'],
+    beneficios: ['bpc', 'aposentadoria_idade', 'mandado_seguranca', 'pensao_morte'],
     perfis: [],
     gatilhos: [],
     obrigatorio: true,
@@ -91,7 +93,7 @@ export const CATALOGO_TEMPLATES: TemplateMetadata[] = [
     codigo: '05',
     categoria: 'termo',
     nome: 'Termo de Representação INSS',
-    beneficios: ['bpc', 'aposentadoria_idade'],
+    beneficios: ['bpc', 'aposentadoria_idade', 'pensao_morte'],
     perfis: [],
     gatilhos: [],
     obrigatorio: true,
@@ -110,6 +112,18 @@ export const CATALOGO_TEMPLATES: TemplateMetadata[] = [
   },
 
   // ── Modulares (ativados por gatilhos) ──────────────────────────────────────
+  {
+    // Ativado pelo gatilho tem_representacao_legal em qualquer benefício
+    // (pensão por morte com menores, BPC com incapaz, etc.)
+    codigo: '15',
+    categoria: 'termo',
+    nome: 'Termo de Responsabilidade',
+    beneficios: [], // [] = aplica-se a todos os benefícios
+    perfis: [],
+    gatilhos: ['tem_representacao_legal'],
+    obrigatorio: false,
+    ordem: 6,
+  },
   {
     codigo: '04',
     categoria: 'declaracao',
@@ -176,15 +190,14 @@ export function validarCoerencia(cenario: Cenario): Alerta[] {
     });
   }
 
-  // Info: perfil de menor/incapaz → Termo de Responsabilidade auto-ativado
-  // mas template não existe no DB ainda
-  if (PERFIS_MENORES.includes(perfil)) {
+  // Info: perfil de menor/incapaz sem gatilho tem_representacao_legal
+  if (PERFIS_MENORES.includes(perfil) && !gatilhos.includes('tem_representacao_legal')) {
     alertas.push({
       nivel: 'info',
-      codigo: 'TERMO_RESPONSABILIDADE_AUSENTE',
+      codigo: 'REPRESENTACAO_LEGAL_GATILHO_AUSENTE',
       mensagem:
-        'Perfis de menor ou incapaz normalmente requerem Termo de Responsabilidade do representante legal. Template ainda não cadastrado no sistema.',
-      campo_relacionado: 'perfil',
+        'Perfil de menor ou incapaz: verifique se há representante legal e, se sim, ative o gatilho "tem_representacao_legal" para incluir o Termo de Responsabilidade (código 15).',
+      campo_relacionado: 'gatilhos',
     });
   }
 
@@ -208,9 +221,13 @@ export function montarPacote(cenario: Cenario): PacoteDocumental {
   const { beneficio, gatilhos } = cenario;
   const fonte: Record<string, 'cadeia_minima' | 'modular'> = {};
 
+  // beneficios: [] significa "aplica-se a todos os benefícios"
+  const matchesBeneficio = (t: TemplateMetadata) =>
+    t.beneficios.length === 0 || t.beneficios.includes(beneficio);
+
   // Cadeia mínima: templates sem gatilhos que se aplicam a este benefício
   const cadeiaMinima = CATALOGO_TEMPLATES.filter(
-    (t) => t.gatilhos.length === 0 && t.beneficios.includes(beneficio),
+    (t) => t.gatilhos.length === 0 && matchesBeneficio(t),
   );
 
   // Modulares: ativados por gatilhos do cenário E aplicáveis ao benefício
@@ -218,7 +235,7 @@ export function montarPacote(cenario: Cenario): PacoteDocumental {
     (t) =>
       t.gatilhos.length > 0 &&
       t.gatilhos.some((g) => gatilhos.includes(g)) &&
-      t.beneficios.includes(beneficio),
+      matchesBeneficio(t),
   );
 
   // Monta lista completa, ordena pela ordem canônica (spec 4.5)

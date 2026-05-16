@@ -211,6 +211,14 @@ const TESTEMUNHAS = [
   { nome_completo: 'Adilson Lisboa Mendes',         cpf: '142.821.228-03', rg: '20.283.182',   data_nascimento: '04/11/1970' },
 ];
 
+const INST_VAZIO = { nome_completo: '', data_obito: '' };
+const DEP_VAZIO  = { relacao_com_instituidor_descricao: '' };
+const REP_VAZIO  = null;
+const CHECKBOX_QUALIDADE_VAZIO = {
+  tutor_nato: '☐', tutor_legal: '☐', curador: '☐',
+  responsavel_termo_guarda: '☐', administrador_provisorio: '☐', procurador: '☐',
+};
+
 const CTX_ADULTO_BPC = {
   bloco_contratante_maior_capaz:       true,
   bloco_contratante_a_rogo:            false,
@@ -251,7 +259,12 @@ const CTX_ADULTO_BPC = {
   processo: {
     tipo_beneficio_descricao: 'obtenção do BENEFÍCIO DE PRESTAÇÃO CONTINUADA – BPC/LOAS',
     objeto_procuracao: 'ingressar com Pedido de BENEFÍCIO DE PRESTAÇÃO CONTINUADA EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
+    eh_pensao_morte: false,
   },
+  instituidor: INST_VAZIO,
+  dependente_titular: DEP_VAZIO,
+  representacao_legal: REP_VAZIO,
+  checkbox_qualidade_representacao: CHECKBOX_QUALIDADE_VAZIO,
   honorarios: HONORARIOS_PADRAO,
   multa: MULTA,
   escritorio: ESCRITORIO,
@@ -296,11 +309,100 @@ const CTX_ADULTO_MS = {
   processo: {
     tipo_beneficio_descricao: 'impetração de MANDADO DE SEGURANÇA contra ato do INSS',
     objeto_procuracao: 'impetrar MANDADO DE SEGURANÇA em face do INSS (Instituto Nacional do Seguro Social)',
+    eh_pensao_morte: false,
   },
   honorarios: {
     ...HONORARIOS_PADRAO,
     valor_fixo: '3.000,00',
     valor_fixo_extenso: 'três mil reais',
+  },
+};
+
+// ─── Contextos de Pensão por Morte ───────────────────────────────────────────
+
+// Caso 1: Sebastiana — cônjuge supérstite, adulto capaz, sem representação legal
+const CTX_PENSAO_MORTE_SEBASTIANA = {
+  ...CTX_ADULTO_BPC,
+  cliente: {
+    ...CTX_ADULTO_BPC.cliente,
+    nome_completo: 'SEBASTIANA MARTA GOMES DE SOUSA GENEROSO',
+    cpf: '013.588.698-80',
+    estado_civil: 'viúvo(a)',
+    data_nascimento: '10/03/1965',
+    nome_mae: 'Maria Gomes de Sousa',
+  },
+  endereco: {
+    ...CTX_ADULTO_BPC.endereco,
+    logradouro: 'Rua Teste',
+    numero: '1',
+    complemento_formatado: '',
+    bairro: 'Centro',
+    cidade: 'Fortaleza',
+    uf: 'CE',
+    cep: '60000-000',
+  },
+  processo: {
+    tipo_beneficio_descricao: 'BENEFÍCIO DE PENSÃO POR MORTE PREVIDENCIÁRIA',
+    objeto_procuracao: 'ingressar com Pedido de BENEFÍCIO DE PENSÃO POR MORTE em decorrência do óbito de FRANCISCO GENEROSO DA SILVA, EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
+    eh_pensao_morte: true,
+  },
+  instituidor: {
+    nome_completo: 'FRANCISCO GENEROSO DA SILVA',
+    data_obito: '03/05/2025',
+  },
+  dependente_titular: {
+    relacao_com_instituidor_descricao: 'cônjuge supérstite',
+  },
+  representacao_legal: REP_VAZIO,
+  checkbox_qualidade_representacao: CHECKBOX_QUALIDADE_VAZIO,
+};
+
+// Caso 2: Maria Ferreira — cônjuge supérstite com 2 filhos menores + representação legal
+const CTX_PENSAO_MORTE_MARIA_COM_MENORES = {
+  ...CTX_ADULTO_BPC,
+  cliente: {
+    ...CTX_ADULTO_BPC.cliente,
+    nome_completo: 'MARIA APARECIDA FERREIRA DA SILVA',
+    cpf: '123.456.789-00',
+    estado_civil: 'viúvo(a)',
+    data_nascimento: '15/06/1975',
+    nome_mae: 'Ana Ferreira',
+  },
+  endereco: {
+    ...CTX_ADULTO_BPC.endereco,
+    logradouro: 'Av. Brasil',
+    numero: '500',
+    complemento_formatado: ', Bloco B',
+    bairro: 'Vila Nova',
+    cidade: 'São Paulo',
+    uf: 'SP',
+    cep: '01310-100',
+  },
+  processo: {
+    tipo_beneficio_descricao: 'BENEFÍCIO DE PENSÃO POR MORTE PREVIDENCIÁRIA',
+    objeto_procuracao: 'ingressar com Pedido de BENEFÍCIO DE PENSÃO POR MORTE em decorrência do óbito de JOÃO PEDRO DA SILVA, EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
+    eh_pensao_morte: true,
+  },
+  instituidor: {
+    nome_completo: 'JOÃO PEDRO DA SILVA',
+    data_obito: '12/01/2025',
+  },
+  dependente_titular: {
+    relacao_com_instituidor_descricao: 'cônjuge supérstite',
+  },
+  representacao_legal: {
+    representante_nome: 'MARIA APARECIDA FERREIRA DA SILVA',
+    representante_cpf: '123.456.789-00',
+    representante_rg: '22.333.444-5',
+    qualidade_descricao: 'tutor(a) nato(a)',
+    beneficiarios_representados: [
+      { nome: 'LUCAS PEDRO FERREIRA DA SILVA', cpf: '234.567.890-11' },
+      { nome: 'ANA BEATRIZ FERREIRA DA SILVA', cpf: '345.678.901-22' },
+    ],
+  },
+  checkbox_qualidade_representacao: {
+    tutor_nato: '☑', tutor_legal: '☐', curador: '☐',
+    responsavel_termo_guarda: '☐', administrador_provisorio: '☐', procurador: '☐',
   },
 };
 
@@ -318,7 +420,13 @@ function qualificacaoContratante(ch) {
     t(', filho(a) de '), v('{cliente.nome_mae}'),
     t(', residente na '), v('{endereco.logradouro}'), t(', Nº '), v('{endereco.numero}'),
     v('{endereco.complemento_formatado}'), t(', Bairro: '), v('{endereco.bairro}'),
-    t(', '), v('{endereco.cidade}'), t(' ('), v('{endereco.uf}'), t('), CEP.: '), v('{endereco.cep}'), t(';'),
+    t(', '), v('{endereco.cidade}'), t(' ('), v('{endereco.uf}'), t('), CEP.: '), v('{endereco.cep}'),
+    v('{#processo.eh_pensao_morte}'),
+    t(', na qualidade de '), v('{dependente_titular.relacao_com_instituidor_descricao}'),
+    t(' de '), v('{instituidor.nome_completo}'),
+    t(' (falecido em '), v('{instituidor.data_obito}'), t(')'),
+    v('{/processo.eh_pensao_morte}'),
+    t(';'),
   ));
   ch.push(blocoTag('{/bloco_contratante_maior_capaz}'));
 
@@ -334,6 +442,11 @@ function qualificacaoContratante(ch) {
     t(', residente na '), v('{endereco.logradouro}'), t(', Nº '), v('{endereco.numero}'),
     v('{endereco.complemento_formatado}'), t(', Bairro: '), v('{endereco.bairro}'),
     t(', '), v('{endereco.cidade}'), t(' ('), v('{endereco.uf}'), t('), CEP.: '), v('{endereco.cep}'),
+    v('{#processo.eh_pensao_morte}'),
+    t(', na qualidade de '), v('{dependente_titular.relacao_com_instituidor_descricao}'),
+    t(' de '), v('{instituidor.nome_completo}'),
+    t(' (falecido em '), v('{instituidor.data_obito}'), t(')'),
+    v('{/processo.eh_pensao_morte}'),
     t(', ASSINO, conjuntamente, com duas Testemunhas (A ROGO) abaixo;'),
   ));
   ch.push(blocoTag('{/bloco_contratante_a_rogo}'));
@@ -352,7 +465,13 @@ function qualificacaoContratante(ch) {
     t(' (CPF: '), v('{representante.cpf}'), t(', RG: '), v('{representante.rg}'), t(')'),
     t(', ambos residentes na '), v('{endereco.logradouro}'), t(', Nº '), v('{endereco.numero}'),
     v('{endereco.complemento_formatado}'), t(', Bairro: '), v('{endereco.bairro}'),
-    t(', Cidade: '), v('{endereco.cidade}'), t(' ('), v('{endereco.uf}'), t('), CEP.: '), v('{endereco.cep}'), t(';'),
+    t(', Cidade: '), v('{endereco.cidade}'), t(' ('), v('{endereco.uf}'), t('), CEP.: '), v('{endereco.cep}'),
+    v('{#processo.eh_pensao_morte}'),
+    t(', na qualidade de '), v('{dependente_titular.relacao_com_instituidor_descricao}'),
+    t(' de '), v('{instituidor.nome_completo}'),
+    t(' (falecido em '), v('{instituidor.data_obito}'), t(')'),
+    v('{/processo.eh_pensao_morte}'),
+    t(';'),
   ));
   ch.push(blocoTag('{/bloco_contratante_menor}'));
 }
@@ -931,11 +1050,15 @@ const cenarios = [
   { nome: '01_contrato_MENOR_BPC',           buf: contratoBuf,   ctx: CTX_MENOR_BPC  },
   { nome: '01_contrato_AROGO_BPC',           buf: contratoBuf,   ctx: CTX_AROGO_BPC  },
   { nome: '01_contrato_ADULTO_MS',           buf: contratoBuf,   ctx: CTX_ADULTO_MS  },
+  { nome: '01_contrato_PENSAO_MORTE_SEBASTIANA',        buf: contratoBuf, ctx: CTX_PENSAO_MORTE_SEBASTIANA },
+  { nome: '01_contrato_PENSAO_MORTE_MARIA_COM_MENORES', buf: contratoBuf, ctx: CTX_PENSAO_MORTE_MARIA_COM_MENORES },
   { nome: '02_procuracao_ADULTO_BPC',        buf: procuracaoBuf, ctx: CTX_ADULTO_BPC },
   { nome: '02_procuracao_ADULTO_BPC_LIDIANE',buf: procuracaoBuf, ctx: CTX_ADULTO_BPC_LIDIANE },
   { nome: '02_procuracao_ADULTO_BPC_ALCIONE',buf: procuracaoBuf, ctx: CTX_ADULTO_BPC_ALCIONE },
   { nome: '02_procuracao_MENOR_BPC',         buf: procuracaoBuf, ctx: CTX_MENOR_BPC  },
   { nome: '02_procuracao_ADULTO_MS',         buf: procuracaoBuf, ctx: CTX_ADULTO_MS  },
+  { nome: '02_procuracao_PENSAO_MORTE_SEBASTIANA',        buf: procuracaoBuf, ctx: CTX_PENSAO_MORTE_SEBASTIANA },
+  { nome: '02_procuracao_PENSAO_MORTE_MARIA_COM_MENORES', buf: procuracaoBuf, ctx: CTX_PENSAO_MORTE_MARIA_COM_MENORES },
 ];
 
 let totalOk = 0;

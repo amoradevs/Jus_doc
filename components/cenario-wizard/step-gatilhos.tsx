@@ -1,29 +1,38 @@
 'use client';
 
-import { Home, Building2, HeartCrack } from 'lucide-react';
+import { Home, Building2, HeartCrack, Users, CheckCircle2 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import type { GatilhoId } from '@/lib/document-generation/cadeia-documental';
+import type { GatilhoId, BeneficioId } from '@/lib/document-generation/cadeia-documental';
 
-const OPCOES: { value: GatilhoId; label: string; descricao: string; Icon: React.ElementType }[] = [
+const TODAS_OPCOES: { value: GatilhoId; label: string; descricao: string; Icon: React.ElementType; beneficios?: BeneficioId[] }[] = [
   {
     value: 'imovel_terceiro',
     label: 'Imóvel de terceiro',
     descricao: 'O cliente reside em imóvel cedido — gera Declaração de Residência.',
     Icon: Home,
+    beneficios: ['bpc', 'aposentadoria_idade'],
   },
   {
     value: 'mei_inativo',
     label: 'MEI inativo',
     descricao: 'O cliente possui MEI sem atividade — gera Declaração de Inatividade de Empresa.',
     Icon: Building2,
+    beneficios: ['bpc', 'aposentadoria_idade', 'mandado_seguranca'],
   },
   {
     value: 'separado_de_fato',
     label: 'Separado de fato',
     descricao: 'Separação não formalizada — gera Declaração de Separação de Fato (BPC).',
     Icon: HeartCrack,
+    beneficios: ['bpc'],
+  },
+  {
+    value: 'tem_representacao_legal',
+    label: 'Há representação legal',
+    descricao: 'Dependente é menor ou incapaz com representante legal — gera Termo de Responsabilidade.',
+    Icon: Users,
   },
 ];
 
@@ -32,9 +41,14 @@ type Props = {
   onChange: (g: GatilhoId[]) => void;
   onNext: () => void;
   onBack: () => void;
+  beneficio?: BeneficioId | null;
 };
 
-export function StepGatilhos({ value, onChange, onNext, onBack }: Props) {
+export function StepGatilhos({ value, onChange, onNext, onBack, beneficio }: Props) {
+  const OPCOES = TODAS_OPCOES.filter(
+    (o) => !o.beneficios || !beneficio || o.beneficios.includes(beneficio),
+  );
+
   function toggle(gatilho: GatilhoId) {
     onChange(
       value.includes(gatilho)
@@ -43,16 +57,49 @@ export function StepGatilhos({ value, onChange, onNext, onBack }: Props) {
     );
   }
 
+  const isNenhumaChecked = value.length === 0;
+
   return (
     <div className="space-y-5">
       <div>
         <h2 className="text-base font-semibold text-foreground">Situações específicas</h2>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          Selecione as situações que se aplicam ao caso. Se nenhuma se aplicar, pode avançar diretamente.
+          Selecione as situações que se aplicam ao caso ou confirme que nenhuma se aplica.
         </p>
       </div>
 
       <div className="space-y-2">
+        {/* Opção padrão — pré-selecionada quando nenhum gatilho está ativo */}
+        <label
+          htmlFor="gatilho-nenhuma"
+          className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3.5 transition-all ${
+            isNenhumaChecked
+              ? 'border-primary/40 bg-primary/5'
+              : 'border-border bg-card hover:border-primary/30 hover:bg-accent/30'
+          }`}
+        >
+          <Checkbox
+            id="gatilho-nenhuma"
+            checked={isNenhumaChecked}
+            onCheckedChange={() => onChange([])}
+            className="mt-0.5 shrink-0"
+          />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="size-3.5 text-muted-foreground shrink-0" />
+              <Label
+                htmlFor="gatilho-nenhuma"
+                className="cursor-pointer text-sm font-medium text-foreground"
+              >
+                Nenhuma situação especial
+              </Label>
+            </div>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              O caso segue o fluxo padrão — sem documentos adicionais.
+            </p>
+          </div>
+        </label>
+
         {OPCOES.map(({ value: v, label, descricao, Icon }) => {
           const checked = value.includes(v);
           return (

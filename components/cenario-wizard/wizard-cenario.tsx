@@ -148,6 +148,7 @@ export function WizardCenario({ clientId, processoId }: Props) {
           onChange={handleGatilhosChange}
           onNext={irParaConfirmacao}
           onBack={() => irParaPasso(2)}
+          beneficio={beneficio}
         />
       )}
 

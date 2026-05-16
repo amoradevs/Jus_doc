@@ -41,3 +41,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# geração local de documentos (binários de teste — não versionados)
+/scripts/output/
+/templates/_backup_pre_p2/
+
+# arquivos avulsos não relacionados ao projeto
+/presentations/

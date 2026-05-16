@@ -2,6 +2,10 @@ import CloudConvert from 'cloudconvert';
 
 let cloudConvert: CloudConvert | null = null;
 
+export function isPdfConverterAvailable(): boolean {
+  return !!process.env.PDF_CONVERTER_API_KEY;
+}
+
 function getClient(): CloudConvert {
   if (!cloudConvert) {
     if (!process.env.PDF_CONVERTER_API_KEY) throw new Error('PDF_CONVERTER_API_KEY não configurada');

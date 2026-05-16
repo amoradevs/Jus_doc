@@ -28,9 +28,13 @@ export async function GET(_req: Request, { params }: Params) {
   if (error || !data) return NextResponse.json({ error: 'Erro ao baixar arquivo.' }, { status: 500 });
 
   const buffer = await data.arrayBuffer();
+  const isDocx = doc.storage_path.endsWith('.docx');
+  const contentType = isDocx
+    ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    : 'application/pdf';
   return new Response(buffer, {
     headers: {
-      'Content-Type': 'application/pdf',
+      'Content-Type': contentType,
       'Content-Disposition': `attachment; filename="${doc.nome_arquivo}"`,
     },
   });

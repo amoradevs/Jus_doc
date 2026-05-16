@@ -10,6 +10,7 @@ import { MoverEtapaSelect } from '@/components/mover-etapa-select';
 import { AlterarStatusSelect } from '@/components/alterar-status-select';
 import { ListaPrazos } from '@/components/prazos/lista-prazos';
 import { EncerrarProcessoButton } from '@/components/encerrar-processo-button';
+import { PensaoMorteCard } from '@/components/pensao-morte/pensao-morte-card';
 
 type Props = {
   params: Promise<{ numero_interno: string }>;
@@ -101,6 +102,26 @@ export default async function ProcessoPage({ params, searchParams }: Props) {
   const client = processo.clients;
   if (!client) notFound();
 
+  // Dados extras — pensão por morte
+  let pensaoMorteData: {
+    instituidor: { nome_completo: string; data_obito: string; qualidade_previdenciaria: string } | null;
+    dependentes: { nome_completo: string; cpf: string; data_nascimento: string; relacao_com_instituidor: string; e_titular_no_sistema: boolean }[];
+    representacao_legal: { representante_nome: string; representante_cpf: string; qualidade: string; beneficiarios_representados: { nome: string; cpf: string }[] } | null;
+  } | null = null;
+
+  if (processoData.tipo_beneficio === 'pensao_morte') {
+    const [{ data: instituidores }, { data: dependentes }, { data: repLegal }] = await Promise.all([
+      db.from('instituidores').select('nome_completo, data_obito, qualidade_previdenciaria').eq('processo_id', processoData.id).is('archived_at', null).limit(1),
+      db.from('dependentes_habilitados').select('nome_completo, cpf, data_nascimento, relacao_com_instituidor, e_titular_no_sistema').eq('processo_id', processoData.id).is('archived_at', null).order('created_at'),
+      db.from('representacoes_legais').select('representante_nome, representante_cpf, qualidade, beneficiarios_representados').eq('processo_id', processoData.id).is('archived_at', null).limit(1),
+    ]);
+    pensaoMorteData = {
+      instituidor: (instituidores as typeof instituidores)?.[0] ?? null,
+      dependentes: (dependentes ?? []) as { nome_completo: string; cpf: string; data_nascimento: string; relacao_com_instituidor: string; e_titular_no_sistema: boolean }[],
+      representacao_legal: (repLegal as typeof repLegal)?.[0] ?? null,
+    };
+  }
+
   // Dados extras por aba
   let packages: { id: string; criado_em: string; expira_em: string; templates_usados: string[] }[] = [];
   if (tab === 'documentos') {
@@ -191,6 +212,16 @@ export default async function ProcessoPage({ params, searchParams }: Props) {
               </div>
             )}
           </div>
+
+          {/* Dados da Pensão por Morte */}
+          {pensaoMorteData && (
+            <PensaoMorteCard
+              processoId={processo.id}
+              instituidor={pensaoMorteData.instituidor}
+              dependentes={pensaoMorteData.dependentes}
+              representacaoLegal={pensaoMorteData.representacao_legal}
+            />
+          )}
 
           {/* Etapa no Pipeline */}
           <div className="bg-card rounded-2xl border border-border p-5">
