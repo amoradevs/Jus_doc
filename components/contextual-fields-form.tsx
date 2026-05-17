@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { ContextualGroup } from '@/lib/document-generation/contextual-fields-resolver';
 
-type Props = { clientId: string; missingGroups: ContextualGroup[]; codigos: string; modo?: string; processoId?: string };
+type Props = { clientId: string; missingGroups: ContextualGroup[]; codigos: string; modo?: string; processoId?: string; advogadas?: string; assinatura?: string };
 
 const LABELS: Record<ContextualGroup, string> = {
   representante_legal: 'Representante legal',
@@ -19,7 +19,7 @@ const LABELS: Record<ContextualGroup, string> = {
   testemunhas: 'Testemunhas',
 };
 
-export function ContextualFieldsForm({ clientId, missingGroups, codigos, modo = 'direto', processoId }: Props) {
+export function ContextualFieldsForm({ clientId, missingGroups, codigos, modo = 'direto', processoId, advogadas, assinatura }: Props) {
   const router = useRouter();
   const { register, handleSubmit, formState: { isSubmitting } } = useForm();
 
@@ -35,7 +35,9 @@ export function ContextualFieldsForm({ clientId, missingGroups, codigos, modo = 
     });
     if (res.ok) {
       const pidParam = processoId ? `&processoId=${processoId}` : '';
-      router.push(`/clientes/${clientId}/gerar/resultado?codigos=${codigos}&modo=${modo}${pidParam}`);
+      const advParam = advogadas ? `&advogadas=${advogadas}` : '';
+      const assParam = assinatura !== undefined ? `&assinatura=${assinatura}` : '';
+      router.push(`/clientes/${clientId}/gerar/resultado?codigos=${codigos}&modo=${modo}${pidParam}${advParam}${assParam}`);
     } else {
       toast.error('Erro ao salvar os dados. Tente novamente.');
     }
