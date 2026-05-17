@@ -291,7 +291,7 @@ export function getCenarioContextOverrides(cenario: Cenario): Partial<TemplateCo
 
 // ─── Builder principal ────────────────────────────────────────────────────────
 
-export type AdvogadasSelecionadas = 'lidiane' | 'alcione' | 'ambas';
+export type AdvogadasSelecionadas = 'lidiane' | 'alcione' | 'ambas' | 'branco';
 
 export async function buildTemplateContext(
   clientId: string,
@@ -577,7 +577,7 @@ export async function buildTemplateContext(
     tem_duas_advogadas: advogadas === 'ambas',
     apenas_lidiane: advogadas === 'lidiane',
     apenas_alcione: advogadas === 'alcione',
-    incluir_assinatura_lidiane: incluirAssinaturaLidiane && (advogadas === 'lidiane' || advogadas === 'ambas'),
+    incluir_assinatura_lidiane: incluirAssinaturaLidiane && advogadas === 'lidiane',
   };
 
   if (!cenario) return baseContext;

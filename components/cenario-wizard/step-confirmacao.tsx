@@ -14,12 +14,12 @@ import { AlertaItem } from './alerta-item';
 import { CATALOGO_TEMPLATES } from '@/lib/document-generation/cadeia-documental';
 import type { PacoteDocumental, Alerta } from '@/lib/document-generation/cadeia-documental';
 
-type AdvogadasSelecionadas = 'ambas' | 'lidiane' | 'alcione';
+type AdvogadasSelecionadas = 'lidiane' | 'alcione' | 'branco';
 
 const OPCOES_ADVOGADA: { value: AdvogadasSelecionadas; label: string; sub?: string }[] = [
-  { value: 'ambas',    label: 'Ambas',          sub: 'Lidiane e Alcione' },
-  { value: 'lidiane',  label: 'Apenas Lidiane' },
-  { value: 'alcione',  label: 'Apenas Alcione' },
+  { value: 'lidiane', label: 'Apenas Lidiane Rocha Abreu',            sub: 'OAB 220305-SP' },
+  { value: 'alcione', label: 'Apenas Alcione Ferreira Gomes Alencar', sub: 'OAB 218550-SP' },
+  { value: 'branco',  label: 'Deixar em branco',                      sub: 'preencher manualmente depois' },
 ];
 
 const NOMES = Object.fromEntries(CATALOGO_TEMPLATES.map((t) => [t.codigo, t.nome]));
@@ -39,10 +39,10 @@ export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientI
   const [dialogAberto, setDialogAberto] = useState(false);
   const [erroGeracao, setErroGeracao] = useState('');
   const [modalAdvogadaAberto, setModalAdvogadaAberto] = useState(false);
-  const [advogadasSelecionadas, setAdvogadasSelecionadas] = useState<AdvogadasSelecionadas>('ambas');
+  const [advogadasSelecionadas, setAdvogadasSelecionadas] = useState<AdvogadasSelecionadas>('lidiane');
   const [incluirAssinaturaLidiane, setIncluirAssinaturaLidiane] = useState(true);
 
-  const lidianeSelecionada = advogadasSelecionadas === 'lidiane' || advogadasSelecionadas === 'ambas';
+  const lidianeSelecionada = advogadasSelecionadas === 'lidiane';
 
   // Alertas dinâmicos por cadeia mínima desmarcada
   const alertasCadeiaMinima: Alerta[] = useMemo(() => {
@@ -97,7 +97,13 @@ export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientI
   }
 
   function handleGerarClick() {
-    setModalAdvogadaAberto(true);
+    if (codigosAtivos.includes('05')) {
+      setModalAdvogadaAberto(true);
+    } else if (temAviso) {
+      setDialogAberto(true);
+    } else {
+      executarGeracao();
+    }
   }
 
   function handleConfirmarAdvogada() {
@@ -206,9 +212,9 @@ export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientI
       <Dialog open={modalAdvogadaAberto} onOpenChange={setModalAdvogadaAberto}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Selecionar advogada(s)</DialogTitle>
+            <DialogTitle>Qual advogada será a representante no Termo INSS?</DialogTitle>
             <DialogDescription>
-              Escolha quem irá assinar os documentos deste pacote.
+              Contrato e Procuração sempre incluem as duas advogadas.
             </DialogDescription>
           </DialogHeader>
           <RadioGroup
@@ -245,7 +251,6 @@ export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientI
               />
               <div>
                 <p className="text-sm font-medium text-foreground">Incluir assinatura digital da Dra. Lidiane</p>
-                <p className="text-xs text-muted-foreground">Apenas no Termo de Representação INSS</p>
               </div>
             </label>
           )}

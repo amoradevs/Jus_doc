@@ -23,12 +23,12 @@ type Template = {
 
 type Props = { clientId: string; templates?: Template[]; processoId?: string };
 
-type AdvogadasSelecionadas = 'ambas' | 'lidiane' | 'alcione';
+type AdvogadasSelecionadas = 'lidiane' | 'alcione' | 'branco';
 
 const OPCOES_ADVOGADA: { value: AdvogadasSelecionadas; label: string; sub?: string }[] = [
-  { value: 'ambas',   label: 'Ambas',          sub: 'Lidiane e Alcione' },
-  { value: 'lidiane', label: 'Apenas Lidiane' },
-  { value: 'alcione', label: 'Apenas Alcione' },
+  { value: 'lidiane', label: 'Apenas Lidiane Rocha Abreu',            sub: 'OAB 220305-SP' },
+  { value: 'alcione', label: 'Apenas Alcione Ferreira Gomes Alencar', sub: 'OAB 218550-SP' },
+  { value: 'branco',  label: 'Deixar em branco',                      sub: 'preencher manualmente depois' },
 ];
 
 const FAMILIA_LABEL: Record<string, string> = {
@@ -48,10 +48,10 @@ export function GerarModo({ clientId, templates = [], processoId }: Props) {
   // Modal de seleção de advogada
   const [modalAberto, setModalAberto] = useState(false);
   const [pendingModo, setPendingModo] = useState<'direto' | 'revisar'>('direto');
-  const [advogadasSelecionadas, setAdvogadasSelecionadas] = useState<AdvogadasSelecionadas>('ambas');
+  const [advogadasSelecionadas, setAdvogadasSelecionadas] = useState<AdvogadasSelecionadas>('lidiane');
   const [incluirAssinaturaLidiane, setIncluirAssinaturaLidiane] = useState(true);
 
-  const lidianeSelecionada = advogadasSelecionadas === 'lidiane' || advogadasSelecionadas === 'ambas';
+  const lidianeSelecionada = advogadasSelecionadas === 'lidiane';
 
   const emBusca = busca.trim().length > 0;
 
@@ -76,7 +76,19 @@ export function GerarModo({ clientId, templates = [], processoId }: Props) {
   function continuar(modo: 'direto' | 'revisar') {
     if (selected.length === 0 || loading) return;
     setPendingModo(modo);
-    setModalAberto(true);
+    if (selected.includes('05')) {
+      setModalAberto(true);
+    } else {
+      confirmarSemModal(modo);
+    }
+  }
+
+  function confirmarSemModal(modo: 'direto' | 'revisar') {
+    setLoading(modo);
+    const pid = processoId ? `&processoId=${processoId}` : '';
+    router.push(
+      `/clientes/${clientId}/gerar/campos?codigos=${selected.join(',')}&modo=${modo}${pid}&advogadas=branco&assinatura=0`,
+    );
   }
 
   function confirmar() {
@@ -195,9 +207,9 @@ export function GerarModo({ clientId, templates = [], processoId }: Props) {
       <Dialog open={modalAberto} onOpenChange={setModalAberto}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Selecionar advogada(s)</DialogTitle>
+            <DialogTitle>Qual advogada será a representante no Termo INSS?</DialogTitle>
             <DialogDescription>
-              Escolha quem irá assinar os documentos deste pacote.
+              Contrato e Procuração sempre incluem as duas advogadas.
             </DialogDescription>
           </DialogHeader>
 
@@ -235,7 +247,6 @@ export function GerarModo({ clientId, templates = [], processoId }: Props) {
               />
               <div>
                 <p className="text-sm font-medium text-foreground">Incluir assinatura digital da Dra. Lidiane</p>
-                <p className="text-xs text-muted-foreground">Apenas no Termo de Representação INSS</p>
               </div>
             </label>
           )}

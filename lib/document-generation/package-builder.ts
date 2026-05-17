@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { db } from '@/lib/db';
 import { buildTemplateContext } from './template-context';
 import type { AdvogadasSelecionadas } from './template-context';
+import { CATALOGO_TEMPLATES } from './cadeia-documental';
 import type { Cenario } from './cadeia-documental';
 import { renderDocxTemplate } from './docx-renderer';
 import { convertDocxToPdf, isPdfConverterAvailable } from './pdf-converter';
@@ -67,9 +68,15 @@ export async function buildDocumentPackage(
     let extensao: string;
     let contentType: string;
 
+    // Contrato e Procuração sempre saem com ambas advogadas, independente da seleção do modal
+    const categoriaTemplate = CATALOGO_TEMPLATES.find((t) => t.codigo === template.codigo)?.categoria;
+    const ctx = (categoriaTemplate === 'contrato' || categoriaTemplate === 'procuracao')
+      ? { ...context, mostrar_lidiane: true, mostrar_alcione: true, tem_duas_advogadas: true, apenas_lidiane: false, apenas_alcione: false, incluir_assinatura_lidiane: false }
+      : context;
+
     if (template.formato === 'docx') {
       const templateBuffer = await getTemplateBuffer(template);
-      docxBuffer = await renderDocxTemplate(templateBuffer, context);
+      docxBuffer = await renderDocxTemplate(templateBuffer, ctx);
       if (usarPdf) {
         fileBuffer = await convertDocxToPdf(docxBuffer);
         extensao = 'pdf';
@@ -81,7 +88,7 @@ export async function buildDocumentPackage(
       }
     } else {
       const slug = path.basename(template.caminho_arquivo, '.pdf');
-      fileBuffer = await renderPdfOverlay(slug, context);
+      fileBuffer = await renderPdfOverlay(slug, ctx);
       extensao = 'pdf';
       contentType = 'application/pdf';
     }
