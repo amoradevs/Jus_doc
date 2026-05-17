@@ -180,25 +180,40 @@ No resultado, clique em:
 
 A geração de documentos é acessada pelo **perfil do cliente**.
 
-### Como gerar um pacote
+### Como gerar um pacote — pela trilha guiada
 
 1. Abra o perfil do cliente
 2. Clique em **Gerar documentos**
-3. Escolha o tipo de benefício (BPC/LOAS, Aposentadoria por Idade, etc.)
+3. Escolha o tipo de benefício (BPC/LOAS, Aposentadoria por Idade, Pensão por Morte, etc.)
 4. Selecione o perfil do segurado (adulto, menor, com representante, etc.)
-5. Marque as situações específicas do caso (renda familiar, laudo médico, etc.)
+5. Marque as situações específicas do caso:
+   - **Imóvel de terceiro** — ao marcar, um campo aparece para informar o nome do proprietário do imóvel. O nome é incluído automaticamente na Declaração de Residência.
+   - **MEI inativo** — gera Declaração de Inatividade de Empresa
+   - **Separado de fato** — gera Declaração de Separação de Fato
+   - **Há representação legal** — gera Termo de Responsabilidade
 6. Revise os documentos sugeridos — pode marcar/desmarcar individualmente
-7. Clique em **Gerar** e aguarde
+7. Se o pacote incluir o **Termo de Representação INSS**, um modal pergunta qual advogada assina o termo e se deve incluir a assinatura digital
+8. Clique em **Gerar** e aguarde
 
 O sistema gera todos os documentos selecionados preenchidos com os dados do cliente e disponibiliza para download em ZIP.
+
+### Como gerar um pacote — pela busca rápida
+
+Use a barra de busca no topo da tela de geração para encontrar um documento específico pelo nome. Selecione um ou mais documentos e clique em **Gerar Documento**.
+
+> O comportamento é idêntico ao da trilha guiada — se o Termo de Representação INSS estiver selecionado, o modal de advogada aparece igualmente.
 
 ### Documentos disponíveis
 
 O escritório tem 15 templates configurados, incluindo:
 - Contratos de honorários (adulto, menor, BPC, MS)
-- Procuração
-- Declarações diversas
-- Formulários INSS
+- Procuração (sempre com as duas advogadas)
+- Declarações: Hipossuficiência, Residência, Separação de Fato, Inatividade MEI
+- Formulários INSS: Termo de Representação e Autorização, Termo de Responsabilidade
+
+### Checkboxes nos documentos
+
+Os formulários do INSS (Termo de Representação, Termo de Responsabilidade) usam o padrão **(X)** em negrito para itens marcados e **( )** para desmarcados — compatível com impressão e leitores de PDF.
 
 ### Histórico de pacotes
 
@@ -322,5 +337,5 @@ Em **Configurações → Templates**, você pode:
 
 ---
 
-*Manual atualizado em maio de 2025 — GestorAli v1.0*
+*Manual atualizado em maio de 2026 — GestorAli v1.3*
 *Sistema desenvolvido para Rocha & Alencar Advocacia*
