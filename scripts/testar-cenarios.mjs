@@ -106,10 +106,15 @@ const TODAS_OPCOES_CHECKBOX = [
   'bpc', 'atualizacao_cadastral',
 ];
 
-function checkboxes(marcados) {
-  const cb = {};
-  for (const k of TODAS_OPCOES_CHECKBOX) cb[k] = marcados.includes(k) ? '☑' : '☐';
-  return cb;
+function checkboxAndX(marcados) {
+  const checkbox = {};
+  const checkbox_X = {};
+  for (const k of TODAS_OPCOES_CHECKBOX) {
+    const m = marcados.includes(k);
+    checkbox[k]   = m ? '☑' : '☐';
+    checkbox_X[k] = m ? 'X' : ' ';
+  }
+  return { checkbox, checkbox_X };
 }
 
 function advFlags(sel) {
@@ -174,7 +179,7 @@ const CENARIOS = [
         tipo_beneficio_descricao: 'BENEFÍCIO DE PRESTAÇÃO CONTINUADA – BPC/LOAS',
         objeto_procuracao: 'ingressar com Pedido de BENEFÍCIO DE PRESTAÇÃO CONTINUADA EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
       },
-      checkbox: checkboxes(['bpc']),
+      ...checkboxAndX(['bpc']),
     },
   },
   {
@@ -194,7 +199,7 @@ const CENARIOS = [
         tipo_beneficio_descricao: 'BENEFÍCIO DE APOSENTADORIA POR TEMPO DE CONTRIBUIÇÃO',
         objeto_procuracao: 'ingressar com Pedido de BENEFÍCIO DE APOSENTADORIA POR TEMPO DE CONTRIBUIÇÃO EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
       },
-      checkbox: checkboxes(['aposentadoria_tempo']),
+      ...checkboxAndX(['aposentadoria_tempo']),
       doc: { ...DOC, cidade_assinatura: 'Campinas (SP)' },
     },
   },
@@ -215,7 +220,7 @@ const CENARIOS = [
         tipo_beneficio_descricao: 'BENEFÍCIO DE PRESTAÇÃO CONTINUADA – BPC/LOAS',
         objeto_procuracao: 'ingressar com Pedido de BENEFÍCIO DE PRESTAÇÃO CONTINUADA EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
       },
-      checkbox: checkboxes(['bpc']),
+      ...checkboxAndX(['bpc']),
     },
   },
   {
@@ -235,7 +240,7 @@ const CENARIOS = [
         tipo_beneficio_descricao: 'BENEFÍCIO DE PRESTAÇÃO CONTINUADA – BPC/LOAS',
         objeto_procuracao: 'ingressar com Pedido de BENEFÍCIO DE PRESTAÇÃO CONTINUADA EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
       },
-      checkbox: checkboxes(['bpc']),
+      ...checkboxAndX(['bpc']),
       doc: { ...DOC, cidade_assinatura: 'Santo André (SP)' },
     },
   },
@@ -256,7 +261,7 @@ const CENARIOS = [
         tipo_beneficio_descricao: 'BENEFÍCIO DE APOSENTADORIA POR TEMPO DE CONTRIBUIÇÃO',
         objeto_procuracao: 'ingressar com Pedido de BENEFÍCIO DE APOSENTADORIA POR TEMPO DE CONTRIBUIÇÃO EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
       },
-      checkbox: checkboxes(['aposentadoria_tempo']),
+      ...checkboxAndX(['aposentadoria_tempo']),
     },
   },
   {
@@ -282,7 +287,7 @@ const CENARIOS = [
         tipo_beneficio_descricao: 'IMPETRAÇÃO DE MANDADO DE SEGURANÇA',
         objeto_procuracao: 'impetrar MANDADO DE SEGURANÇA em face do INSS (Instituto Nacional do Seguro Social)',
       },
-      checkbox: checkboxes([]),
+      ...checkboxAndX([]),
     },
   },
 ];

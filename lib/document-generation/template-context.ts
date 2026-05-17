@@ -177,6 +177,7 @@ export type TemplateContext = {
     beneficiarios_representados: Array<{ nome: string; cpf: string }>;
   } | null;
   checkbox_qualidade_representacao: Record<string, string>;
+  checkbox_qualidade_representacao_X: Record<string, string>;
   // Blocos de honorários (exatamente um ativo por geração)
   bloco_honorarios_padrao: boolean;          // BPC adulto, Aposentadoria, qualquer adulto
   bloco_honorarios_menor: boolean;           // qualquer benefício + perfil menor
@@ -200,6 +201,7 @@ export type TemplateContext = {
   escritorio: { adv1_nome: string; adv1_cpf: string; adv1_oab: string; adv1_email: string; adv1_assinatura_path: string; adv2_nome: string; adv2_oab: string; adv2_cpf: string; adv2_email: string; endereco_logradouro: string; endereco_numero: string; endereco_complemento: string; endereco_bairro: string; endereco_cidade: string; endereco_uf: string; endereco_cep: string; foro_eleito: string };
   doc: { cidade_assinatura: string; dia_assinatura: string; mes_assinatura_extenso: string; mes_assinatura_numero: string; ano_assinatura: string };
   checkbox: Record<string, string>;
+  checkbox_X: Record<string, string>;
 };
 
 // ─── Mapeamento BeneficioId → texto jurídico ──────────────────────────────────
@@ -256,13 +258,18 @@ export function getCenarioContextOverrides(cenario: Cenario): Partial<TemplateCo
   const benInfo = BENEFICIO_ID_MAP[cenario.beneficio] ?? BENEFICIO_ID_MAP.bpc;
 
   const checkboxCenario: Record<string, string> = {};
+  const checkboxCenarioX: Record<string, string> = {};
   for (const opcao of TODAS_OPCOES_CHECKBOX) {
-    checkboxCenario[opcao] = benInfo.marcados.includes(opcao) ? '☑' : '☐';
+    const marcado = benInfo.marcados.includes(opcao);
+    checkboxCenario[opcao] = marcado ? '☑' : '☐';
+    checkboxCenarioX[opcao] = marcado ? 'X' : ' ';
   }
 
   const checkboxQualidade: Record<string, string> = {};
+  const checkboxQualidadeX: Record<string, string> = {};
   for (const q of TODAS_QUALIDADES_REPRESENTACAO) {
     checkboxQualidade[q] = '☐';
+    checkboxQualidadeX[q] = q === 'tutor_nato' ? 'X' : ' ';
   }
 
   return {
@@ -282,10 +289,12 @@ export function getCenarioContextOverrides(cenario: Cenario): Partial<TemplateCo
       eh_pensao_morte: ehPensaoMorte,
     },
     checkbox: checkboxCenario,
+    checkbox_X: checkboxCenarioX,
     instituidor: { nome_completo: '', data_obito: '' },
     dependente_titular: { relacao_com_instituidor_descricao: '' },
     representacao_legal: null,
     checkbox_qualidade_representacao: checkboxQualidade,
+    checkbox_qualidade_representacao_X: checkboxQualidadeX,
   };
 }
 
@@ -388,8 +397,11 @@ export async function buildTemplateContext(
 
   // ── Checkboxes ────────────────────────────────────────────────────────────
   const checkbox: Record<string, string> = {};
+  const checkboxX: Record<string, string> = {};
   for (const opcao of TODAS_OPCOES_CHECKBOX) {
-    checkbox[opcao] = tipoInfo.marcados.includes(opcao) ? '☑' : '☐';
+    const marcado = tipoInfo.marcados.includes(opcao);
+    checkbox[opcao] = marcado ? '☑' : '☐';
+    checkboxX[opcao] = marcado ? 'X' : ' ';
   }
 
   // ── Data de assinatura ────────────────────────────────────────────────────
@@ -521,6 +533,14 @@ export async function buildTemplateContext(
       }
       return m;
     })(),
+    checkbox_qualidade_representacao_X: (() => {
+      const m: Record<string, string> = {};
+      for (const q of TODAS_QUALIDADES_REPRESENTACAO) {
+        // Termo de Responsabilidade é sempre para menor — qualidade sempre tutor_nato
+        m[q] = q === 'tutor_nato' ? 'X' : ' ';
+      }
+      return m;
+    })(),
 
     // Honorários
     honorarios: {
@@ -570,6 +590,7 @@ export async function buildTemplateContext(
 
     // Checkboxes do Termo INSS
     checkbox,
+    checkbox_X: checkboxX,
 
     // Seleção de advogada
     mostrar_lidiane: advogadas === 'lidiane' || advogadas === 'ambas',

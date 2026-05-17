@@ -87,9 +87,15 @@ const pTag = (tag) => new Paragraph({
   alignment: AlignmentType.LEFT,
 });
 
-// Linha de benefício (sem espaçamento extra entre linhas da lista)
-const pBen = (text) => new Paragraph({
-  children: [baseRun(text)],
+// Linha de checkbox: '(' normal + {checkbox_X.tag} bold + ')' normal + rótulo
+// O contexto retorna 'X' se marcado, ' ' se não — apenas o X fica em negrito
+const pCheck = (prefix, items) => new Paragraph({
+  children: [
+    baseRun(prefix),
+    ...items.flatMap(({ tag, label }) => [
+      baseRun('('), boldRun(tag), baseRun(')'), baseRun(label),
+    ]),
+  ],
   spacing: spacing(SP_NONE, SP_NONE),
   alignment: AlignmentType.LEFT,
 });
@@ -143,14 +149,30 @@ const doc = new Document({
       p('CONFIRO PODERES ESPECÍFICOS para me representar perante o INSS na solicitação do serviço ou benefício abaixo indicado e AUTORIZO o(a) referido(a) profissional a ter acesso apenas às informações pessoais necessárias a subsidiar o requerimento eletrônico do serviço ou benefício abaixo elencado:', SP, SP),
 
       // ── Lista de benefícios (sem espaçamento entre linhas) ───────────────
-      pBen('I.    {checkbox.aposentadoria_idade} Aposentadoria por Idade   {checkbox.aposentadoria_idade_urbana} urbana   {checkbox.aposentadoria_idade_rural} rural'),
-      pBen('II.   {checkbox.aposentadoria_tempo} Aposentadoria por Tempo de Contribuição'),
-      pBen('III.  {checkbox.aposentadoria_especial} Aposentadoria Especial'),
-      pBen('IV.   {checkbox.pensao_morte} Pensão por Morte Previdenciária   {checkbox.pensao_morte_urbana} urbana   {checkbox.pensao_morte_rural} rural'),
-      pBen('V.    {checkbox.auxilio_reclusao} Auxílio-Reclusão   {checkbox.auxilio_reclusao_urbano} urbano   {checkbox.auxilio_reclusao_rural} rural'),
-      pBen('VI.   {checkbox.salario_maternidade} Salário-Maternidade   {checkbox.salario_maternidade_urbano} urbano   {checkbox.salario_maternidade_rural} rural'),
-      pBen('VII.  {checkbox.bpc} Benefício de Prestação Continuada – BPC/LOAS'),
-      pBen('VIII. {checkbox.atualizacao_cadastral} Atualização Cadastral'),
+      pCheck('I.    ', [
+        { tag: '{checkbox_X.aposentadoria_idade}',        label: ' Aposentadoria por Idade   ' },
+        { tag: '{checkbox_X.aposentadoria_idade_urbana}', label: ' urbana   ' },
+        { tag: '{checkbox_X.aposentadoria_idade_rural}',  label: ' rural' },
+      ]),
+      pCheck('II.   ', [{ tag: '{checkbox_X.aposentadoria_tempo}',    label: ' Aposentadoria por Tempo de Contribuição' }]),
+      pCheck('III.  ', [{ tag: '{checkbox_X.aposentadoria_especial}',  label: ' Aposentadoria Especial' }]),
+      pCheck('IV.   ', [
+        { tag: '{checkbox_X.pensao_morte}',        label: ' Pensão por Morte Previdenciária   ' },
+        { tag: '{checkbox_X.pensao_morte_urbana}', label: ' urbana   ' },
+        { tag: '{checkbox_X.pensao_morte_rural}',  label: ' rural' },
+      ]),
+      pCheck('V.    ', [
+        { tag: '{checkbox_X.auxilio_reclusao}',        label: ' Auxílio-Reclusão   ' },
+        { tag: '{checkbox_X.auxilio_reclusao_urbano}', label: ' urbano   ' },
+        { tag: '{checkbox_X.auxilio_reclusao_rural}',  label: ' rural' },
+      ]),
+      pCheck('VI.   ', [
+        { tag: '{checkbox_X.salario_maternidade}',        label: ' Salário-Maternidade   ' },
+        { tag: '{checkbox_X.salario_maternidade_urbano}', label: ' urbano   ' },
+        { tag: '{checkbox_X.salario_maternidade_rural}',  label: ' rural' },
+      ]),
+      pCheck('VII.  ', [{ tag: '{checkbox_X.bpc}',                  label: ' Benefício de Prestação Continuada – BPC/LOAS' }]),
+      pCheck('VIII. ', [{ tag: '{checkbox_X.atualizacao_cadastral}', label: ' Atualização Cadastral' }]),
 
       // ── Continuação ──────────────────────────────────────────────────────
       p('Podendo, para tanto, praticar os atos necessários ao cumprimento deste mandato, em especial, prestar informações, acompanhar requerimentos, cumprir exigências, ter vistas e tomar ciência de decisões sobre processos de requerimento de benefícios operacionalizados pelo Instituto.', SP, SP),

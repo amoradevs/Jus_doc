@@ -143,7 +143,7 @@ function tabelaQualidade() {
         width: { size: COL_QUAL, type: WidthType.DXA },
         borders: CELL_NONE,
         children: [new Paragraph({
-          children: [r(esqTag + ' '), r(esqLabel)],
+          children: [r('('), rb(esqTag), r(') '), r(esqLabel)],
           spacing: spacing(SP_SM, SP_SM),
           alignment: AlignmentType.LEFT,
         })],
@@ -152,7 +152,7 @@ function tabelaQualidade() {
         width: { size: COL_QUAL, type: WidthType.DXA },
         borders: CELL_NONE,
         children: [new Paragraph({
-          children: [r(dirTag + ' '), r(dirLabel)],
+          children: [r('('), rb(dirTag), r(') '), r(dirLabel)],
           spacing: spacing(SP_SM, SP_SM),
           alignment: AlignmentType.LEFT,
         })],
@@ -180,16 +180,16 @@ function tabelaQualidade() {
     rows: [
       headerRow,
       makeRow(
-        '{checkbox_qualidade_representacao.tutor_nato}',   'Tutor Nato',
-        '{checkbox_qualidade_representacao.tutor_legal}',  'Tutor Legal',
+        '{checkbox_qualidade_representacao_X.tutor_nato}',   'Tutor Nato',
+        '{checkbox_qualidade_representacao_X.tutor_legal}',  'Tutor Legal',
       ),
       makeRow(
-        '{checkbox_qualidade_representacao.curador}',              'Curador',
-        '{checkbox_qualidade_representacao.responsavel_termo_guarda}', 'Responsável Termo de Guarda',
+        '{checkbox_qualidade_representacao_X.curador}',              'Curador',
+        '{checkbox_qualidade_representacao_X.responsavel_termo_guarda}', 'Responsável Termo de Guarda',
       ),
       makeRow(
-        '{checkbox_qualidade_representacao.administrador_provisorio}', 'Administrador Provisório',
-        '{checkbox_qualidade_representacao.procurador}',               'Procurador',
+        '{checkbox_qualidade_representacao_X.administrador_provisorio}', 'Administrador Provisório',
+        '{checkbox_qualidade_representacao_X.procurador}',               'Procurador',
       ),
     ],
   });

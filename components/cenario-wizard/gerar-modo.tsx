@@ -111,7 +111,7 @@ export function GerarModo({ clientId, templates = [], processoId }: Props) {
         <Input
           placeholder="Buscar documento específico…"
           value={busca}
-          onChange={(e) => { setBusca(e.target.value); setSelected([]); }}
+          onChange={(e) => setBusca(e.target.value)}
           className="pl-9 pr-9 rounded-xl"
         />
         {emBusca && (
