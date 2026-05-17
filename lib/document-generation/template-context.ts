@@ -292,7 +292,6 @@ export function getCenarioContextOverrides(cenario: Cenario): Partial<TemplateCo
     checkbox_X: checkboxCenarioX,
     instituidor: { nome_completo: '', data_obito: '' },
     dependente_titular: { relacao_com_instituidor_descricao: '' },
-    representacao_legal: null,
     checkbox_qualidade_representacao: checkboxQualidade,
     checkbox_qualidade_representacao_X: checkboxQualidadeX,
   };
@@ -525,7 +524,7 @@ export async function buildTemplateContext(
             (b) => ({ nome: b.nome ?? '', cpf: formatarCPF(b.cpf ?? '') }),
           ),
         }
-      : null,
+      : { representante_nome: '', representante_cpf: '', representante_rg: '', qualidade_descricao: '', beneficiarios_representados: [] },
     checkbox_qualidade_representacao: (() => {
       const m: Record<string, string> = {};
       for (const q of TODAS_QUALIDADES_REPRESENTACAO) {

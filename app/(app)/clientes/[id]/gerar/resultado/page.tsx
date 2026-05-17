@@ -410,6 +410,12 @@ export default function ResultadoPage() {
 
   /* ── Erro ── */
   if (status === 'error') {
+    const erroAmigavel = errorMsg?.toLowerCase().includes('multi error')
+      ? 'O documento selecionado exige dados complementares que não foram encontrados no cadastro deste cliente. Verifique se todas as informações necessárias estão preenchidas e tente novamente.'
+      : errorMsg?.toLowerCase().includes('falha de rede') || errorMsg?.toLowerCase().includes('network')
+        ? 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.'
+        : 'Não foi possível gerar o documento. Verifique o cadastro do cliente e tente novamente.';
+
     return (
       <div className="max-w-md space-y-5">
         <div className="flex items-center gap-3">
@@ -417,8 +423,8 @@ export default function ResultadoPage() {
             <X className="w-4 h-4 text-red-600 dark:text-red-400" strokeWidth={2.5} />
           </div>
           <div>
-            <h1 className="font-bold text-foreground">Erro na geração</h1>
-            <p className="text-sm text-muted-foreground">{errorMsg}</p>
+            <h1 className="font-bold text-foreground">Não foi possível gerar o documento</h1>
+            <p className="text-sm text-muted-foreground">{erroAmigavel}</p>
           </div>
         </div>
         <div className="flex gap-2">
