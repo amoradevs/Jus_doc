@@ -253,7 +253,10 @@ const doc = new Document({
         SP * 3, SP * 4,
       ),
       pL('_________________________________', SP_NONE, SP_NONE),
+      new Paragraph({ children: [new TextRun({ text: '{cliente.nome_completo}', font: FONT, size: 18 })], spacing: spacing(SP_NONE, SP_NONE), alignment: AlignmentType.LEFT }),
+      new Paragraph({ children: [new TextRun({ text: '{cliente.cpf}',           font: FONT, size: 18 })], spacing: spacing(SP_NONE, SP_NONE), alignment: AlignmentType.LEFT }),
       pL([rb('{representacao_legal.representante_nome}')], SP_NONE, SP_NONE),
+      pL([rb('{representacao_legal.representante_cpf}')], SP_NONE, SP_NONE),
 
     ],
   }],
