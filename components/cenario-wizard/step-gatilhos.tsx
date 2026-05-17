@@ -1,9 +1,15 @@
 'use client';
 
-import { Home, Building2, HeartCrack, Users, CheckCircle2 } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Home, Building2, HeartCrack, Users, CheckCircle2, Loader2 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+  DialogDescription, DialogFooter, DialogClose,
+} from '@/components/ui/dialog';
 import type { GatilhoId, BeneficioId } from '@/lib/document-generation/cadeia-documental';
 
 const TODAS_OPCOES: { value: GatilhoId; label: string; descricao: string; Icon: React.ElementType; beneficios?: BeneficioId[] }[] = [
@@ -37,6 +43,7 @@ const TODAS_OPCOES: { value: GatilhoId; label: string; descricao: string; Icon: 
 ];
 
 type Props = {
+  clientId: string;
   value: GatilhoId[];
   onChange: (g: GatilhoId[]) => void;
   onNext: () => void;
@@ -44,17 +51,56 @@ type Props = {
   beneficio?: BeneficioId | null;
 };
 
-export function StepGatilhos({ value, onChange, onNext, onBack, beneficio }: Props) {
+export function StepGatilhos({ clientId, value, onChange, onNext, onBack, beneficio }: Props) {
   const OPCOES = TODAS_OPCOES.filter(
     (o) => !o.beneficios || !beneficio || o.beneficios.includes(beneficio),
   );
 
+  const [modalAberto, setModalAberto] = useState(false);
+  const [nomeProprietario, setNomeProprietario] = useState('');
+  const [salvando, setSalvando] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
   function toggle(gatilho: GatilhoId) {
+    if (gatilho === 'imovel_terceiro') {
+      if (value.includes('imovel_terceiro')) {
+        // Desmarcar — apenas remove, sem modal
+        onChange(value.filter((g) => g !== 'imovel_terceiro'));
+      } else {
+        // Marcar — abre modal para capturar nome do proprietário
+        setNomeProprietario('');
+        setModalAberto(true);
+      }
+      return;
+    }
+
     onChange(
       value.includes(gatilho)
         ? value.filter((g) => g !== gatilho)
         : [...value, gatilho],
     );
+  }
+
+  async function confirmarProprietario() {
+    const nome = nomeProprietario.trim();
+    if (!nome || salvando) return;
+
+    setSalvando(true);
+    try {
+      await fetch(`/api/clientes/${clientId}/contextual-data`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imovel: { proprietario_nome: nome, cedido: true } }),
+      });
+      onChange([...value, 'imovel_terceiro']);
+      setModalAberto(false);
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') confirmarProprietario();
   }
 
   const isNenhumaChecked = value.length === 0;
@@ -141,6 +187,49 @@ export function StepGatilhos({ value, onChange, onNext, onBack, beneficio }: Pro
           <Button onClick={onNext} className="rounded-xl">Avançar</Button>
         </div>
       </div>
+
+      {/* ── Modal — proprietário do imóvel ── */}
+      <Dialog open={modalAberto} onOpenChange={(open) => { if (!salvando) setModalAberto(open); }}>
+        <DialogContent
+          className="sm:max-w-sm"
+          onOpenAutoFocus={(e) => { e.preventDefault(); inputRef.current?.focus(); }}
+        >
+          <DialogHeader>
+            <DialogTitle>Quem é o proprietário do imóvel?</DialogTitle>
+            <DialogDescription>
+              O nome será incluído automaticamente na Declaração de Residência.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-1">
+            <Input
+              ref={inputRef}
+              placeholder="Nome completo do proprietário"
+              value={nomeProprietario}
+              onChange={(e) => setNomeProprietario(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={salvando}
+              className="rounded-xl"
+            />
+          </div>
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" className="rounded-xl" disabled={salvando}>
+                Cancelar
+              </Button>
+            </DialogClose>
+            <Button
+              className="rounded-xl gap-2"
+              onClick={confirmarProprietario}
+              disabled={!nomeProprietario.trim() || salvando}
+            >
+              {salvando && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

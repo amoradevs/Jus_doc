@@ -144,6 +144,7 @@ export function WizardCenario({ clientId, processoId }: Props) {
 
       {step === 3 && (
         <StepGatilhos
+          clientId={clientId}
           value={gatilhos}
           onChange={handleGatilhosChange}
           onNext={irParaConfirmacao}
