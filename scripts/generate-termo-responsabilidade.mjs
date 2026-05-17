@@ -82,16 +82,15 @@ const pTag = (tag) => new Paragraph({
   alignment: AlignmentType.LEFT,
 });
 
-// ── Tabela de beneficiários (loop docxtemplater, bordas visíveis) ─────────────
-// {#loop} no primeiro cell, {/loop} no último — docxtemplater repete a row.
+// ── Tabela de representante + beneficiário (bordas visíveis) ──────────────────
 function tabelaBeneficiarios() {
-  const makeHeaderRow = () => new TableRow({
+  const makeHeaderRow = (label) => new TableRow({
     children: [
       new TableCell({
         columnSpan: 2,
         borders: CELL_SOLID,
         children: [new Paragraph({
-          children: [rb('Beneficiários:', SZ)],
+          children: [rb(label, SZ)],
           alignment: AlignmentType.CENTER,
           spacing: spacing(SP_SM, SP_SM),
         })],
@@ -99,16 +98,13 @@ function tabelaBeneficiarios() {
     ],
   });
 
-  const makeDataRow = () => new TableRow({
+  const makeDataRow = (nomeTag, cpfTag) => new TableRow({
     children: [
       new TableCell({
         width: { size: COL_NOME, type: WidthType.DXA },
         borders: CELL_SOLID,
         children: [new Paragraph({
-          children: [
-            r('{#representacao_legal.beneficiarios_representados}Nome: '),
-            r('{.nome}'),
-          ],
+          children: [r('Nome: '), r(nomeTag)],
           spacing: spacing(SP_SM, SP_SM),
           alignment: AlignmentType.LEFT,
         })],
@@ -117,10 +113,7 @@ function tabelaBeneficiarios() {
         width: { size: COL_CPF, type: WidthType.DXA },
         borders: CELL_SOLID,
         children: [new Paragraph({
-          children: [
-            r('CPF: {.cpf}'),
-            r('{/representacao_legal.beneficiarios_representados}'),
-          ],
+          children: [r('CPF: '), r(cpfTag)],
           spacing: spacing(SP_SM, SP_SM),
           alignment: AlignmentType.LEFT,
         })],
@@ -131,7 +124,14 @@ function tabelaBeneficiarios() {
   return new Table({
     width: { size: TABLE_W, type: WidthType.DXA },
     layout: TableLayoutType.FIXED,
-    rows: [makeHeaderRow(), makeDataRow()],
+    rows: [
+      // Mãe / Representante
+      makeHeaderRow('Responsável (Representante):'),
+      makeDataRow('{representacao_legal.representante_nome}', '{representacao_legal.representante_cpf}'),
+      // Cliente / Beneficiário
+      makeHeaderRow('Beneficiário representado:'),
+      makeDataRow('{cliente.nome_completo}', '{cliente.cpf}'),
+    ],
   });
 }
 
@@ -246,11 +246,14 @@ const doc = new Document({
       tabelaQualidade(),
 
       // ── Local, Data e Assinatura ─────────────────────────────────────────
-      p([
-        rb('Local e Data: ', SZ), r('{doc.cidade_assinatura}, '),
-        r('{doc.dia_assinatura}/{doc.mes_assinatura_numero}/{doc.ano_assinatura}'),
-      ], SP * 3, SP),
-      pL([rb('Assinatura: ', SZ), r('{representacao_legal.representante_nome}')], SP, SP_NONE),
+      pL(
+        '{doc.cidade_assinatura}, {doc.dia_assinatura}'
+        + ' de {doc.mes_assinatura_extenso}'
+        + ' de {doc.ano_assinatura}.',
+        SP * 3, SP * 4,
+      ),
+      pL('_________________________________', SP_NONE, SP_NONE),
+      pL([rb('{representacao_legal.representante_nome}')], SP_NONE, SP_NONE),
 
     ],
   }],
