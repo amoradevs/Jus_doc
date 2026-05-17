@@ -11,6 +11,7 @@ import { AlterarStatusSelect } from '@/components/alterar-status-select';
 import { ListaPrazos } from '@/components/prazos/lista-prazos';
 import { EncerrarProcessoButton } from '@/components/encerrar-processo-button';
 import { PensaoMorteCard } from '@/components/pensao-morte/pensao-morte-card';
+import { DeleteProcessoButton } from '@/components/delete-processo-button';
 
 type Props = {
   params: Promise<{ numero_interno: string }>;
@@ -274,6 +275,15 @@ export default async function ProcessoPage({ params, searchParams }: Props) {
               />
             </div>
           )}
+
+          {/* Zona de perigo */}
+          <div className="mt-8 pt-6 border-t border-border">
+            <DeleteProcessoButton
+              processoId={processo.id}
+              numeroInterno={processo.numero_interno}
+              clienteId={processo.cliente_id}
+            />
+          </div>
         </div>
       )}
 
