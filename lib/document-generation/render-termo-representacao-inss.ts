@@ -150,55 +150,17 @@ export async function renderTermoRepresentacaoInss(ctx: TemplateContext): Promis
   // ── Corpo do formulário ────────────────────────────────────────────────────
   const x = ML;
 
-  drawSegments(page, y, x, [
-    { text: 'Eu, ', font: fn },
-    { text: cl.nome_completo, font: fn },
-    { text: ', inscrito(a) no', font: fn },
-  ]);
-  y -= LH;
+  // Bloco de identificação: parágrafo único contínuo, igual ao formulário oficial do INSS.
+  const identificacao =
+    `Eu, ${cl.nome_completo}, inscrito(a) no CPF nº ${cl.cpf}, RG nº ${cl.rg || ''}, ` +
+    `residente e domiciliado(a) em, ${endFull}, no Município de ${en.cidade}/${en.uf}, ` +
+    `CEP ${en.cep}, representado pela advogada ${wr.adv1_nome}, CPF nº ${wr.adv1_cpf}, ` +
+    `OAB Nº ${wr.adv1_oab}, NIT nº ${cl.nit || ''}, CONFIRO PODERES ESPECÍFICOS para me ` +
+    `representar perante o INSS na solicitação do serviço ou benefício abaixo indicado e ` +
+    `AUTORIZO o(a) referido(a) profissional a ter acesso apenas às informações pessoais ` +
+    `necessárias a subsidiar o requerimento eletrônico do serviço ou benefício abaixo elencado:`;
 
-  drawSegments(page, y, x, [
-    { text: 'CPF nº ', font: fn },
-    { text: cl.cpf, font: fn },
-    { text: ', RG nº ', font: fn },
-    { text: cl.rg || '', font: fn },
-    { text: ', residente e domiciliado(a) em,', font: fn },
-  ]);
-  y -= LH;
-
-  y = drawWrapped(page, endFull + ',', x, y, BW, fn, FS, LH);
-
-  drawSegments(page, y, x, [
-    { text: 'no Município de ', font: fn },
-    { text: `${en.cidade}/${en.uf}`, font: fn },
-    { text: ', CEP ', font: fn },
-    { text: en.cep, font: fn },
-    { text: ',', font: fn },
-  ]);
-  y -= LH;
-
-  drawSegments(page, y, x, [
-    { text: 'representado pela advogada ', font: fn },
-    { text: wr.adv1_nome, font: fn },
-    { text: ',', font: fn },
-  ]);
-  y -= LH;
-
-  drawSegments(page, y, x, [
-    { text: 'CPF nº ', font: fn },
-    { text: wr.adv1_cpf, font: fn },
-    { text: ', OAB Nº ', font: fn },
-    { text: wr.adv1_oab, font: fn },
-    { text: ', NIT nº ', font: fn },
-    { text: cl.nit || '', font: fn },
-    { text: ',', font: fn },
-  ]);
-  y -= LH;
-
-  y = drawJustified(page,
-    'CONFIRO PODERES ESPECÍFICOS para me representar perante o INSS na solicitação do serviço ou benefício abaixo indicado e AUTORIZO o(a) referido(a) profissional a ter acesso apenas às informações pessoais necessárias a subsidiar o requerimento eletrônico do serviço ou benefício abaixo elencado:',
-    x, y, BW, fn, FS, LH,
-  );
+  y = drawJustified(page, identificacao, x, y, BW, fn, FS, LH);
   y -= 4;
 
   // ── Tabela de checkboxes ───────────────────────────────────────────────────
