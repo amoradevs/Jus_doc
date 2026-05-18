@@ -202,27 +202,40 @@ export function PdfCompressor() {
       {/* Done */}
       {state.phase === 'done' && (
         <div className="flex flex-col gap-4">
-          <div className={`border rounded-lg p-4 ${state.compressedSize < state.originalSize ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800' : 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800'}`}>
-            <p className={`text-sm font-semibold mb-3 ${state.compressedSize < state.originalSize ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400'}`}>
-              {state.compressedSize < state.originalSize ? '✓ Compressão concluída!' : '⚠ Arquivo já está no menor tamanho possível'}
-            </p>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div>
-                <p className="text-xs text-muted-foreground">Original</p>
-                <p className="text-sm font-medium text-foreground">{formatMB(state.originalSize)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Redução</p>
-                <p className={`text-sm font-bold ${state.compressedSize < state.originalSize ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
-                  {state.compressedSize < state.originalSize ? `-${reduction(state.originalSize, state.compressedSize)}%` : '—'}
+          {(() => {
+            const MAX = 5 * 1024 * 1024;
+            const aindaGrande = state.compressedSize > MAX;
+            const semReducao = state.compressedSize >= state.originalSize;
+            const cor = aindaGrande ? 'amber' : 'green';
+            return (
+              <div className={`border rounded-lg p-4 bg-${cor}-50 dark:bg-${cor}-950/20 border-${cor}-200 dark:border-${cor}-800`}>
+                <p className={`text-sm font-semibold mb-3 text-${cor}-700 dark:text-${cor}-400`}>
+                  {aindaGrande ? '⚠ Arquivo ainda acima de 5 MB' : '✓ Compressão concluída!'}
                 </p>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Original</p>
+                    <p className="text-sm font-medium text-foreground">{formatMB(state.originalSize)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Redução</p>
+                    <p className={`text-sm font-bold ${semReducao ? 'text-muted-foreground' : `text-${cor}-600 dark:text-${cor}-400`}`}>
+                      {semReducao ? '—' : `-${reduction(state.originalSize, state.compressedSize)}%`}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Novo tamanho</p>
+                    <p className="text-sm font-medium text-foreground">{formatMB(state.compressedSize)}</p>
+                  </div>
+                </div>
+                {aindaGrande && (
+                  <p className="text-xs text-amber-700 dark:text-amber-400 mt-3">
+                    Baixe o arquivo comprimido e envie-o novamente ao compressor. Repita até atingir 5 MB.
+                  </p>
+                )}
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Novo tamanho</p>
-                <p className="text-sm font-medium text-foreground">{formatMB(state.compressedSize)}</p>
-              </div>
-            </div>
-          </div>
+            );
+          })()}
           <div className="flex gap-2">
             <Button onClick={handleDownload} className="flex-1 gap-2">
               <Download className="w-4 h-4" />
