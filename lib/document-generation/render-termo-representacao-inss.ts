@@ -127,8 +127,7 @@ export async function renderTermoRepresentacaoInss(ctx: TemplateContext): Promis
   ]);
   y -= LH;
 
-  page.drawText(endFull + ',', { x, y, size: FS, font: fn, color: rgb(0, 0, 0) });
-  y -= LH;
+  y = drawWrapped(page, endFull + ',', x, y, BW, fn, FS, LH);
 
   drawSegments(page, y, x, [
     { text: 'no Município de ', font: fn },
