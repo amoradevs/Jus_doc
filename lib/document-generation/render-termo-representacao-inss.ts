@@ -59,6 +59,44 @@ function drawWrapped(
   return y;
 }
 
+function drawJustified(
+  page: PDFPage, text: string, x: number, startY: number,
+  maxW: number, font: PDFFont, size: number, lh: number,
+): number {
+  const words = text.split(' ');
+  const lines: string[][] = [];
+  let current: string[] = [];
+  for (const word of words) {
+    const test = [...current, word].join(' ');
+    if (tw(test, font, size) > maxW && current.length > 0) {
+      lines.push(current);
+      current = [word];
+    } else {
+      current.push(word);
+    }
+  }
+  if (current.length > 0) lines.push(current);
+
+  let y = startY;
+  for (let i = 0; i < lines.length; i++) {
+    const lineWords = lines[i];
+    const isLast = i === lines.length - 1;
+    if (isLast || lineWords.length === 1) {
+      page.drawText(lineWords.join(' '), { x, y, size, font, color: rgb(0, 0, 0) });
+    } else {
+      const totalW = lineWords.reduce((s, w) => s + tw(w, font, size), 0);
+      const gap = (maxW - totalW) / (lineWords.length - 1);
+      let cx = x;
+      for (const word of lineWords) {
+        page.drawText(word, { x: cx, y, size, font, color: rgb(0, 0, 0) });
+        cx += tw(word, font, size) + gap;
+      }
+    }
+    y -= lh;
+  }
+  return y;
+}
+
 function drawCheckbox(page: PDFPage, x: number, y: number, checked: boolean, font: PDFFont) {
   const b = FS;
   page.drawRectangle({
@@ -92,10 +130,10 @@ export async function renderTermoRepresentacaoInss(ctx: TemplateContext): Promis
   const dataStr = `${dc.dia_assinatura}/${dc.mes_assinatura_numero}/${dc.ano_assinatura}`;
 
   // ── Logo INSS ──────────────────────────────────────────────────────────────
-  const logoPath = path.resolve(process.cwd(), 'templates/inss-logo.png');
+  const logoPath = path.resolve(process.cwd(), 'templates/brasao-republica.png');
   if (fs.existsSync(logoPath)) {
     const img = await pdfDoc.embedPng(fs.readFileSync(logoPath));
-    const d = img.scaleToFit(160, 55);
+    const d = img.scaleToFit(60, 60);
     page.drawImage(img, { x: (PW - d.width) / 2, y: PH - 14 - d.height, width: d.width, height: d.height });
   }
 
@@ -157,7 +195,7 @@ export async function renderTermoRepresentacaoInss(ctx: TemplateContext): Promis
   ]);
   y -= LH;
 
-  y = drawWrapped(page,
+  y = drawJustified(page,
     'CONFIRO PODERES ESPECÍFICOS para me representar perante o INSS na solicitação do serviço ou benefício abaixo indicado e AUTORIZO o(a) referido(a) profissional a ter acesso apenas às informações pessoais necessárias a subsidiar o requerimento eletrônico do serviço ou benefício abaixo elencado:',
     x, y, BW, fn, FS, LH,
   );
@@ -216,7 +254,7 @@ export async function renderTermoRepresentacaoInss(ctx: TemplateContext): Promis
   y = tableBot - LH;
 
   // ── Parágrafo "Podendo" ────────────────────────────────────────────────────
-  y = drawWrapped(page,
+  y = drawJustified(page,
     'Podendo, para tanto, praticar os atos necessários ao cumprimento deste mandato, em especial, prestar informações, acompanhar requerimentos, cumprir exigências, ter vistas e tomar ciência de decisões sobre processos de requerimento de benefícios operacionalizados pelo Instituto.',
     x, y, BW, fn, FS, LH,
   );
@@ -235,7 +273,7 @@ export async function renderTermoRepresentacaoInss(ctx: TemplateContext): Promis
   centered(page, 'TERMO DE RESPONSABILIDADE', y, fb, FS);
   y -= LH * 1.5;
 
-  y = drawWrapped(page,
+  y = drawJustified(page,
     'Por este Termo de Responsabilidade, comprometo-me a comunicar ao INSS qualquer evento que possa anular esta Procuração, no prazo de trinta dias, a contar da data que o mesmo ocorra, principalmente o óbito do segurado / pensionista, mediante apresentação da respectiva certidão. Estou ciente de que o descumprimento do compromisso ora assumido, além de obrigar a devolução de importâncias recebidas indevidamente, quando for o caso, sujeitar-me-á às penalidades previstas nos arts. 171 e 299, ambos do Código Penal.',
     x, y, BW, fn, FS, LH,
   );
@@ -256,12 +294,12 @@ export async function renderTermoRepresentacaoInss(ctx: TemplateContext): Promis
   page.drawText('CÓDIGO PENAL', { x, y, size: FS_SM, font: fb, color: rgb(0, 0, 0) });
   y -= LH * 0.9;
 
-  y = drawWrapped(page,
+  y = drawJustified(page,
     'Art. 171 - Obter, para si ou para outrem, vantagem ilícita, em prejuízo alheio, induzindo ou mantendo alguém em erro, mediante artifício, ardil, ou qualquer outro meio fraudulento.',
     x, y, BW, fn, FS_SM, LH * 0.9,
   );
 
-  drawWrapped(page,
+  drawJustified(page,
     'Art. 299 – Omitir, em documento público ou particular, declaração que devia constar, ou nele inserir ou fazer inserir declaração falsa ou diversa da que devia ser escrita, com o fim de prejudicar direito, criar, obrigação ou alterar a verdade sobre fato juridicamente relevante.',
     x, y, BW, fn, FS_SM, LH * 0.9,
   );
