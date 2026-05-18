@@ -4,9 +4,8 @@ import { useRef, useState } from 'react';
 import { FileText, Upload, Download, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const MAX_OUTPUT_BYTES = 5 * 1024 * 1024;
-const QUALITIES = [0.75, 0.55, 0.35];
-const SCALE = 1.5; // ~144 DPI — legível e compacto
+const QUALITIES = [0.75, 0.55, 0.35, 0.2];
+const SCALE = 1.2; // ~115 DPI — legível, menor footprint em mobile
 
 type State =
   | { phase: 'idle' }
@@ -53,7 +52,8 @@ async function compressPdf(
     canvases.push(canvas);
   }
 
-  // Tenta qualidades progressivamente menores até caber em 5 MB
+  // Tenta qualidades progressivamente menores; sempre retorna o menor resultado obtido
+  let bestBytes: Uint8Array | null = null;
   for (const quality of QUALITIES) {
     onProgress(65, `Comprimindo imagens (qualidade ${Math.round(quality * 100)}%)…`);
     const pdfDoc = await PDFDocument.create();
@@ -70,13 +70,11 @@ async function compressPdf(
     }
 
     const pdfBytes = await pdfDoc.save();
-    if (pdfBytes.byteLength <= MAX_OUTPUT_BYTES) {
-      onProgress(100, 'Concluído!');
-      return new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
-    }
+    if (!bestBytes || pdfBytes.byteLength < bestBytes.byteLength) bestBytes = pdfBytes;
   }
 
-  throw new Error('Não foi possível comprimir abaixo de 5 MB mesmo na qualidade mínima. Tente dividir o documento em partes menores.');
+  onProgress(100, 'Concluído!');
+  return new Blob([bestBytes!.buffer as ArrayBuffer], { type: 'application/pdf' });
 }
 
 export function PdfCompressor() {
@@ -204,8 +202,10 @@ export function PdfCompressor() {
       {/* Done */}
       {state.phase === 'done' && (
         <div className="flex flex-col gap-4">
-          <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-            <p className="text-sm font-semibold text-green-700 dark:text-green-400 mb-3">✓ Compressão concluída!</p>
+          <div className={`border rounded-lg p-4 ${state.compressedSize < state.originalSize ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800' : 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800'}`}>
+            <p className={`text-sm font-semibold mb-3 ${state.compressedSize < state.originalSize ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400'}`}>
+              {state.compressedSize < state.originalSize ? '✓ Compressão concluída!' : '⚠ Arquivo já está no menor tamanho possível'}
+            </p>
             <div className="grid grid-cols-3 gap-2 text-center">
               <div>
                 <p className="text-xs text-muted-foreground">Original</p>
@@ -213,8 +213,8 @@ export function PdfCompressor() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Redução</p>
-                <p className="text-sm font-bold text-green-600 dark:text-green-400">
-                  -{reduction(state.originalSize, state.compressedSize)}%
+                <p className={`text-sm font-bold ${state.compressedSize < state.originalSize ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
+                  {state.compressedSize < state.originalSize ? `-${reduction(state.originalSize, state.compressedSize)}%` : '—'}
                 </p>
               </div>
               <div>
