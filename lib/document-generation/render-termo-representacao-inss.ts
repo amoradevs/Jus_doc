@@ -95,11 +95,12 @@ export async function renderTermoRepresentacaoInss(ctx: TemplateContext): Promis
   const logoPath = path.resolve(process.cwd(), 'templates/inss-logo.png');
   if (fs.existsSync(logoPath)) {
     const img = await pdfDoc.embedPng(fs.readFileSync(logoPath));
-    const d = img.scaleToFit(52, 52);
-    page.drawImage(img, { x: (PW - d.width) / 2, y: PH - 18 - d.height, width: d.width, height: d.height });
+    const d = img.scaleToFit(160, 55);
+    page.drawImage(img, { x: (PW - d.width) / 2, y: PH - 14 - d.height, width: d.width, height: d.height });
   }
 
   // ── Cabeçalho ──────────────────────────────────────────────────────────────
+  // y=760 deixa ~13pt de espaço abaixo do logo (logo bottom em ~773)
   let y = PH - 82;
   centered(page, 'INSTITUTO NACIONAL DO SEGURO SOCIAL', y, fb, FS);
   y -= LH;
