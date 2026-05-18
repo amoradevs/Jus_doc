@@ -115,7 +115,7 @@ export async function renderTermoRepresentacaoInss(ctx: TemplateContext): Promis
   drawSegments(page, y, x, [
     { text: 'Eu, ', font: fn },
     { text: cl.nome_completo, font: fn },
-    { text: ', inscrito (a) no', font: fn },
+    { text: ', inscrito(a) no', font: fn },
   ]);
   y -= LH;
 
@@ -124,7 +124,7 @@ export async function renderTermoRepresentacaoInss(ctx: TemplateContext): Promis
     { text: cl.cpf, font: fn },
     { text: ', RG nº ', font: fn },
     { text: cl.rg || '', font: fn },
-    { text: ', residente e domiciliado (a) em,', font: fn },
+    { text: ', residente e domiciliado(a) em,', font: fn },
   ]);
   y -= LH;
 
@@ -132,15 +132,15 @@ export async function renderTermoRepresentacaoInss(ctx: TemplateContext): Promis
 
   drawSegments(page, y, x, [
     { text: 'no Município de ', font: fn },
-    { text: cidadeUf, font: fn },
+    { text: `${en.cidade}/${en.uf}`, font: fn },
     { text: ', CEP ', font: fn },
     { text: en.cep, font: fn },
-    { text: ', representado pelo', font: fn },
+    { text: ',', font: fn },
   ]);
   y -= LH;
 
   drawSegments(page, y, x, [
-    { text: 'advogado ', font: fn },
+    { text: 'representado pela advogada ', font: fn },
     { text: wr.adv1_nome, font: fn },
     { text: ',', font: fn },
   ]);
@@ -153,12 +153,12 @@ export async function renderTermoRepresentacaoInss(ctx: TemplateContext): Promis
     { text: wr.adv1_oab, font: fn },
     { text: ', NIT nº ', font: fn },
     { text: cl.nit || '', font: fn },
-    { text: ', CONFIRO PODERES', font: fn },
+    { text: ',', font: fn },
   ]);
   y -= LH;
 
   y = drawWrapped(page,
-    'ESPECÍFICOS para me representar perante o INSS na solicitação do serviço ou benefício abaixo indicado e AUTORIZO o (a) referido (a) profissional a ter acesso apenas às informações pessoais necessárias a subsidiar o requerimento eletrônico do serviço ou benefício abaixo elencado:',
+    'CONFIRO PODERES ESPECÍFICOS para me representar perante o INSS na solicitação do serviço ou benefício abaixo indicado e AUTORIZO o(a) referido(a) profissional a ter acesso apenas às informações pessoais necessárias a subsidiar o requerimento eletrônico do serviço ou benefício abaixo elencado:',
     x, y, BW, fn, FS, LH,
   );
   y -= 4;
@@ -171,9 +171,9 @@ export async function renderTermoRepresentacaoInss(ctx: TemplateContext): Promis
     { num: 'III.',  label: 'Aposentadoria Especial',              key: 'aposentadoria_especial' },
     { num: 'IV.',   label: 'Pensão por Morte Previdenciária',     key: 'pensao_morte',           sub: [{ label: 'urbana', key: 'pensao_morte_urbana' }, { label: 'rural', key: 'pensao_morte_rural' }] },
     { num: 'V.',    label: 'Auxílio-Reclusão',                   key: 'auxilio_reclusao',        sub: [{ label: 'urbano', key: 'auxilio_reclusao_urbano' }, { label: 'rural', key: 'auxilio_reclusao_rural' }] },
-    { num: 'VI.',   label: 'Salário Maternidade',                 key: 'salario_maternidade',    sub: [{ label: 'urbano', key: 'salario_maternidade_urbano' }, { label: 'rural', key: 'salario_maternidade_rural' }] },
-    { num: 'VII.',  label: 'Atualização Cadastral',               key: 'atualizacao_cadastral' },
-    { num: 'VIII.', label: 'Benefício de Prestação Continuada – BPC/LOAS', key: 'bpc' },
+    { num: 'VI.',   label: 'Salário-Maternidade',                 key: 'salario_maternidade',    sub: [{ label: 'urbano', key: 'salario_maternidade_urbano' }, { label: 'rural', key: 'salario_maternidade_rural' }] },
+    { num: 'VII.',  label: 'Benefício de Prestação Continuada – BPC/LOAS', key: 'bpc' },
+    { num: 'VIII.', label: 'Atualização Cadastral',               key: 'atualizacao_cadastral' },
   ];
 
   const tableH = ROW_H * rows.length + 2;
@@ -236,37 +236,33 @@ export async function renderTermoRepresentacaoInss(ctx: TemplateContext): Promis
   y -= LH * 1.5;
 
   y = drawWrapped(page,
-    'Por este Termo de Responsabilidade, comprometo-me a comunicar ao INSS qualquer evento que possa anular esta Procuração, no prazo de trinta dias, a contar da data que o mesmo ocorra, principalmente o óbito do segurado / pensionista, mediante apresentação da respectiva certidão.',
-    x, y, BW, fn, FS, LH,
-  );
-  y -= LH * 0.5;
-
-  y = drawWrapped(page,
-    'Estou ciente de que o descumprimento do compromisso ora assumido, além de obrigar a devolução de importâncias recebidas indevidamente, quando for o caso, sujeitar-me-á às penalidades previstas nos arts. 171 e 299, ambos do Código Penal.',
+    'Por este Termo de Responsabilidade, comprometo-me a comunicar ao INSS qualquer evento que possa anular esta Procuração, no prazo de trinta dias, a contar da data que o mesmo ocorra, principalmente o óbito do segurado / pensionista, mediante apresentação da respectiva certidão. Estou ciente de que o descumprimento do compromisso ora assumido, além de obrigar a devolução de importâncias recebidas indevidamente, quando for o caso, sujeitar-me-á às penalidades previstas nos arts. 171 e 299, ambos do Código Penal.',
     x, y, BW, fn, FS, LH,
   );
   y -= LH;
 
-  // ── Assinatura Procurador ──────────────────────────────────────────────────
+  // ── Assinatura Procurador (nome + OAB da advogada) ────────────────────────
   page.drawText(`${cidadeUf}, ${dataStr}.`, { x, y, size: FS, font: fn, color: rgb(0, 0, 0) });
   const sig2X = x + BW - 155;
   page.drawLine({ start: { x: sig2X, y }, end: { x: x + BW, y }, thickness: 0.5, color: rgb(0, 0, 0) });
-  y -= 5;
-  const lbl2 = 'Assinatura do (a) Procurador (a)';
-  page.drawText(lbl2, { x: sig2X + (155 - tw(lbl2, fn, FS_SM)) / 2, y, size: FS_SM, font: fn, color: rgb(0, 0, 0) });
-  y -= LH * 2;
+  y -= LH * 0.9;
+  page.drawText(wr.adv1_nome, { x: sig2X + (155 - tw(wr.adv1_nome, fn, FS_SM)) / 2, y, size: FS_SM, font: fn, color: rgb(0, 0, 0) });
+  y -= LH * 0.85;
+  const oabStr = `OAB ${wr.adv1_oab}`;
+  page.drawText(oabStr, { x: sig2X + (155 - tw(oabStr, fn, FS_SM)) / 2, y, size: FS_SM, font: fn, color: rgb(0, 0, 0) });
+  y -= LH * 1.5;
 
   // ── Código Penal ───────────────────────────────────────────────────────────
   page.drawText('CÓDIGO PENAL', { x, y, size: FS_SM, font: fb, color: rgb(0, 0, 0) });
   y -= LH * 0.9;
 
   y = drawWrapped(page,
-    'Art. 171. Obter, para si ou para outrem, vantagem ilícita, em prejuízo alheio, induzindo ou manter alguém em erro, mediante artifício, ardil ou qualquer outro meio fraudulento.',
+    'Art. 171 - Obter, para si ou para outrem, vantagem ilícita, em prejuízo alheio, induzindo ou mantendo alguém em erro, mediante artifício, ardil, ou qualquer outro meio fraudulento.',
     x, y, BW, fn, FS_SM, LH * 0.9,
   );
 
   drawWrapped(page,
-    'Art. 299. Omitir, em documento público ou particular, declaração que devia constar, ou nele inserir ou fazer inserir declaração falsa ou diversa da que devia ser escrita, com o fim de prejudicar direito, criar, obrigação ou alterar a verdade sobre fato juridicamente relevante.',
+    'Art. 299 – Omitir, em documento público ou particular, declaração que devia constar, ou nele inserir ou fazer inserir declaração falsa ou diversa da que devia ser escrita, com o fim de prejudicar direito, criar, obrigação ou alterar a verdade sobre fato juridicamente relevante.',
     x, y, BW, fn, FS_SM, LH * 0.9,
   );
 
