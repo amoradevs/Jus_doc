@@ -10,6 +10,7 @@ import type { Cenario } from './cadeia-documental';
 import { renderDocxTemplate } from './docx-renderer';
 import { convertDocxToPdf, isPdfConverterAvailable } from './pdf-converter';
 import { renderPdfOverlay } from './pdf-overlay';
+import { renderTermoRepresentacaoInss } from './render-termo-representacao-inss';
 
 const storage = createClient(
   process.env.SUPABASE_URL!,
@@ -74,7 +75,11 @@ export async function buildDocumentPackage(
       ? { ...context, mostrar_lidiane: true, mostrar_alcione: true, tem_duas_advogadas: true, apenas_lidiane: false, apenas_alcione: false, incluir_assinatura_lidiane: false }
       : context;
 
-    if (template.formato === 'docx') {
+    if (template.codigo === '05') {
+      fileBuffer = await renderTermoRepresentacaoInss(ctx);
+      extensao = 'pdf';
+      contentType = 'application/pdf';
+    } else if (template.formato === 'docx') {
       const templateBuffer = await getTemplateBuffer(template);
       docxBuffer = await renderDocxTemplate(templateBuffer, ctx);
       if (usarPdf) {
