@@ -122,6 +122,13 @@ scripts/
 - Download em PDF e DOCX por documento; ZIP do pacote completo
 - Modal de seleção de advogada antes de gerar (wizard e busca rápida)
 - Assinatura digital da Dra. Lidiane embutida como imagem PNG no Termo INSS
+- Templates 03 e 04: RG do representante condicional nos dois blocos (cabeçalho e assinatura) — some completamente quando vazio, sem rótulo solto
+
+### Wizard de cenário (4 steps)
+- Step 2 (Perfil): hint visual inline quando menor/incapaz selecionado — informa que representante legal será exigido
+- Step 3 (Gatilhos): auto-seleção de `tem_representacao_legal` para perfis menores/incapazes + badge "Necessário para este perfil"
+- Step 3 (Gatilhos): subformulário inline de representante legal aparece quando gatilho ativo — coleta nome completo, CPF (validado com dígito verificador), RG (opcional) e parentesco (select: Genitora/Genitor/Tutora/Tutor/Curadora/Curador); salva via PATCH antes de avançar
+- Validação de CPF com algoritmo de dígito verificador nos dois contextos: cliente principal e representante legal
 
 ### Gestão de clientes e processos
 - CRUD completo de clientes com soft delete
@@ -158,24 +165,23 @@ scripts/
 
 ## 7. Bugs conhecidos
 
-### BUG-01 — Representante legal ausente nos contratos de menores (templates 03 e 04) ✅ RESOLVIDO
+### BUG-01 — Representante legal ausente nos contratos de menores (templates 03 e 04) ✅ RESOLVIDO COMPLETAMENTE
 
-**Sintoma:** Ao gerar documentos para clientes menores de idade (perfis `menor_impubere` e `menor_pubere`), os templates `03_contrato_bpc_menor_16.docx` e `04_contrato_bpc_menor_16_a_18.docx` geravam sem os dados da mãe/responsável (nome, CPF, RG, parentesco).
+**Sintoma original:** Templates 03 e 04 geravam sem os dados do representante legal (nome, CPF, RG, parentesco) — cabeçalho com `"Representado(a) por seu(sua) (CPF: , RG: )"` e assinatura com nome da menor seguido de rótulos vazios.
 
-**Causa raiz identificada:** Divergência de chave entre o formulário de coleta e o builder de contexto.
-- `contextual-fields-form.tsx` gravava o nome com a chave `nome` → `{ "nome": "Maria Silva" }`
-- `buildTemplateContext()` lia com a chave `nome_completo` → `ctx.representante_legal?.nome_completo` → sempre `undefined` → `''`
-- Os templates usam `{representante.nome_completo}` (confirmado por extração do XML)
+**Causa raiz (camada 1 — chave errada):** `contextual-fields-form.tsx` gravava o nome com a chave `nome` → `{ "nome": "Maria Silva" }`. `buildTemplateContext()` lia `nome_completo` → sempre `''`. **Correção (2026-05-20):** chave alterada de `'nome'` para `'nome_completo'` na linha 71.
 
-**Correção aplicada (2026-05-20):** `components/contextual-fields-form.tsx` linha 71 — chave do campo alterada de `'nome'` para `'nome_completo'`. Testado com docxtemplater + angularParser antes e depois da correção.
+**Causa raiz (camada 2 — dado nunca coletado no wizard):** O fluxo wizard nunca exibia o formulário de campos contextuais (`contextual-fields-form.tsx`), que só existe na busca rápida. Para qualquer cliente menor gerado pelo wizard, `representante_legal` era `null` no banco. **Correção (2026-05-20):** subformulário inline adicionado no Step 3 (Gatilhos) — aparece quando `tem_representacao_legal` está ativo e salva via PATCH antes de avançar.
 
-**Invariante documentada:** o campo de nome do representante no formulário contextual deve sempre usar a chave `nome_completo`, alinhada com `TemplateContext.representante.nome_completo` e os placeholders `{representante.nome_completo}` dos templates 03, 04, 06, 07.
+**Invariante documentada:** o campo de nome do representante deve sempre usar a chave `nome_completo` em todas as camadas — formulário contextual, PATCH payload, `buildTemplateContext()` e placeholders `{representante.nome_completo}` dos templates 03, 04, 06, 07. Nunca usar `nome`.
 
 ---
 
 ## 8. Próximo passo lógico de desenvolvimento
 
 **Imediato:** Implementar o template 07 (Declaração de Inatividade de MEI) — criar o arquivo DOCX, cadastrar na tabela `document_templates` com `campos_contextuais_necessarios = ['empresa_mei']` e testar o fluxo completo com o gatilho `mei_inativo`.
+
+**UX — wizard:** O subformulário de representante legal (Step 3) não pré-carrega dados existentes do banco. Se a advogada voltar e avançar novamente, os campos estarão vazios mas o PATCH sobrescreve corretamente. Melhoria futura: carregar dados existentes ao montar o componente.
 
 ---
 

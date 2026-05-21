@@ -55,7 +55,7 @@ Os formulários do INSS (templates 13, 14, 15) possuem checkboxes que **não sã
 
 ## Campos contextuais — mapeamento de chaves
 
-Os dados coletados pelo formulário (`contextual-fields-form.tsx`) são gravados como JSONB na tabela `client_contextual_data`. As chaves usadas no formulário **devem ser idênticas** às lidas por `buildTemplateContext()` e às usadas nos placeholders dos templates.
+Os dados coletados pelo formulário (`contextual-fields-form.tsx`) **e pelo subformulário inline do wizard** (`step-gatilhos.tsx`) são gravados como JSONB na tabela `client_contextual_data`. As chaves usadas **devem ser idênticas** às lidas por `buildTemplateContext()` e às usadas nos placeholders dos templates.
 
 ### Grupo `representante_legal`
 
@@ -68,6 +68,15 @@ Os dados coletados pelo formulário (`contextual-fields-form.tsx`) são gravados
 | `nome_mae` | *(não mapeado no contexto ainda)* | *(não usado nos templates ainda)* |
 
 > **Invariante:** nunca usar a chave `nome` para o nome do representante. A chave correta é `nome_completo` em todas as camadas. Bug corrigido em 2026-05-20.
+
+### RG do representante — comportamento condicional
+
+O campo `rg` do representante é **opcional** em todo o sistema:
+- No subformulário do wizard, o campo RG nunca bloqueia o avanço.
+- Nos templates 03 e 04, o RG aparece em dois lugares com lógica condicional idêntica: o trecho some completamente quando `representante.rg` é vazio — sem rótulo "RG:" solto.
+  - **Cabeçalho** (`bloco_contratante_menor`): `{#representante.rg}, RG: {representante.rg}{/representante.rg}` — inline no parágrafo de qualificação.
+  - **Assinatura** (`bloco_assinatura_menor`): parágrafo inteiro `RG: {representante.rg}` envolvido por `{#representante.rg}` / `{/representante.rg}` em parágrafos separados.
+- O mesmo padrão deve ser usado ao criar novos templates que incluam o RG do representante.
 
 ## Histórico
 
