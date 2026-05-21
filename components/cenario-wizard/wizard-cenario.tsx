@@ -93,11 +93,18 @@ export function WizardCenario({ clientId, processoId }: Props) {
     setBeneficio(b);
   }
 
+  const PERFIS_MENORES: PerfilId[] = ['menor_impubere', 'menor_pubere', 'incapaz_curador'];
+
   function handlePerfilChange(p: PerfilId) {
     setPerfil(p);
-    // Mudança de perfil invalida o pacote computado
     setPacote(null);
     setCodigosAtivos([]);
+    setGatilhos((prev) => {
+      const semRepresentacao = prev.filter((g) => g !== 'tem_representacao_legal');
+      return PERFIS_MENORES.includes(p)
+        ? [...semRepresentacao, 'tem_representacao_legal']
+        : semRepresentacao;
+    });
   }
 
   function handleGatilhosChange(g: GatilhoId[]) {
@@ -150,6 +157,7 @@ export function WizardCenario({ clientId, processoId }: Props) {
           onNext={irParaConfirmacao}
           onBack={() => irParaPasso(2)}
           beneficio={beneficio}
+          perfilEhMenor={perfil !== null && PERFIS_MENORES.includes(perfil)}
         />
       )}
 

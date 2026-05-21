@@ -49,9 +49,10 @@ type Props = {
   onNext: () => void;
   onBack: () => void;
   beneficio?: BeneficioId | null;
+  perfilEhMenor?: boolean;
 };
 
-export function StepGatilhos({ clientId, value, onChange, onNext, onBack, beneficio }: Props) {
+export function StepGatilhos({ clientId, value, onChange, onNext, onBack, beneficio, perfilEhMenor }: Props) {
   const OPCOES = TODAS_OPCOES.filter(
     (o) => !o.beneficios || !beneficio || o.beneficios.includes(beneficio),
   );
@@ -165,7 +166,7 @@ export function StepGatilhos({ clientId, value, onChange, onNext, onBack, benefi
                 className="mt-0.5 shrink-0"
               />
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <Icon className="size-3.5 text-muted-foreground shrink-0" />
                   <Label
                     htmlFor={`gatilho-${v}`}
@@ -173,6 +174,11 @@ export function StepGatilhos({ clientId, value, onChange, onNext, onBack, benefi
                   >
                     {label}
                   </Label>
+                  {v === 'tem_representacao_legal' && perfilEhMenor && (
+                    <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                      Necessário para este perfil
+                    </span>
+                  )}
                 </div>
                 <p className="mt-0.5 text-xs text-muted-foreground">{descricao}</p>
               </div>
