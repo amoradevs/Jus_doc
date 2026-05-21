@@ -89,6 +89,7 @@ scripts/
 |---------|--------|
 | Template 05 é PDF puro (pdf-lib), não DOCX | Formulário oficial do INSS tem layout pixel-perfect que DOCX não reproduz fielmente |
 | Motor de cadeia documental é código TypeScript puro (hardcoded) | Velocidade de implementação; spec prevê migrar para tabela Supabase futuramente |
+| Templates DOCX de produção vivem no Supabase Storage, não no repo | `package-builder.ts` lê `storage_path` da tabela `document_templates`; se preenchido, baixa do bucket `templates`. Editar arquivos no repo **não afeta produção** — fazer upload direto ao Storage |
 | Soft delete obrigatório em todas as entidades de negócio (`archived_at`, `archived_by`, `archive_reason`) | Dados jurídicos são ativos permanentes; hard delete é proibido (ADR-001) |
 | FKs de processo com `ON DELETE RESTRICT` | Camada de segurança extra caso bug tente delete físico (ADR-002) |
 | NextAuth, não Supabase Auth | Sistema legado; tabela `users` customizada. FKs para `auth.users` não existem — usar `UUID` sem FK |
@@ -117,12 +118,13 @@ scripts/
 
 ### Geração de documentos
 - Motor de cadeia documental (`cadeia-documental.ts`) — mapeia benefício + perfil + gatilhos → lista de templates na ordem canônica
-- 15 templates DOCX com condicionais DocxTemplater (advogadas, checkboxes, representante legal, cônjuge, MEI, imóvel de terceiro)
+- Templates DOCX com condicionais DocxTemplater (advogadas, checkboxes, representante legal, cônjuge, MEI, imóvel de terceiro)
 - Template 05 — Termo de Representação INSS: PDF pixel-perfect com pdf-lib, brasão da República, texto justificado, tabela de 8 checkboxes, duas assinaturas
 - Download em PDF e DOCX por documento; ZIP do pacote completo
 - Modal de seleção de advogada antes de gerar (wizard e busca rápida)
 - Assinatura digital da Dra. Lidiane embutida como imagem PNG no Termo INSS
-- Templates 03 e 04: RG do representante condicional nos dois blocos (cabeçalho e assinatura) — some completamente quando vazio, sem rótulo solto
+- Contrato de honorários (`01_01_contrato_honorarios.docx`): RG do representante condicional em dois blocos — cabeçalho (`{#representante.rg}, RG: ...{/representante.rg}` inline) e assinatura (parágrafo envolvido por tags de bloco); some completamente quando vazio
+- Histórico de documentos gerados: botão de exclusão por pacote com diálogo de confirmação — remove registro do banco e ZIP do Storage (`DELETE /api/geracao/[packageId]`)
 
 ### Wizard de cenário (4 steps)
 - Step 2 (Perfil): hint visual inline quando menor/incapaz selecionado — informa que representante legal será exigido
@@ -135,6 +137,7 @@ scripts/
 - Processos desacoplados de clientes (1 cliente → N processos), numeração `YYYY-NNNN`
 - Pipeline Kanban com drag-and-drop por etapa
 - Tracker de prazos processuais (administrativo, judicial, comercial, evento) com cálculo de dias úteis/corridos, feriados nacionais, recesso forense
+- Exclusão de pacotes gerados pela advogada diretamente no portal (hard delete — pacote de teste não polui o histórico do cliente)
 
 ### Infraestrutura
 - Soft delete em processos com cascata para 4 entidades filhas (trigger SQL)

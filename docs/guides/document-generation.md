@@ -1,5 +1,29 @@
 # Geração de Documentos
 
+## ⚠ Invariante crítica — templates em produção
+
+Os templates DOCX de produção **vivem no Supabase Storage** (bucket `templates`), não no repo. A função `getTemplateBuffer()` em `package-builder.ts` verifica o campo `storage_path` da tabela `document_templates`: se preenchido, faz download do Storage; caso contrário, lê do filesystem.
+
+**Editar arquivos `.docx` no repo não afeta produção.** Para corrigir um template em produção:
+1. Baixar o arquivo atual do Storage
+2. Aplicar as alterações localmente
+3. Fazer upload de volta via Supabase Storage API (`upsert: true`)
+
+Templates de produção mapeados no banco (21/05/2026):
+
+| Código | Arquivo no Storage |
+|--------|-------------------|
+| `01` | `templates/01_01_contrato_honorarios.docx` |
+| `02` | `templates/02_02_procuracao.docx` |
+| `03` | `templates/03_03_declaracao_hipossuficiencia.docx` |
+| `04` | `templates/04_04_declaracao_residencia.docx` |
+| `05` | `templates/05_termo_representacao_inss.docx` |
+| `06` | `templates/06_06_declaracao_separacao.docx` |
+| `07` | `templates/07_07_declaracao_inatividade_mei.docx` |
+| `15` | `templates/15_termo_responsabilidade.docx` |
+
+---
+
 ## Fluxo completo
 
 ### 1. Seleção de templates (`/clientes/[id]/gerar`)
@@ -73,11 +97,13 @@ Os dados coletados pelo formulário (`contextual-fields-form.tsx`) **e pelo subf
 
 O campo `rg` do representante é **opcional** em todo o sistema:
 - No subformulário do wizard, o campo RG nunca bloqueia o avanço.
-- Nos templates 03 e 04, o RG aparece em dois lugares com lógica condicional idêntica: o trecho some completamente quando `representante.rg` é vazio — sem rótulo "RG:" solto.
+- No template de produção `01_01_contrato_honorarios.docx` (Storage), o RG aparece em dois lugares com lógica condicional idêntica: o trecho some completamente quando `representante.rg` é vazio — sem rótulo "RG:" solto.
   - **Cabeçalho** (`bloco_contratante_menor`): `{#representante.rg}, RG: {representante.rg}{/representante.rg}` — inline no parágrafo de qualificação.
   - **Assinatura** (`bloco_assinatura_menor`): parágrafo inteiro `RG: {representante.rg}` envolvido por `{#representante.rg}` / `{/representante.rg}` em parágrafos separados.
 - O mesmo padrão deve ser usado ao criar novos templates que incluam o RG do representante.
 
-## Histórico
+## Histórico e exclusão de pacotes
 
 Todo pacote gerado fica registrado no perfil do cliente. Re-download disponível por 30 dias após a geração. Após esse prazo, o arquivo ZIP é deletado do storage mas o registro histórico permanece.
+
+A advogada pode excluir qualquer pacote manualmente pelo ícone de lixeira no histórico do cliente. A exclusão é **hard delete**: remove `generated_documents`, `generation_packages` e o ZIP do bucket `pacotes` no Storage. Rota: `DELETE /api/geracao/[packageId]`.
