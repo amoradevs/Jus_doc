@@ -1,10 +1,12 @@
 'use client';
 
 import { RadioGroup as RadioGroupPrimitive } from 'radix-ui';
-import { User, PenLine, Baby, PersonStanding, UserCog } from 'lucide-react';
+import { User, PenLine, Baby, PersonStanding, UserCog, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import type { PerfilId } from '@/lib/document-generation/cadeia-documental';
+
+const PERFIS_MENORES: PerfilId[] = ['menor_impubere', 'menor_pubere', 'incapaz_curador'];
 
 const OPCOES: { value: PerfilId; label: string; descricao: string; Icon: React.ElementType }[] = [
   {
@@ -96,6 +98,15 @@ export function StepPerfil({ value, onChange, onNext, onBack }: Props) {
           </RadioGroupPrimitive.Item>
         ))}
       </RadioGroupPrimitive.Root>
+
+      {value && PERFIS_MENORES.includes(value) && (
+        <div className="flex items-start gap-2.5 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3">
+          <Info className="mt-0.5 size-3.5 shrink-0 text-primary" />
+          <p className="text-xs text-primary leading-relaxed">
+            Este perfil exige <strong>representante legal</strong> — o gatilho correspondente será ativado automaticamente na próxima etapa.
+          </p>
+        </div>
+      )}
 
       <div className="sticky bottom-0 -mx-4 px-4 pb-4 pt-3 bg-background/80 backdrop-blur-sm border-t border-border">
         <div className="flex items-center justify-between">
