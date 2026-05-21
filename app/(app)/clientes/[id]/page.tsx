@@ -10,6 +10,7 @@ import { labelEtapa as labelEtapaPipeline } from '@/lib/pipeline';
 import { DocumentChecklist } from '@/components/document-checklist';
 import { InitChecklistButton } from '@/components/init-checklist-button';
 import { CadastroBadge } from '@/components/cadastro-badge';
+import { DeletePackageButton } from '@/components/delete-package-button';
 
 type Processo = {
   id: string;
@@ -340,20 +341,23 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
                       {pkg.templates_usados.length} documento(s)
                     </p>
                   </div>
-                  {expirado ? (
-                    <span className="text-xs text-muted-foreground border border-border rounded-lg px-2.5 py-1">
-                      Expirado
-                    </span>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Button asChild size="sm" variant="ghost" className="rounded-lg text-xs h-7">
-                        <Link href={`/clientes/${id}/gerar/resultado?packageId=${pkg.id}`}>Ver docs</Link>
-                      </Button>
-                      <Button asChild size="sm" variant="outline" className="rounded-lg border-border text-xs h-7">
-                        <Link href={`/api/download/${pkg.id}`}>Baixar ZIP</Link>
-                      </Button>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {expirado ? (
+                      <span className="text-xs text-muted-foreground border border-border rounded-lg px-2.5 py-1">
+                        Expirado
+                      </span>
+                    ) : (
+                      <>
+                        <Button asChild size="sm" variant="ghost" className="rounded-lg text-xs h-7">
+                          <Link href={`/clientes/${id}/gerar/resultado?packageId=${pkg.id}`}>Ver docs</Link>
+                        </Button>
+                        <Button asChild size="sm" variant="outline" className="rounded-lg border-border text-xs h-7">
+                          <Link href={`/api/download/${pkg.id}`}>Baixar ZIP</Link>
+                        </Button>
+                      </>
+                    )}
+                    <DeletePackageButton packageId={pkg.id} />
+                  </div>
                 </div>
               );
             })}
