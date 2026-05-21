@@ -68,7 +68,7 @@ function GroupFields({ group, register }: { group: ContextualGroup; register: Re
 
   if (group === 'representante_legal') return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      {f('nome', 'Nome completo')}
+      {f('nome_completo', 'Nome completo')}
       {f('cpf', 'CPF')}
       {f('rg', 'RG')}
       {f('parentesco', 'Parentesco')}
