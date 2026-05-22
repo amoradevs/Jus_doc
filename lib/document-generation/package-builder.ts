@@ -100,6 +100,9 @@ export async function buildDocumentPackage(
 
     const nomeArquivo = `${clientNameNorm}_${template.codigo}_${normalizeName(template.nome)}_${dateStr}.${extensao}`;
     zip.file(nomeArquivo, fileBuffer);
+    if (docxBuffer && extensao === 'pdf') {
+      zip.file(nomeArquivo.replace(/\.pdf$/, '.docx'), docxBuffer);
+    }
     docs.push({ codigo: template.codigo, nome: template.nome, nome_arquivo: nomeArquivo, buffer: fileBuffer, docxBuffer, contentType });
   }
 

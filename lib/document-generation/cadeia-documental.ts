@@ -100,11 +100,10 @@ export const CATALOGO_TEMPLATES: TemplateMetadata[] = [
     ordem: 3,
   },
   {
-    // Spec 4.1: Hipossuficiência é específica do BPC (benefício assistencial)
     codigo: '03',
     categoria: 'declaracao',
     nome: 'Declaração de Hipossuficiência',
-    beneficios: ['bpc'],
+    beneficios: [], // [] = aplica-se a todos os benefícios
     perfis: [],
     gatilhos: [],
     obrigatorio: true,
@@ -198,17 +197,6 @@ export function validarCoerencia(cenario: Cenario): Alerta[] {
       mensagem:
         'Perfil de menor ou incapaz: verifique se há representante legal e, se sim, ative o gatilho "tem_representacao_legal" para incluir o Termo de Responsabilidade (código 15).',
       campo_relacionado: 'gatilhos',
-    });
-  }
-
-  // Info: Mandado de Segurança → avaliar gratuidade da justiça
-  if (beneficio === 'mandado_seguranca') {
-    alertas.push({
-      nivel: 'info',
-      codigo: 'MS_GRATUIDADE_JUSTICA',
-      mensagem:
-        'Avalie se cabe pedido de gratuidade da justiça. Se aplicável, adicione manualmente a Declaração de Hipossuficiência ao pacote.',
-      campo_relacionado: 'beneficio',
     });
   }
 
