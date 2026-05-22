@@ -156,17 +156,6 @@ export function validarCoerencia(cenario: Cenario): Alerta[] {
   const alertas: Alerta[] = [];
   const { beneficio, perfil, gatilhos } = cenario;
 
-  // Aviso: a rogo — confirmar testemunhas
-  if (perfil === 'a_rogo') {
-    alertas.push({
-      nivel: 'aviso',
-      codigo: 'AROGO_CONFIRMAR_TESTEMUNHAS',
-      mensagem:
-        'Confirmar dados das duas testemunhas a rogo (nome, CPF, RG, data de nascimento) no cadastro do cliente antes de gerar.',
-      campo_relacionado: 'perfil',
-    });
-  }
-
   // Aviso: separado_de_fato fora do BPC → declaração omitida
   if (gatilhos.includes('separado_de_fato') && beneficio !== 'bpc') {
     alertas.push({
