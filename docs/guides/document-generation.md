@@ -51,17 +51,18 @@ Se o cliente já tiver esses dados salvos de uma geração anterior, o passo é 
 
 O sistema processa cada template em paralelo:
 
-**Para templates `.docx` (12-15):**
+**Para templates `.docx`:**
 1. Renderiza com `docxtemplater` usando os dados do cliente
-2. Converte para `.pdf` via CloudConvert API
+2. Converte para `.pdf` via LibreOffice headless
 
-**Para templates `.pdf` INSS (3):**
+**Para templates `.pdf` INSS:**
 1. Abre o PDF original com `pdf-lib`
 2. Sobrepõe texto nos campos mapeados por coordenadas (x, y)
 
 **Empacotamento:**
 - Todos os PDFs são compactados em um `.zip`
-- O ZIP é salvo no Supabase Storage
+- Para cada template DOCX convertido a PDF, o DOCX renderizado **também é incluído no ZIP** (`package-builder.ts` — linha após `zip.file(nomeArquivo, fileBuffer)`)
+- O ZIP é salvo no Supabase Storage (bucket `pacotes`)
 - Registro criado em `generation_packages` e `generated_documents`
 - Download disponível por **30 dias**
 
@@ -72,6 +73,14 @@ O sistema processa cada template em paralelo:
 ```
 
 Exemplo: `MARIA_DA_SILVA_SANTOS_01_Contrato_BPC_Adulto_20260428.pdf`
+
+## Declaração de Hipossuficiência — todos os processos
+
+A Declaração de Hipossuficiência (código `03`) é incluída automaticamente em **qualquer tipo de ação** (`beneficios: []` em `cadeia-documental.ts`). Não é mais restrita ao BPC.
+
+## Assinatura digital da Dra. Lidiane — sempre ativa
+
+No Termo de Representação INSS (template `05`), a assinatura da Dra. Lidiane é **sempre incluída** quando ela é a advogada selecionada. O toggle foi removido do wizard — `incluir_assinatura_lidiane` é hardcoded como `true` em `step-confirmacao.tsx`.
 
 ## PDFs do INSS — checkboxes
 

@@ -120,9 +120,11 @@ scripts/
 - Motor de cadeia documental (`cadeia-documental.ts`) — mapeia benefício + perfil + gatilhos → lista de templates na ordem canônica
 - Templates DOCX com condicionais DocxTemplater (advogadas, checkboxes, representante legal, cônjuge, MEI, imóvel de terceiro)
 - Template 05 — Termo de Representação INSS: PDF pixel-perfect com pdf-lib, brasão da República, texto justificado, tabela de 8 checkboxes, duas assinaturas
-- Download em PDF e DOCX por documento; ZIP do pacote completo
-- Modal de seleção de advogada antes de gerar (wizard e busca rápida)
-- Assinatura digital da Dra. Lidiane embutida como imagem PNG no Termo INSS
+- Declaração de Hipossuficiência (código 03) inclusa em **todos os tipos de ação** — `beneficios: []` em `cadeia-documental.ts`
+- Assinatura digital da Dra. Lidiane **sempre ativa** no Termo INSS — `incluir_assinatura_lidiane` hardcoded como `true`; toggle removido do wizard
+- ZIP "Baixar todos" inclui **PDF e DOCX** de cada documento (templates DOCX convertidos para PDF incluem ambos os formatos no mesmo ZIP)
+- Download em PDF e DOCX por documento individual; ZIP do pacote completo
+- Modal de seleção de advogada antes de gerar (wizard e busca rápida) — define qual assina o Termo INSS; Contrato e Procuração sempre saem com as duas
 - Contrato de honorários (`01_01_contrato_honorarios.docx`): RG do representante condicional em dois blocos — cabeçalho (`{#representante.rg}, RG: ...{/representante.rg}` inline) e assinatura (parágrafo envolvido por tags de bloco); some completamente quando vazio
 - Histórico de documentos gerados: botão de exclusão por pacote com diálogo de confirmação — remove registro do banco e ZIP do Storage (`DELETE /api/geracao/[packageId]`)
 
