@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertTriangle, Loader2 } from 'lucide-react';
+import { AlertTriangle, Loader2, Pencil } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,15 +14,13 @@ import { AlertaItem } from './alerta-item';
 import { CATALOGO_TEMPLATES } from '@/lib/document-generation/cadeia-documental';
 import type { PacoteDocumental, Alerta } from '@/lib/document-generation/cadeia-documental';
 
-type AdvogadasSelecionadas = 'lidiane' | 'alcione' | 'branco';
+type AdvogadasSelecionadas = 'adv1' | 'adv2' | 'branco';
 
-const OPCOES_ADVOGADA: { value: AdvogadasSelecionadas; label: string; sub?: string }[] = [
-  { value: 'lidiane', label: 'Apenas Lidiane Rocha Abreu',            sub: 'OAB 220305-SP' },
-  { value: 'alcione', label: 'Apenas Alcione Ferreira Gomes Alencar', sub: 'OAB 218550-SP' },
-  { value: 'branco',  label: 'Deixar em branco',                      sub: 'preencher manualmente depois' },
-];
+type AdvSettings = { adv1Nome: string; adv1NomeCurto: string; adv1Oab: string; adv2Nome: string; adv2NomeCurto: string; adv2Oab: string };
 
 const NOMES = Object.fromEntries(CATALOGO_TEMPLATES.map((t) => [t.codigo, t.nome]));
+
+type Testemunha = { nome_completo: string };
 
 type Props = {
   pacote: PacoteDocumental;
@@ -31,15 +29,26 @@ type Props = {
   clientId: string;
   processoId?: string;
   onBack: () => void;
+  advSettings?: AdvSettings;
+  testemunhas?: Testemunha[];
+  onEditarTestemunhas?: () => void;
 };
 
-export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientId, processoId, onBack }: Props) {
+export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientId, processoId, onBack, advSettings, testemunhas, onEditarTestemunhas }: Props) {
   const router = useRouter();
   const [gerando, setGerando] = useState(false);
   const [dialogAberto, setDialogAberto] = useState(false);
   const [erroGeracao, setErroGeracao] = useState('');
   const [modalAdvogadaAberto, setModalAdvogadaAberto] = useState(false);
-  const [advogadasSelecionadas, setAdvogadasSelecionadas] = useState<AdvogadasSelecionadas>('lidiane');
+  const [advogadasSelecionadas, setAdvogadasSelecionadas] = useState<AdvogadasSelecionadas>('adv1');
+
+  const temParceira = !!(advSettings?.adv2Nome);
+
+  const opcoesAdvogada: { value: AdvogadasSelecionadas; label: string; sub?: string }[] = temParceira ? [
+    { value: 'adv1', label: `Apenas ${advSettings?.adv1NomeCurto || advSettings?.adv1Nome}`, sub: advSettings?.adv1Oab ? `OAB ${advSettings.adv1Oab}` : undefined },
+    { value: 'adv2', label: `Apenas ${advSettings?.adv2NomeCurto || advSettings?.adv2Nome}`, sub: advSettings?.adv2Oab ? `OAB ${advSettings.adv2Oab}` : undefined },
+    { value: 'branco',  label: 'Deixar em branco', sub: 'preencher manualmente depois' },
+  ] : [];
 
   // Alertas dinâmicos por cadeia mínima desmarcada
   const alertasCadeiaMinima: Alerta[] = useMemo(() => {
@@ -77,7 +86,7 @@ export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientI
           cenario: pacote.cenario,
           processoId: processoId ?? undefined,
           advogadas_selecionadas: advogadasSelecionadas,
-          incluir_assinatura_lidiane: true,
+
         }),
       });
       const data = await res.json();
@@ -94,7 +103,7 @@ export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientI
   }
 
   function handleGerarClick() {
-    if (codigosAtivos.includes('05')) {
+    if (codigosAtivos.includes('05') && temParceira) {
       setModalAdvogadaAberto(true);
     } else if (temAviso) {
       setDialogAberto(true);
@@ -176,9 +185,33 @@ export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientI
       {todosAlertas.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Alertas</p>
-          {[...erros, ...avisos, ...infos].map((a) => (
-            <AlertaItem key={a.codigo} alerta={a} />
-          ))}
+          {[...erros, ...avisos, ...infos].map((a) => {
+            if (a.codigo === 'AROGO_CONFIRMAR_TESTEMUNHAS') {
+              const t1 = testemunhas?.[0]?.nome_completo;
+              const t2 = testemunhas?.[1]?.nome_completo;
+              const mensagem = t1 && t2
+                ? `Testemunha 1: ${t1} · Testemunha 2: ${t2}`
+                : a.mensagem;
+              return (
+                <div key={a.codigo} className="rounded-xl border border-sky-200 bg-sky-50 dark:border-sky-800 dark:bg-sky-950/30 px-3.5 py-2.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-sm text-sky-800 dark:text-sky-300">{mensagem}</p>
+                    {onEditarTestemunhas && (
+                      <button
+                        type="button"
+                        onClick={onEditarTestemunhas}
+                        className="shrink-0 flex items-center gap-1 text-xs font-medium text-sky-700 dark:text-sky-400 hover:text-sky-900 dark:hover:text-sky-200 transition-colors"
+                      >
+                        <Pencil className="w-3 h-3" />
+                        Editar
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            }
+            return <AlertaItem key={a.codigo} alerta={a} />;
+          })}
         </div>
       )}
 
@@ -219,7 +252,7 @@ export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientI
             onValueChange={(v) => setAdvogadasSelecionadas(v as AdvogadasSelecionadas)}
             className="gap-2 py-1"
           >
-            {OPCOES_ADVOGADA.map((op) => (
+            {opcoesAdvogada.map((op) => (
               <label
                 key={op.value}
                 htmlFor={`adv-${op.value}`}

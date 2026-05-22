@@ -61,6 +61,7 @@ export function ClientForm({ mode, clientId, defaultValues }: Props) {
     const payload = {
       ...data,
       cpf: unmaskCPF(data.cpf),
+      endereco_cep: data.endereco_cep.replace(/\D/g, ''),
     };
 
     const res = await fetch(url, {
@@ -215,7 +216,11 @@ export function ClientForm({ mode, clientId, defaultValues }: Props) {
           {field('nome_mae', 'Nome da mãe')}
           {field('nome_pai', 'Nome do pai (opcional)')}
           {field('telefone', 'WhatsApp / telefone', 'tel')}
-          {field('senha_cadastro', 'Senha do cadastro (Meu INSS / gov.br)')}
+          <div className="space-y-1">
+            <Label htmlFor="senha_cadastro">Senha do cadastro (Meu INSS / gov.br) <span className="text-muted-foreground font-normal">— opcional</span></Label>
+            <Input id="senha_cadastro" type="text" {...register('senha_cadastro')} />
+            <p className="text-xs text-muted-foreground">Usada durante o atendimento presencial para acessar o portal junto com o cliente.</p>
+          </div>
         </div>
       </section>
 
@@ -229,6 +234,11 @@ export function ClientForm({ mode, clientId, defaultValues }: Props) {
               maxLength={9}
               placeholder="00000-000"
               {...register('endereco_cep')}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, '').slice(0, 8);
+                const masked = digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
+                setValue('endereco_cep', masked);
+              }}
               onBlur={(e) => lookupCep(e.target.value)}
             />
             {cepLoading && <p className="text-xs text-muted-foreground">Buscando CEP…</p>}

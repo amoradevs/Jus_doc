@@ -5,7 +5,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   Check, Download, FileText, Loader2, RotateCcw,
-  ChevronLeft, Eye, X, Pencil, Printer, ArrowLeft,
+  ChevronLeft, Eye, X, Pencil, Printer, ArrowLeft, Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -207,12 +207,25 @@ function PdfViewer({
         /* Editor */
         <div className="flex-1 overflow-auto bg-secondary/10 py-10 px-4">
           <div className="max-w-3xl mx-auto">
-            {/* Barra de dica */}
-            <div className="flex items-center gap-2 mb-4 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-xl">
-              <Pencil className="w-3.5 h-3.5 text-primary shrink-0" />
-              <p className="text-xs text-muted-foreground">
-                Clique em qualquer trecho para editar. Use <kbd className="px-1 py-0.5 bg-secondary rounded text-xs font-mono">Ctrl+B</kbd> negrito, <kbd className="px-1 py-0.5 bg-secondary rounded text-xs font-mono">Ctrl+I</kbd> itálico.
-              </p>
+            {/* Guia de uso do editor */}
+            <div className="mb-4 px-4 py-3 bg-primary/5 border border-primary/20 rounded-xl space-y-2">
+              <div className="flex items-center gap-2">
+                <Pencil className="w-3.5 h-3.5 text-primary shrink-0" />
+                <p className="text-xs font-medium text-foreground">Como usar o editor</p>
+              </div>
+              <ul className="text-xs text-muted-foreground space-y-1 pl-5 list-disc">
+                <li>Clique em qualquer trecho do documento para editar o texto.</li>
+                <li>
+                  Formatação rápida:{' '}
+                  <kbd className="px-1 py-0.5 bg-secondary rounded font-mono">Ctrl+B</kbd> negrito &nbsp;
+                  <kbd className="px-1 py-0.5 bg-secondary rounded font-mono">Ctrl+I</kbd> itálico &nbsp;
+                  <kbd className="px-1 py-0.5 bg-secondary rounded font-mono">Ctrl+U</kbd> sublinhado
+                </li>
+                <li>
+                  Quando terminar, clique em <strong>Salvar como PDF</strong> — uma janela de impressão abrirá. Escolha <em>&ldquo;Salvar como PDF&rdquo;</em> na lista de impressoras para gerar o arquivo.
+                </li>
+                <li>Para voltar ao documento original sem edições, clique em <strong>Ver PDF</strong>.</li>
+              </ul>
             </div>
             {/* Documento editável */}
             <style>{`
@@ -266,6 +279,8 @@ export default function ResultadoPage() {
   const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
   const [downloadingDocx, setDownloadingDocx] = useState<string | null>(null);
   const [previewing, setPreviewing] = useState<Doc | null>(null);
+  const [deletando, setDeletando] = useState(false);
+  const [confirmarDelete, setConfirmarDelete] = useState(false);
 
   // Intercepta botão Voltar do browser quando o viewer está aberto
   useEffect(() => {
@@ -282,7 +297,6 @@ export default function ResultadoPage() {
     const params = new URLSearchParams(window.location.search);
     const pid = params.get('processoId') ?? undefined;
     const advogadas = params.get('advogadas') ?? 'ambas';
-    const assinatura = params.get('assinatura') !== '0';
     fetch('/api/geracao', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -291,7 +305,6 @@ export default function ResultadoPage() {
         templateCodes: codigos.split(',').filter(Boolean),
         processoId: pid,
         advogadas_selecionadas: advogadas,
-        incluir_assinatura_lidiane: assinatura,
       }),
     })
       .then((r) => r.json())
@@ -352,6 +365,18 @@ export default function ResultadoPage() {
       setErrorMsg('Erro ao baixar Word.');
     }
     setDownloadingDocx(null);
+  }
+
+  async function deletarPacote() {
+    setDeletando(true);
+    try {
+      await fetch(`/api/pacotes/${packageId}`, { method: 'DELETE' });
+      window.location.href = `/clientes/${id}`;
+    } catch {
+      setErrorMsg('Erro ao deletar pacote.');
+      setDeletando(false);
+      setConfirmarDelete(false);
+    }
   }
 
   /* ── Visualizador / Editor fullscreen ── */
@@ -516,6 +541,46 @@ export default function ResultadoPage() {
           </Link>
         </Button>
       </div>
+
+      {/* Botão deletar */}
+      {!confirmarDelete ? (
+        <button
+          onClick={() => setConfirmarDelete(true)}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-red-500 transition-colors mx-auto"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          Excluir este pacote
+        </button>
+      ) : (
+        <div className="rounded-xl border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30 px-4 py-3 space-y-3">
+          <p className="text-sm text-red-800 dark:text-red-300 font-medium">
+            Excluir este pacote permanentemente?
+          </p>
+          <p className="text-xs text-red-700 dark:text-red-400">
+            Os arquivos serão removidos do storage e não poderão ser recuperados.
+          </p>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setConfirmarDelete(false)}
+              disabled={deletando}
+              className="rounded-lg"
+            >
+              Cancelar
+            </Button>
+            <Button
+              size="sm"
+              onClick={deletarPacote}
+              disabled={deletando}
+              className="rounded-lg gap-1.5 bg-red-600 hover:bg-red-700 text-white border-0"
+            >
+              {deletando ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+              Excluir
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -60,7 +60,7 @@ interface TemplateMetadata {
 }
 
 // Perfis que ativam auto-regra de representação legal
-const PERFIS_MENORES: PerfilId[] = ['menor_impubere', 'menor_pubere', 'incapaz_curador'];
+export const PERFIS_MENORES: PerfilId[] = ['menor_impubere', 'menor_pubere', 'incapaz_curador'];
 
 // ─── Catálogo estático (hardcoded nesta fase) ─────────────────────────────────
 // Extensão futura: migrar para colunas beneficios[], perfis[], gatilhos[]

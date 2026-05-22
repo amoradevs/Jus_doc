@@ -4,13 +4,14 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
   montarPacote,
+  PERFIS_MENORES,
   type BeneficioId,
   type PerfilId,
   type GatilhoId,
   type PacoteDocumental,
 } from '@/lib/document-generation/cadeia-documental';
 import { StepBeneficio } from './step-beneficio';
-import { StepPerfil } from './step-perfil';
+import { StepPerfil, type Testemunha } from './step-perfil';
 import { StepGatilhos } from './step-gatilhos';
 import { StepConfirmacao } from './step-confirmacao';
 
@@ -23,7 +24,8 @@ const LABELS: Record<Step, string> = {
   4: 'Confirmação',
 };
 
-type Props = { clientId: string; processoId?: string };
+type AdvSettings = { adv1Nome: string; adv1NomeCurto: string; adv1Oab: string; adv2Nome: string; adv2NomeCurto: string; adv2Oab: string };
+type Props = { clientId: string; processoId?: string; advSettings?: AdvSettings };
 
 function StepIndicator({ step }: { step: Step }) {
   return (
@@ -68,13 +70,14 @@ function StepIndicator({ step }: { step: Step }) {
   );
 }
 
-export function WizardCenario({ clientId, processoId }: Props) {
+export function WizardCenario({ clientId, processoId, advSettings }: Props) {
   const [step, setStep] = useState<Step>(1);
   const [beneficio, setBeneficio] = useState<BeneficioId | null>(null);
   const [perfil, setPerfil] = useState<PerfilId | null>(null);
   const [gatilhos, setGatilhos] = useState<GatilhoId[]>([]);
   const [pacote, setPacote] = useState<PacoteDocumental | null>(null);
   const [codigosAtivos, setCodigosAtivos] = useState<string[]>([]);
+  const [testemunhas, setTestemunhas] = useState<Testemunha[]>([]);
 
   function irParaPasso(destino: Step) {
     setStep(destino);
@@ -93,22 +96,15 @@ export function WizardCenario({ clientId, processoId }: Props) {
     setBeneficio(b);
   }
 
-  const PERFIS_MENORES: PerfilId[] = ['menor_impubere', 'menor_pubere', 'incapaz_curador'];
-
   function handlePerfilChange(p: PerfilId) {
     setPerfil(p);
+    // Mudança de perfil invalida o pacote computado
     setPacote(null);
     setCodigosAtivos([]);
-    setGatilhos((prev) => {
-      const semRepresentacao = prev.filter((g) => g !== 'tem_representacao_legal');
-      return PERFIS_MENORES.includes(p)
-        ? [...semRepresentacao, 'tem_representacao_legal']
-        : semRepresentacao;
-    });
   }
 
   function handleGatilhosChange(g: GatilhoId[]) {
-    const ehMenor = perfil !== null && PERFIS_MENORES.includes(perfil);
+    const ehMenor = perfil !== null && perfil !== undefined && PERFIS_MENORES.includes(perfil);
     const gatilhosFinais =
       ehMenor && !g.includes('tem_representacao_legal')
         ? [...g, 'tem_representacao_legal' as GatilhoId]
@@ -147,10 +143,13 @@ export function WizardCenario({ clientId, processoId }: Props) {
 
       {step === 2 && (
         <StepPerfil
+          clientId={clientId}
           value={perfil}
           onChange={handlePerfilChange}
           onNext={() => irParaPasso(3)}
           onBack={() => irParaPasso(1)}
+          initialTestemunhas={testemunhas}
+          onTestemunhasSalvas={setTestemunhas}
         />
       )}
 
@@ -162,7 +161,7 @@ export function WizardCenario({ clientId, processoId }: Props) {
           onNext={irParaConfirmacao}
           onBack={() => irParaPasso(2)}
           beneficio={beneficio}
-          perfilEhMenor={perfil !== null && PERFIS_MENORES.includes(perfil)}
+          perfil={perfil}
         />
       )}
 
@@ -174,6 +173,9 @@ export function WizardCenario({ clientId, processoId }: Props) {
           clientId={clientId}
           processoId={processoId}
           onBack={() => irParaPasso(3)}
+          advSettings={advSettings}
+          testemunhas={testemunhas}
+          onEditarTestemunhas={() => irParaPasso(2)}
         />
       )}
     </div>
