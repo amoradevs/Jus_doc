@@ -32,10 +32,11 @@ export async function GET(_req: Request, { params }: Params) {
   const contentType = isDocx
     ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     : 'application/pdf';
+  const disposition = isDocx ? 'attachment' : 'inline';
   return new Response(buffer, {
     headers: {
       'Content-Type': contentType,
-      'Content-Disposition': `attachment; filename="${doc.nome_arquivo}"`,
+      'Content-Disposition': `${disposition}; filename="${doc.nome_arquivo}"`,
     },
   });
 }

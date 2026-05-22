@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import {
   montarPacote,
@@ -78,6 +78,17 @@ export function WizardCenario({ clientId, processoId, advSettings }: Props) {
   const [pacote, setPacote] = useState<PacoteDocumental | null>(null);
   const [codigosAtivos, setCodigosAtivos] = useState<string[]>([]);
   const [testemunhas, setTestemunhas] = useState<Testemunha[]>([]);
+
+  useEffect(() => {
+    fetch(`/api/clientes/${clientId}/contextual-data`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data?.testemunhas) && data.testemunhas.length > 0) {
+          setTestemunhas(data.testemunhas);
+        }
+      })
+      .catch(() => {});
+  }, [clientId]);
 
   function irParaPasso(destino: Step) {
     setStep(destino);

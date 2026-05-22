@@ -114,7 +114,7 @@ function GroupFields({ group, register }: { group: ContextualGroup; register: Re
       {[0, 1].map((i) => (
         <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2 text-xs font-semibold text-slate-500 uppercase">Testemunha {i + 1}</div>
-          {f(`testemunhas[${i}].nome`, 'Nome')}
+          {f(`testemunhas[${i}].nome_completo`, 'Nome')}
           {f(`testemunhas[${i}].cpf`, 'CPF')}
           {f(`testemunhas[${i}].rg`, 'RG')}
           {f(`testemunhas[${i}].data_nascimento`, 'Data de nascimento', 'date')}

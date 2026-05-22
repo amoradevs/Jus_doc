@@ -492,8 +492,21 @@ export async function buildTemplateContext(
       data_inicio_inatividade: formatarData((ctx?.empresa_mei as Record<string, string>)?.data_inicio_inatividade ?? ''),
     },
 
-    // Testemunhas (loop — preenchidas via dados do processo futuramente)
-    testemunhas: [],
+    // Testemunhas a rogo
+    testemunhas: (() => {
+      type TestemunhaRaw = { nome_completo?: string; cpf?: string; rg?: string; data_nascimento?: string };
+      const raw: TestemunhaRaw[] = Array.isArray(ctx?.testemunhas) ? (ctx.testemunhas as TestemunhaRaw[]) : [];
+      return raw
+        .filter((t) => t?.nome_completo)
+        .map((t) => ({
+          tipo_label: 'A ROGO',
+          nome_completo: t.nome_completo ?? '',
+          cpf: formatarCPF(t.cpf ?? ''),
+          rg: t.rg ?? '',
+          tem_rg: !!(t.rg?.trim()),
+          data_nascimento: formatarData(t.data_nascimento ?? ''),
+        }));
+    })(),
 
     // Processo
     processo: {

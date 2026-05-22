@@ -61,16 +61,16 @@ export default async function DashboardPage({
 
   // KPIs de processo — filtráveis por data de criação do processo
   const qDeferidos = filtrado
-    ? db.from('processos').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'deferido').gte('created_at', dateStart!).lte('created_at', dateEnd!)
-    : db.from('processos').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'deferido');
+    ? db.from('processos').select('*, clients!inner(deletado_em)', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'deferido').is('clients.deletado_em', null).gte('created_at', dateStart!).lte('created_at', dateEnd!)
+    : db.from('processos').select('*, clients!inner(deletado_em)', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'deferido').is('clients.deletado_em', null);
 
   const qIndeferidos = filtrado
-    ? db.from('processos').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'indeferido').gte('created_at', dateStart!).lte('created_at', dateEnd!)
-    : db.from('processos').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'indeferido');
+    ? db.from('processos').select('*, clients!inner(deletado_em)', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'indeferido').is('clients.deletado_em', null).gte('created_at', dateStart!).lte('created_at', dateEnd!)
+    : db.from('processos').select('*, clients!inner(deletado_em)', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'indeferido').is('clients.deletado_em', null);
 
   const qAndamento = filtrado
-    ? db.from('processos').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'em_andamento').gte('created_at', dateStart!).lte('created_at', dateEnd!)
-    : db.from('processos').select('*', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'em_andamento');
+    ? db.from('processos').select('*, clients!inner(deletado_em)', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'em_andamento').is('clients.deletado_em', null).gte('created_at', dateStart!).lte('created_at', dateEnd!)
+    : db.from('processos').select('*, clients!inner(deletado_em)', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'em_andamento').is('clients.deletado_em', null);
 
   const qRecentes = db
     .from('clients')
