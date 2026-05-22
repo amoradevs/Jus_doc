@@ -102,6 +102,9 @@ export function StepGatilhos({ clientId, value, onChange, onNext, onBack, benefi
   const temRepresentacao = value.includes('tem_representacao_legal');
 
   function toggle(gatilho: GatilhoId) {
+    // Para perfis de menor/incapaz, tem_representacao_legal é obrigatório e não pode ser desmarcado
+    if (gatilho === 'tem_representacao_legal' && perfilEhMenor) return;
+
     if (gatilho === 'imovel_terceiro') {
       if (value.includes('imovel_terceiro')) {
         onChange(value.filter((g) => g !== 'imovel_terceiro'));
@@ -190,61 +193,70 @@ export function StepGatilhos({ clientId, value, onChange, onNext, onBack, benefi
       </div>
 
       <div className="space-y-2">
-        {/* Nenhuma situação especial */}
-        <label
-          htmlFor="gatilho-nenhuma"
-          className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3.5 transition-all ${
-            isNenhumaChecked
-              ? 'border-primary/40 bg-primary/5'
-              : 'border-border bg-card hover:border-primary/30 hover:bg-accent/30'
-          }`}
-        >
-          <Checkbox
-            id="gatilho-nenhuma"
-            checked={isNenhumaChecked}
-            onCheckedChange={() => onChange([])}
-            className="mt-0.5 shrink-0"
-          />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="size-3.5 text-muted-foreground shrink-0" />
-              <Label htmlFor="gatilho-nenhuma" className="cursor-pointer text-sm font-medium text-foreground">
-                Nenhuma situação especial
-              </Label>
+        {/* Nenhuma situação especial — oculto para perfis de menor/incapaz (sempre há representante legal) */}
+        {!perfilEhMenor && (
+          <label
+            htmlFor="gatilho-nenhuma"
+            className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3.5 transition-all ${
+              isNenhumaChecked
+                ? 'border-primary/40 bg-primary/5'
+                : 'border-border bg-card hover:border-primary/30 hover:bg-accent/30'
+            }`}
+          >
+            <Checkbox
+              id="gatilho-nenhuma"
+              checked={isNenhumaChecked}
+              onCheckedChange={() => onChange([])}
+              className="mt-0.5 shrink-0"
+            />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="size-3.5 text-muted-foreground shrink-0" />
+                <Label htmlFor="gatilho-nenhuma" className="cursor-pointer text-sm font-medium text-foreground">
+                  Nenhuma situação especial
+                </Label>
+              </div>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                O caso segue o fluxo padrão — sem documentos adicionais.
+              </p>
             </div>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              O caso segue o fluxo padrão — sem documentos adicionais.
-            </p>
-          </div>
-        </label>
+          </label>
+        )}
 
         {OPCOES.map(({ value: v, label, descricao, Icon }) => {
           const checked = value.includes(v);
+          const obrigatorio = v === 'tem_representacao_legal' && perfilEhMenor;
           return (
             <div key={v}>
               <label
                 htmlFor={`gatilho-${v}`}
-                className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3.5 transition-all ${
-                  checked
-                    ? 'border-primary/40 bg-primary/5'
-                    : 'border-border bg-card hover:border-primary/30 hover:bg-accent/30'
+                className={`flex items-start gap-3 rounded-2xl border px-4 py-3.5 transition-all ${
+                  obrigatorio
+                    ? 'cursor-default border-primary/40 bg-primary/5'
+                    : checked
+                    ? 'cursor-pointer border-primary/40 bg-primary/5'
+                    : 'cursor-pointer border-border bg-card hover:border-primary/30 hover:bg-accent/30'
                 }`}
               >
                 <Checkbox
                   id={`gatilho-${v}`}
                   checked={checked}
                   onCheckedChange={() => toggle(v)}
+                  disabled={obrigatorio}
                   className="mt-0.5 shrink-0"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <Icon className="size-3.5 text-muted-foreground shrink-0" />
-                    <Label htmlFor={`gatilho-${v}`} className="cursor-pointer text-sm font-medium text-foreground">
+                    <Label
+                      htmlFor={`gatilho-${v}`}
+                      className={`text-sm font-medium text-foreground ${obrigatorio ? 'cursor-default' : 'cursor-pointer'}`}
+                    >
                       {label}
                     </Label>
-                    {v === 'tem_representacao_legal' && perfilEhMenor && (
-                      <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                        Necessário para este perfil
+                    {obrigatorio && (
+                      <span className="inline-flex items-center rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary">
+                        Obrigatório para este perfil
                       </span>
                     )}
                   </div>

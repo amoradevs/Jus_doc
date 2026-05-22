@@ -108,7 +108,12 @@ export function WizardCenario({ clientId, processoId }: Props) {
   }
 
   function handleGatilhosChange(g: GatilhoId[]) {
-    setGatilhos(g);
+    const ehMenor = perfil !== null && PERFIS_MENORES.includes(perfil);
+    const gatilhosFinais =
+      ehMenor && !g.includes('tem_representacao_legal')
+        ? [...g, 'tem_representacao_legal']
+        : g;
+    setGatilhos(gatilhosFinais);
     setPacote(null);
     setCodigosAtivos([]);
   }
