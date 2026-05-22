@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth-helpers';
 import { buildDocumentPackage } from '@/lib/document-generation/package-builder';
 
+export const maxDuration = 60;
+
 export async function POST(req: Request) {
   const user = await getCurrentUser();
   const { clientId, templateCodes, cenario, advogadas_selecionadas, processoId, incluir_assinatura_lidiane } = await req.json();
