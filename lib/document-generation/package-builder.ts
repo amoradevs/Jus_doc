@@ -59,51 +59,55 @@ export async function buildDocumentPackage(
     .in('codigo', templateCodes);
 
   const zip = new JSZip();
-  const docs: Array<{ codigo: string; nome: string; nome_arquivo: string; buffer: Buffer; docxBuffer: Buffer | null; contentType: string }> = [];
-
   const usarPdf = isPdfConverterAvailable();
 
-  for (const template of templates ?? []) {
-    let fileBuffer: Buffer;
-    let docxBuffer: Buffer | null = null;
-    let extensao: string;
-    let contentType: string;
+  // Processa todos os templates em paralelo
+  const docs = await Promise.all(
+    (templates ?? []).map(async (template) => {
+      let fileBuffer: Buffer;
+      let docxBuffer: Buffer | null = null;
+      let extensao: string;
+      let contentType: string;
 
-    // Contrato e Procuração sempre saem com ambas advogadas, independente da seleção do modal
-    const categoriaTemplate = CATALOGO_TEMPLATES.find((t) => t.codigo === template.codigo)?.categoria;
-    const ctx = (categoriaTemplate === 'contrato' || categoriaTemplate === 'procuracao')
-      ? { ...context, mostrar_lidiane: true, mostrar_alcione: true, tem_duas_advogadas: true, apenas_lidiane: false, apenas_alcione: false, incluir_assinatura_lidiane: false }
-      : context;
+      // Contrato e Procuração sempre saem com ambas advogadas, independente da seleção do modal
+      const categoriaTemplate = CATALOGO_TEMPLATES.find((t) => t.codigo === template.codigo)?.categoria;
+      const ctx = (categoriaTemplate === 'contrato' || categoriaTemplate === 'procuracao')
+        ? { ...context, mostrar_lidiane: true, mostrar_alcione: true, tem_duas_advogadas: true, apenas_lidiane: false, apenas_alcione: false, incluir_assinatura_lidiane: false }
+        : context;
 
-    if (template.codigo === '05') {
-      fileBuffer = await renderTermoRepresentacaoInss(ctx);
-      extensao = 'pdf';
-      contentType = 'application/pdf';
-    } else if (template.formato === 'docx') {
-      const templateBuffer = await getTemplateBuffer(template);
-      docxBuffer = await renderDocxTemplate(templateBuffer, ctx);
-      if (usarPdf) {
-        fileBuffer = await convertDocxToPdf(docxBuffer);
+      if (template.codigo === '05') {
+        fileBuffer = await renderTermoRepresentacaoInss(ctx);
         extensao = 'pdf';
         contentType = 'application/pdf';
+      } else if (template.formato === 'docx') {
+        const templateBuffer = await getTemplateBuffer(template);
+        docxBuffer = await renderDocxTemplate(templateBuffer, ctx);
+        if (usarPdf) {
+          fileBuffer = await convertDocxToPdf(docxBuffer);
+          extensao = 'pdf';
+          contentType = 'application/pdf';
+        } else {
+          fileBuffer = docxBuffer;
+          extensao = 'docx';
+          contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        }
       } else {
-        fileBuffer = docxBuffer;
-        extensao = 'docx';
-        contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        const slug = path.basename(template.caminho_arquivo, '.pdf');
+        fileBuffer = await renderPdfOverlay(slug, ctx);
+        extensao = 'pdf';
+        contentType = 'application/pdf';
       }
-    } else {
-      const slug = path.basename(template.caminho_arquivo, '.pdf');
-      fileBuffer = await renderPdfOverlay(slug, ctx);
-      extensao = 'pdf';
-      contentType = 'application/pdf';
-    }
 
-    const nomeArquivo = `${clientNameNorm}_${template.codigo}_${normalizeName(template.nome)}_${dateStr}.${extensao}`;
-    zip.file(nomeArquivo, fileBuffer);
-    if (docxBuffer && extensao === 'pdf') {
-      zip.file(nomeArquivo.replace(/\.pdf$/, '.docx'), docxBuffer);
+      const nomeArquivo = `${clientNameNorm}_${template.codigo}_${normalizeName(template.nome)}_${dateStr}.${extensao}`;
+      return { codigo: template.codigo, nome: template.nome, nome_arquivo: nomeArquivo, buffer: fileBuffer, docxBuffer, contentType, extensao };
+    }),
+  );
+
+  for (const doc of docs) {
+    zip.file(doc.nome_arquivo, doc.buffer);
+    if (doc.docxBuffer && doc.extensao === 'pdf') {
+      zip.file(doc.nome_arquivo.replace(/\.pdf$/, '.docx'), doc.docxBuffer);
     }
-    docs.push({ codigo: template.codigo, nome: template.nome, nome_arquivo: nomeArquivo, buffer: fileBuffer, docxBuffer, contentType });
   }
 
   const zipBuffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
@@ -132,28 +136,31 @@ export async function buildDocumentPackage(
 
   if (pkgError || !pkg) throw new Error('Erro ao registrar pacote no banco');
 
-  for (const doc of docs) {
-    const docPath = `${tenantId}/${clientId}/${pkg.id}/${doc.nome_arquivo}`;
-    await db.storage
-      .from(process.env.SUPABASE_STORAGE_BUCKET!)
-      .upload(docPath, doc.buffer, { contentType: doc.contentType });
-
-    if (doc.docxBuffer) {
-      const docxPath = docPath.replace(/\.pdf$/, '.docx');
+  // Faz upload dos arquivos individuais e registros no banco em paralelo
+  await Promise.all(
+    docs.map(async (doc) => {
+      const docPath = `${tenantId}/${clientId}/${pkg.id}/${doc.nome_arquivo}`;
       await db.storage
         .from(process.env.SUPABASE_STORAGE_BUCKET!)
-        .upload(docxPath, doc.docxBuffer, {
-          contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        });
-    }
+        .upload(docPath, doc.buffer, { contentType: doc.contentType });
 
-    await db.from('generated_documents').insert({
-      package_id: pkg.id,
-      template_codigo: doc.codigo,
-      nome_arquivo: doc.nome_arquivo,
-      storage_path: docPath,
-    });
-  }
+      if (doc.docxBuffer) {
+        const docxPath = docPath.replace(/\.pdf$/, '.docx');
+        await db.storage
+          .from(process.env.SUPABASE_STORAGE_BUCKET!)
+          .upload(docxPath, doc.docxBuffer, {
+            contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          });
+      }
+
+      await db.from('generated_documents').insert({
+        package_id: pkg.id,
+        template_codigo: doc.codigo,
+        nome_arquivo: doc.nome_arquivo,
+        storage_path: docPath,
+      });
+    }),
+  );
 
   return {
     packageId: pkg.id,
