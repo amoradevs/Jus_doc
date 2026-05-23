@@ -36,10 +36,11 @@ export default async function GerarPage({ params, searchParams }: Props) {
     redirect('/configuracoes?aviso=preencha-antes-de-gerar');
   }
 
-  const [{ data: templates }, { data: processoRows }] = await Promise.all([
-    db.from('document_templates').select('*').eq('ativo', 'true'),
-    db.from('processos').select('id, numero_interno, tipo_beneficio').eq('cliente_id', id).order('created_at', { ascending: false }),
-  ]);
+  const { data: processoRows } = await db
+    .from('processos')
+    .select('id, numero_interno, tipo_beneficio')
+    .eq('cliente_id', id)
+    .order('created_at', { ascending: false });
 
   const processos = processoRows ?? [];
 
@@ -111,8 +112,7 @@ export default async function GerarPage({ params, searchParams }: Props) {
               </Link>
             </div>
           )}
-          <p className="text-muted-foreground text-sm mb-6">Busque um documento específico ou monte o pacote completo pelo assistente.</p>
-          <GerarModo clientId={id} templates={templates ?? []} processoId={processoId} />
+          <GerarModo clientId={id} processoId={processoId} />
         </>
       )}
     </div>
