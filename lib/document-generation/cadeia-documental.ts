@@ -127,7 +127,7 @@ export const CATALOGO_TEMPLATES: TemplateMetadata[] = [
     codigo: '04',
     categoria: 'declaracao',
     nome: 'Declaração de Residência',
-    beneficios: ['bpc', 'aposentadoria_idade'],
+    beneficios: ['bpc', 'aposentadoria_idade', 'pensao_morte'],
     perfis: [],
     gatilhos: ['imovel_terceiro'],
     obrigatorio: false,

@@ -19,7 +19,7 @@ const TODAS_OPCOES: { value: GatilhoId; label: string; descricao: string; Icon: 
     label: 'Imóvel de terceiro',
     descricao: 'O cliente reside em imóvel cedido — gera Declaração de Residência.',
     Icon: Home,
-    beneficios: ['bpc', 'aposentadoria_idade'],
+    beneficios: ['bpc', 'aposentadoria_idade', 'pensao_morte'],
   },
   {
     value: 'mei_inativo',
