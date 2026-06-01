@@ -226,10 +226,64 @@ export async function renderTermoRepresentacaoInss(ctx: TemplateContext): Promis
   page.drawText(`${cidadeUf}, ${dataStr}.`, { x, y, size: FS, font: fn, color: rgb(0, 0, 0) });
   const sig1X = x + BW - 155;
   page.drawLine({ start: { x: sig1X, y }, end: { x: x + BW, y }, thickness: 0.5, color: rgb(0, 0, 0) });
-  y -= 5;
-  const lbl1 = 'Assinatura do (a) Representado (a)';
+  y -= LH * 0.8;
+
+  const lbl1 = ctx.bloco_assinatura_a_rogo
+    ? `${cl.nome_completo}`
+    : 'Assinatura do (a) Representado (a)';
   page.drawText(lbl1, { x: sig1X + (155 - tw(lbl1, fn, FS_SM)) / 2, y, size: FS_SM, font: fn, color: rgb(0, 0, 0) });
-  y -= LH * 2;
+  y -= LH * 0.9;
+
+  if (ctx.bloco_assinatura_a_rogo && ctx.testemunhas.length >= 2) {
+    if (ctx.validador.nome_completo) {
+      const v = ctx.validador;
+      const rogoALine = `A ROGO: ${v.nome_completo}`;
+      page.drawText(rogoALine, { x: sig1X + (155 - tw(rogoALine, fn, FS_SM)) / 2, y, size: FS_SM, font: fn, color: rgb(0, 0, 0) });
+      y -= LH * 0.95;
+      if (v.rg) {
+        const rgLine = `RG: ${v.rg}`;
+        page.drawText(rgLine, { x: sig1X + (155 - tw(rgLine, fn, FS_SM)) / 2, y, size: FS_SM, font: fn, color: rgb(0, 0, 0) });
+        y -= LH * 0.95;
+      }
+      const cpfLine = `CPF: ${v.cpf}`;
+      page.drawText(cpfLine, { x: sig1X + (155 - tw(cpfLine, fn, FS_SM)) / 2, y, size: FS_SM, font: fn, color: rgb(0, 0, 0) });
+      y -= LH * 1.4;
+    } else {
+      y -= LH * 0.5;
+    }
+
+    const colW = (BW - 20) / 2;
+    const col1X = x;
+    const col2X = x + colW + 20;
+    y -= LH * 3.0;
+
+    for (const cx of [col1X, col2X]) {
+      page.drawLine({ start: { x: cx, y }, end: { x: cx + colW - 10, y }, thickness: 0.5, color: rgb(0, 0, 0) });
+    }
+    y -= LH * 0.8;
+
+    const t1 = ctx.testemunhas[0];
+    const t2 = ctx.testemunhas[1];
+
+    page.drawText(t1.nome_completo, { x: col1X, y, size: FS_SM, font: fn, color: rgb(0, 0, 0) });
+    page.drawText(t2.nome_completo, { x: col2X, y, size: FS_SM, font: fn, color: rgb(0, 0, 0) });
+    y -= LH * 0.95;
+
+    if (t1.rg) { page.drawText(`RG: ${t1.rg}`, { x: col1X, y, size: FS_SM, font: fn, color: rgb(0, 0, 0) }); }
+    if (t2.rg) { page.drawText(`RG: ${t2.rg}`, { x: col2X, y, size: FS_SM, font: fn, color: rgb(0, 0, 0) }); }
+    y -= LH * 0.95;
+
+    page.drawText(`CPF: ${t1.cpf}`, { x: col1X, y, size: FS_SM, font: fn, color: rgb(0, 0, 0) });
+    page.drawText(`CPF: ${t2.cpf}`, { x: col2X, y, size: FS_SM, font: fn, color: rgb(0, 0, 0) });
+    y -= LH * 0.95;
+
+    page.drawText(`Nasc.: ${t1.data_nascimento}`, { x: col1X, y, size: FS_SM, font: fn, color: rgb(0, 0, 0) });
+    page.drawText(`Nasc.: ${t2.data_nascimento}`, { x: col2X, y, size: FS_SM, font: fn, color: rgb(0, 0, 0) });
+    y -= LH * 0.95;
+    y -= LH * 0.5;
+  } else {
+    y -= LH * 2;
+  }
 
   // ── TERMO DE RESPONSABILIDADE ─────────────────────────────────────────────
   centered(page, 'TERMO DE RESPONSABILIDADE', y, fb, FS);

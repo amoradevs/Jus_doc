@@ -165,7 +165,8 @@ export type TemplateContext = {
   conjuge: { nome_completo: string; data_nascimento: string };
   separacao: { data: string; recebe_pensao: boolean; valor_pensao: string };
   empresa: { cnpj: string; razao_social: string; cnae: string; ramo: string; data_abertura: string; data_inicio_inatividade: string };
-  testemunhas: Array<{ tipo_label: string; nome_completo: string; cpf: string; rg: string; data_nascimento: string }>;
+  testemunhas: Array<{ tipo_label: string; nome_completo: string; cpf: string; rg: string; tem_rg: boolean; data_nascimento: string; id_linha: string }>;
+  validador: { nome_completo: string; cpf: string; rg: string; tem_rg: boolean; id_linha: string };
   processo: { tipo_beneficio_descricao: string; objeto_procuracao: string; eh_pensao_morte: boolean };
   instituidor: { nome_completo: string; data_obito: string };
   dependente_titular: { relacao_com_instituidor_descricao: string };
@@ -502,16 +503,50 @@ export async function buildTemplateContext(
     testemunhas: (() => {
       type TestemunhaRaw = { nome_completo?: string; cpf?: string; rg?: string; data_nascimento?: string };
       const raw: TestemunhaRaw[] = Array.isArray(ctx?.testemunhas) ? (ctx.testemunhas as TestemunhaRaw[]) : [];
+      const idLinhaTestemunha = (rg: string, cpf: string, nasc: string): string => {
+        const parts: string[] = [];
+        if (rg.trim()) parts.push(`RG: ${rg}`);
+        parts.push(`CPF: ${cpf}`);
+        parts.push(`Nasc.: ${nasc}`);
+        return parts.join(' · ');
+      };
       return raw
         .filter((t) => t?.nome_completo)
-        .map((t) => ({
-          tipo_label: 'A ROGO',
-          nome_completo: t.nome_completo ?? '',
-          cpf: formatarCPF(t.cpf ?? ''),
-          rg: t.rg ?? '',
-          tem_rg: !!(t.rg?.trim()),
-          data_nascimento: formatarData(t.data_nascimento ?? ''),
-        }));
+        .map((t) => {
+          const cpf = formatarCPF(t.cpf ?? '');
+          const rg = t.rg ?? '';
+          const nasc = formatarData(t.data_nascimento ?? '');
+          return {
+            tipo_label: 'A ROGO',
+            nome_completo: t.nome_completo ?? '',
+            cpf,
+            rg,
+            tem_rg: !!(t.rg?.trim()),
+            data_nascimento: nasc,
+            id_linha: idLinhaTestemunha(rg, cpf, nasc),
+          };
+        });
+    })(),
+
+    // Validador (perfil a rogo)
+    validador: (() => {
+      type ValidadorRaw = { nome_completo?: string; cpf?: string; rg?: string };
+      const validadorRaw: ValidadorRaw | null = (ctx?.validador as ValidadorRaw) ?? null;
+      const idLinhaValidador = (rg: string, cpf: string): string => {
+        const parts: string[] = [];
+        if (rg.trim()) parts.push(`RG: ${rg}`);
+        parts.push(`CPF: ${cpf}`);
+        return parts.join(' · ');
+      };
+      const cpf = formatarCPF(validadorRaw?.cpf ?? '');
+      const rg = validadorRaw?.rg ?? '';
+      return {
+        nome_completo: validadorRaw?.nome_completo ?? '',
+        cpf,
+        rg,
+        tem_rg: !!(validadorRaw?.rg?.trim()),
+        id_linha: idLinhaValidador(rg, cpf),
+      };
     })(),
 
     // Processo

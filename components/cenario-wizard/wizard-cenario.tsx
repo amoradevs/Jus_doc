@@ -11,7 +11,7 @@ import {
   type PacoteDocumental,
 } from '@/lib/document-generation/cadeia-documental';
 import { StepBeneficio } from './step-beneficio';
-import { StepPerfil, type Testemunha, type RepresentanteLegal } from './step-perfil';
+import { StepPerfil, type Testemunha, type RepresentanteLegal, type Validador } from './step-perfil';
 import { StepGatilhos } from './step-gatilhos';
 import { StepConfirmacao } from './step-confirmacao';
 
@@ -79,6 +79,7 @@ export function WizardCenario({ clientId, processoId, advSettings }: Props) {
   const [codigosAtivos, setCodigosAtivos] = useState<string[]>([]);
   const [testemunhas, setTestemunhas] = useState<Testemunha[]>([]);
   const [representanteLegal, setRepresentanteLegal] = useState<RepresentanteLegal | undefined>(undefined);
+  const [validador, setValidador] = useState<Validador | undefined>(undefined);
 
   useEffect(() => {
     fetch(`/api/clientes/${clientId}/contextual-data`)
@@ -89,6 +90,9 @@ export function WizardCenario({ clientId, processoId, advSettings }: Props) {
         }
         if (data?.representante_legal) {
           setRepresentanteLegal(data.representante_legal as RepresentanteLegal);
+        }
+        if (data?.validador) {
+          setValidador(data.validador as Validador);
         }
       })
       .catch(() => {});
@@ -167,6 +171,8 @@ export function WizardCenario({ clientId, processoId, advSettings }: Props) {
           onTestemunhasSalvas={setTestemunhas}
           initialRepresentanteLegal={representanteLegal}
           onRepresentanteLegalSalvo={setRepresentanteLegal}
+          initialValidador={validador}
+          onValidadorSalvo={setValidador}
         />
       )}
 

@@ -61,6 +61,7 @@ export async function PATCH(req: Request, { params }: Params) {
     empresa_mei: body.empresa_mei ?? prev.empresa_mei ?? null,
     imovel: body.imovel ?? prev.imovel ?? null,
     testemunhas: body.testemunhas ?? prev.testemunhas ?? null,
+    validador: body.validador ?? prev.validador ?? null,
   };
 
   if (existing && existing.length > 0) {

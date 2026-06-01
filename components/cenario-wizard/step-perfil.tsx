@@ -61,8 +61,15 @@ export type RepresentanteLegal = {
   parentesco: string;
 };
 
+export type Validador = {
+  nome_completo: string;
+  cpf: string;
+  rg: string;
+};
+
 const TESTEMUNHA_VAZIA: Testemunha = { nome_completo: '', cpf: '', rg: '', data_nascimento: '' };
 const REPRESENTANTE_VAZIO: RepresentanteLegal = { nome_completo: '', cpf: '', rg: '', parentesco: '' };
+const VALIDADOR_VAZIO: Validador = { nome_completo: '', cpf: '', rg: '' };
 
 type Props = {
   clientId: string;
@@ -74,17 +81,21 @@ type Props = {
   onTestemunhasSalvas?: (t: Testemunha[]) => void;
   initialRepresentanteLegal?: RepresentanteLegal;
   onRepresentanteLegalSalvo?: (r: RepresentanteLegal) => void;
+  initialValidador?: Validador;
+  onValidadorSalvo?: (v: Validador) => void;
 };
 
 export function StepPerfil({
   clientId, value, onChange, onNext, onBack,
   initialTestemunhas, onTestemunhasSalvas,
   initialRepresentanteLegal, onRepresentanteLegalSalvo,
+  initialValidador, onValidadorSalvo,
 }: Props) {
   // ── Modal testemunhas (a rogo) ─────────────────────────────────────────────
   const [modalTestemunhasAberto, setModalTestemunhasAberto] = useState(false);
   const [t1, setT1] = useState<Testemunha>(TESTEMUNHA_VAZIA);
   const [t2, setT2] = useState<Testemunha>(TESTEMUNHA_VAZIA);
+  const [validador, setValidador] = useState<Validador>(VALIDADOR_VAZIO);
 
   // ── Modal representante legal (menores/incapaz) ────────────────────────────
   const [modalRepresentanteAberto, setModalRepresentanteAberto] = useState(false);
@@ -100,6 +111,7 @@ export function StepPerfil({
       const base = initialTestemunhas ?? [];
       setT1(base[0] ?? TESTEMUNHA_VAZIA);
       setT2(base[1] ?? TESTEMUNHA_VAZIA);
+      setValidador(initialValidador ?? VALIDADOR_VAZIO);
       setErroSalvar('');
       setModalTestemunhasAberto(true);
     } else if (value && PERFIS_MENORES.includes(value)) {
@@ -115,6 +127,7 @@ export function StepPerfil({
 
   function podeSalvarTestemunhas() {
     return (
+      validador.nome_completo.trim() && validador.cpf.trim() &&
       t1.nome_completo.trim() && t1.cpf.trim() && t1.data_nascimento &&
       t2.nome_completo.trim() && t2.cpf.trim() && t2.data_nascimento
     );
@@ -128,10 +141,11 @@ export function StepPerfil({
       const res = await fetch(`/api/clientes/${clientId}/contextual-data`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ testemunhas: [t1, t2] }),
+        body: JSON.stringify({ testemunhas: [t1, t2], validador }),
       });
       if (!res.ok) throw new Error('Falha ao salvar');
       onTestemunhasSalvas?.([t1, t2]);
+      onValidadorSalvo?.(validador);
       setModalTestemunhasAberto(false);
       onNext();
     } catch {
@@ -181,6 +195,13 @@ export function StepPerfil({
   function fieldT2(field: keyof Omit<Testemunha, 'cpf'>) {
     return (e: React.ChangeEvent<HTMLInputElement>) =>
       setT2((prev) => ({ ...prev, [field]: e.target.value }));
+  }
+  function cpfChangeValidador(e: React.ChangeEvent<HTMLInputElement>) {
+    setValidador((prev) => ({ ...prev, cpf: maskCPF(e.target.value) }));
+  }
+  function fieldValidador(field: keyof Omit<Validador, 'cpf'>) {
+    return (e: React.ChangeEvent<HTMLInputElement>) =>
+      setValidador((prev) => ({ ...prev, [field]: e.target.value }));
   }
   function cpfChangeRep(e: React.ChangeEvent<HTMLInputElement>) {
     setRep((prev) => ({ ...prev, cpf: maskCPF(e.target.value) }));
@@ -254,19 +275,39 @@ export function StepPerfil({
           onOpenAutoFocus={(e) => { e.preventDefault(); primeiroInputRef.current?.focus(); }}
         >
           <DialogHeader>
-            <DialogTitle>Dados das testemunhas</DialogTitle>
+            <DialogTitle>Dados do validador e testemunhas</DialogTitle>
             <DialogDescription>
-              O perfil &ldquo;A rogo&rdquo; exige duas testemunhas. Preencha os dados abaixo — eles serão incluídos em todos os documentos.
+              O perfil &ldquo;A rogo&rdquo; exige um validador da digital e duas testemunhas. Preencha os dados abaixo — eles serão incluídos em todos os documentos.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-5 py-1">
             <div className="space-y-3">
+              <p className="text-sm font-semibold text-foreground">Quem valida a digital</p>
+              <div className="space-y-2">
+                <div>
+                  <label className="text-sm font-medium">Nome completo <span className="text-destructive">*</span></label>
+                  <Input ref={primeiroInputRef} placeholder="Nome completo" value={validador.nome_completo} onChange={fieldValidador('nome_completo')} disabled={salvando} className="mt-1 rounded-xl" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">CPF <span className="text-destructive">*</span></label>
+                  <Input placeholder="000.000.000-00" value={validador.cpf} onChange={cpfChangeValidador} maxLength={14} disabled={salvando} className="mt-1 rounded-xl" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground">RG <span className="text-muted-foreground font-normal">(opcional)</span></label>
+                  <Input placeholder="Número do RG" value={validador.rg} onChange={fieldValidador('rg')} disabled={salvando} className="mt-1 rounded-xl" />
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-border" />
+
+            <div className="space-y-3">
               <p className="text-sm font-semibold text-foreground">Testemunha 1</p>
               <div className="space-y-2">
                 <div>
                   <label className="text-sm font-medium">Nome completo <span className="text-destructive">*</span></label>
-                  <Input ref={primeiroInputRef} placeholder="Nome completo" value={t1.nome_completo} onChange={fieldT1('nome_completo')} disabled={salvando} className="mt-1 rounded-xl" />
+                  <Input placeholder="Nome completo" value={t1.nome_completo} onChange={fieldT1('nome_completo')} disabled={salvando} className="mt-1 rounded-xl" />
                 </div>
                 <div>
                   <label className="text-sm font-medium">CPF <span className="text-destructive">*</span></label>
