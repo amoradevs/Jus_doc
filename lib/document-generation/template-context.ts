@@ -438,7 +438,13 @@ export async function buildTemplateContext(
       nome_mae: client.nome_mae ?? '',
       nome_pai: client.nome_pai ?? '',
       nit: client.nit ?? '',
-      condicao_menor: ehMenor ? (idade < 16 ? 'impúbere' : 'púbere') : '',
+      condicao_menor: ehMenor
+        ? cenario?.perfil === 'menor_pubere'
+          ? 'púbere'
+          : cenario?.perfil === 'menor_impubere'
+          ? 'impúbere'
+          : idade < 16 ? 'impúbere' : 'púbere'
+        : '',
     },
 
     // Endereço
