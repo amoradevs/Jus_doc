@@ -112,12 +112,11 @@ export const CATALOGO_TEMPLATES: TemplateMetadata[] = [
 
   // ── Modulares (ativados por gatilhos) ──────────────────────────────────────
   {
-    // Ativado pelo gatilho tem_representacao_legal em qualquer benefício
-    // (pensão por morte com menores, BPC com incapaz, etc.)
+    // Ativado pelo gatilho tem_representacao_legal — não se aplica à aposentadoria por idade
     codigo: '15',
     categoria: 'termo',
     nome: 'Termo de Responsabilidade',
-    beneficios: [], // [] = aplica-se a todos os benefícios
+    beneficios: ['bpc', 'mandado_seguranca', 'pensao_morte'],
     perfis: [],
     gatilhos: ['tem_representacao_legal'],
     obrigatorio: false,

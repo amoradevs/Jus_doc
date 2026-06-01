@@ -40,6 +40,7 @@ const TODAS_OPCOES: { value: GatilhoId; label: string; descricao: string; Icon: 
     label: 'Há representação legal',
     descricao: 'Dependente é menor ou incapaz com representante legal — gera Termo de Responsabilidade.',
     Icon: Users,
+    beneficios: ['bpc', 'mandado_seguranca', 'pensao_morte'] as BeneficioId[],
   },
 ];
 
