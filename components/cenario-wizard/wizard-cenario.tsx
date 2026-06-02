@@ -163,6 +163,7 @@ export function WizardCenario({ clientId, processoId, advSettings }: Props) {
       {step === 2 && (
         <StepPerfil
           clientId={clientId}
+          beneficio={beneficio}
           value={perfil}
           onChange={handlePerfilChange}
           onNext={() => irParaPasso(3)}

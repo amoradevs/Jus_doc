@@ -10,11 +10,11 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
   DialogDescription, DialogFooter, DialogClose,
 } from '@/components/ui/dialog';
-import type { PerfilId } from '@/lib/document-generation/cadeia-documental';
+import type { PerfilId, BeneficioId } from '@/lib/document-generation/cadeia-documental';
 import { PERFIS_MENORES } from '@/lib/document-generation/cadeia-documental';
 import { maskCPF } from '@/lib/validators/cpf';
 
-const OPCOES: { value: PerfilId; label: string; descricao: string; Icon: React.ElementType }[] = [
+const TODAS_OPCOES: { value: PerfilId; label: string; descricao: string; Icon: React.ElementType; beneficios?: BeneficioId[] }[] = [
   {
     value: 'adulto_capaz',
     label: 'Adulto capaz',
@@ -32,12 +32,14 @@ const OPCOES: { value: PerfilId; label: string; descricao: string; Icon: React.E
     label: 'Menor impúbere',
     descricao: 'Menor de 16 anos — representado pelo responsável legal.',
     Icon: Baby,
+    beneficios: ['bpc', 'pensao_morte', 'mandado_seguranca'] as BeneficioId[],
   },
   {
     value: 'menor_pubere',
     label: 'Menor púbere',
     descricao: 'Entre 16 e 18 anos — assiste com representante legal.',
     Icon: PersonStanding,
+    beneficios: ['bpc', 'pensao_morte', 'mandado_seguranca'] as BeneficioId[],
   },
   {
     value: 'incapaz_curador',
@@ -73,6 +75,7 @@ const VALIDADOR_VAZIO: Validador = { nome_completo: '', cpf: '', rg: '' };
 
 type Props = {
   clientId: string;
+  beneficio?: BeneficioId | null;
   value: PerfilId | null;
   onChange: (p: PerfilId) => void;
   onNext: () => void;
@@ -86,11 +89,15 @@ type Props = {
 };
 
 export function StepPerfil({
-  clientId, value, onChange, onNext, onBack,
+  clientId, beneficio, value, onChange, onNext, onBack,
   initialTestemunhas, onTestemunhasSalvas,
   initialRepresentanteLegal, onRepresentanteLegalSalvo,
   initialValidador, onValidadorSalvo,
 }: Props) {
+  const OPCOES = TODAS_OPCOES.filter(
+    (o) => !o.beneficios || !beneficio || o.beneficios.includes(beneficio),
+  );
+
   // ── Modal testemunhas (a rogo) ─────────────────────────────────────────────
   const [modalTestemunhasAberto, setModalTestemunhasAberto] = useState(false);
   const [t1, setT1] = useState<Testemunha>(TESTEMUNHA_VAZIA);
