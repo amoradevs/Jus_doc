@@ -86,6 +86,7 @@ export function StepGatilhos({ clientId, value, onChange, onNext, onBack, benefi
   const [meiRamo, setMeiRamo] = useState('');
   const [meiCnae, setMeiCnae] = useState('');
   const [meiDataAbertura, setMeiDataAbertura] = useState('');
+  const [meiDataInatividade, setMeiDataInatividade] = useState('');
   const [salvandoMei, setSalvandoMei] = useState(false);
   const inputMeiCnpjRef = useRef<HTMLInputElement>(null);
 
@@ -120,6 +121,7 @@ export function StepGatilhos({ clientId, value, onChange, onNext, onBack, benefi
         setMeiRamo('');
         setMeiCnae('');
         setMeiDataAbertura('');
+        setMeiDataInatividade('');
         setModalMeiAberto(true);
       }
       return;
@@ -198,7 +200,7 @@ export function StepGatilhos({ clientId, value, onChange, onNext, onBack, benefi
 
   function podeSalvarMei() {
     return meiCnpj.trim() && meiRazaoSocial.trim() && meiRamo.trim() &&
-      meiCnae.trim() && meiDataAbertura.trim();
+      meiCnae.trim() && meiDataAbertura.trim() && meiDataInatividade.trim();
   }
 
   async function confirmarMei() {
@@ -215,7 +217,7 @@ export function StepGatilhos({ clientId, value, onChange, onNext, onBack, benefi
             ramo: meiRamo.trim(),
             cnae: meiCnae.trim(),
             data_abertura: meiDataAbertura,
-            data_inicio_inatividade: meiDataAbertura,
+            data_inicio_inatividade: meiDataInatividade,
           },
         }),
       });
@@ -379,7 +381,7 @@ export function StepGatilhos({ clientId, value, onChange, onNext, onBack, benefi
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Aberta em / Inativa desde</Label>
+              <Label className="text-sm font-medium">Aberta em</Label>
               <Input
                 type="date"
                 value={meiDataAbertura}
@@ -387,7 +389,17 @@ export function StepGatilhos({ clientId, value, onChange, onNext, onBack, benefi
                 disabled={salvandoMei}
                 className="rounded-xl"
               />
-              <p className="text-xs text-muted-foreground">A empresa encontra-se inativa desde sua abertura.</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Inativa desde</Label>
+              <Input
+                type="date"
+                value={meiDataInatividade}
+                onChange={(e) => setMeiDataInatividade(e.target.value)}
+                disabled={salvandoMei}
+                className="rounded-xl"
+              />
             </div>
           </div>
 
