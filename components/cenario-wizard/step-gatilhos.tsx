@@ -215,6 +215,7 @@ export function StepGatilhos({ clientId, value, onChange, onNext, onBack, benefi
             ramo: meiRamo.trim(),
             cnae: meiCnae.trim(),
             data_abertura: meiDataAbertura,
+            data_inicio_inatividade: meiDataAbertura,
           },
         }),
       });
