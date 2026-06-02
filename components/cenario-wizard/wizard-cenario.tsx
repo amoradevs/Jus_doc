@@ -73,6 +73,7 @@ function StepIndicator({ step }: { step: Step }) {
 export function WizardCenario({ clientId, processoId, advSettings }: Props) {
   const [step, setStep] = useState<Step>(1);
   const [beneficio, setBeneficio] = useState<BeneficioId | null>(null);
+  const [msOrgao, setMsOrgao] = useState<'inss' | 'cras' | null>(null);
   const [perfil, setPerfil] = useState<PerfilId | null>(null);
   const [gatilhos, setGatilhos] = useState<GatilhoId[]>([]);
   const [pacote, setPacote] = useState<PacoteDocumental | null>(null);
@@ -106,11 +107,11 @@ export function WizardCenario({ clientId, processoId, advSettings }: Props) {
 
   function handleBeneficioChange(b: BeneficioId) {
     if (b !== beneficio) {
-      // Mudança de benefício → reseta tudo abaixo
       setPerfil(null);
       setGatilhos([]);
       setPacote(null);
       setCodigosAtivos([]);
+      setMsOrgao(null);
     }
     setBeneficio(b);
   }
@@ -135,7 +136,7 @@ export function WizardCenario({ clientId, processoId, advSettings }: Props) {
 
   function irParaConfirmacao() {
     if (!beneficio || !perfil) return;
-    const cenario = { beneficio, perfil, gatilhos };
+    const cenario = { beneficio, perfil, gatilhos, ...(msOrgao ? { ms_orgao: msOrgao } : {}) };
     const p = montarPacote(cenario);
     setPacote(p);
     setCodigosAtivos([...p.codigos]);
@@ -157,6 +158,8 @@ export function WizardCenario({ clientId, processoId, advSettings }: Props) {
           value={beneficio}
           onChange={handleBeneficioChange}
           onNext={() => irParaPasso(2)}
+          msOrgao={msOrgao}
+          onMsOrgaoChange={setMsOrgao}
         />
       )}
 

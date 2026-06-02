@@ -25,6 +25,7 @@ export interface Cenario {
   beneficio: BeneficioId;
   perfil: PerfilId;
   gatilhos: GatilhoId[];
+  ms_orgao?: 'inss' | 'cras';
 }
 
 export interface Alerta {
@@ -72,7 +73,7 @@ export const CATALOGO_TEMPLATES: TemplateMetadata[] = [
     codigo: '01',
     categoria: 'contrato',
     nome: 'Contrato de Honorários',
-    beneficios: ['bpc', 'aposentadoria_idade', 'mandado_seguranca', 'pensao_morte'],
+    beneficios: ['bpc', 'aposentadoria_idade', 'pensao_morte'],
     perfis: [],
     gatilhos: [],
     obrigatorio: true,
@@ -103,7 +104,7 @@ export const CATALOGO_TEMPLATES: TemplateMetadata[] = [
     codigo: '03',
     categoria: 'declaracao',
     nome: 'Declaração de Hipossuficiência',
-    beneficios: [], // [] = aplica-se a todos os benefícios
+    beneficios: ['bpc', 'aposentadoria_idade', 'pensao_morte'],
     perfis: [],
     gatilhos: [],
     obrigatorio: true,
@@ -112,11 +113,11 @@ export const CATALOGO_TEMPLATES: TemplateMetadata[] = [
 
   // ── Modulares (ativados por gatilhos) ──────────────────────────────────────
   {
-    // Ativado pelo gatilho tem_representacao_legal — não se aplica à aposentadoria por idade
+    // Ativado pelo gatilho tem_representacao_legal — não se aplica à aposentadoria por idade nem ao MS
     codigo: '15',
     categoria: 'termo',
     nome: 'Termo de Responsabilidade',
-    beneficios: ['bpc', 'mandado_seguranca', 'pensao_morte'],
+    beneficios: ['bpc', 'pensao_morte'],
     perfis: [],
     gatilhos: ['tem_representacao_legal'],
     obrigatorio: false,
@@ -136,7 +137,7 @@ export const CATALOGO_TEMPLATES: TemplateMetadata[] = [
     codigo: '06',
     categoria: 'declaracao',
     nome: 'Declaração de Separação de Fato (Anexo I)',
-    beneficios: [],
+    beneficios: ['bpc', 'aposentadoria_idade', 'pensao_morte'],
     perfis: [],
     gatilhos: ['separado_de_fato'],
     obrigatorio: false,
@@ -146,7 +147,7 @@ export const CATALOGO_TEMPLATES: TemplateMetadata[] = [
     codigo: '07',
     categoria: 'declaracao',
     nome: 'Declaração de Inatividade de Empresa',
-    beneficios: [],
+    beneficios: ['bpc', 'aposentadoria_idade', 'pensao_morte'],
     perfis: [],
     gatilhos: ['mei_inativo'],
     obrigatorio: false,

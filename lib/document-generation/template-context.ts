@@ -273,6 +273,11 @@ export function getCenarioContextOverrides(cenario: Cenario): Partial<TemplateCo
 
   const benInfo = BENEFICIO_ID_MAP[cenario.beneficio] ?? BENEFICIO_ID_MAP.bpc;
 
+  let objetoProcuracao = benInfo.objeto;
+  if (ehMS && cenario.ms_orgao === 'cras') {
+    objetoProcuracao = 'impetrar MANDADO DE SEGURANÇA em face do CRAS (Centro de Referência de Assistência Social)';
+  }
+
   const checkboxCenario: Record<string, string> = {};
   const checkboxCenarioX: Record<string, string> = {};
   for (const opcao of TODAS_OPCOES_CHECKBOX) {
@@ -301,7 +306,7 @@ export function getCenarioContextOverrides(cenario: Cenario): Partial<TemplateCo
     bloco_assinatura_menor,
     processo: {
       tipo_beneficio_descricao: benInfo.descricao,
-      objeto_procuracao: benInfo.objeto,
+      objeto_procuracao: objetoProcuracao,
       eh_pensao_morte: ehPensaoMorte,
     },
     checkbox: checkboxCenario,
