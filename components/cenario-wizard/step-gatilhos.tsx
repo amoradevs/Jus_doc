@@ -36,6 +36,7 @@ const TODAS_OPCOES: OpcaoGatilho[] = [
     descricao: 'O cliente possui MEI sem atividade — gera Declaração de Inatividade de Empresa.',
     Icon: Building2,
     beneficios: ['bpc', 'aposentadoria_idade', 'mandado_seguranca'],
+    perfis_excluidos: ['menor_impubere', 'menor_pubere'] as PerfilId[],
   },
   {
     value: 'separado_de_fato',
@@ -78,6 +79,16 @@ export function StepGatilhos({ clientId, value, onChange, onNext, onBack, benefi
   const [salvandoImovel, setSalvandoImovel] = useState(false);
   const inputImovelRef = useRef<HTMLInputElement>(null);
 
+  // ── Modal — MEI inativo ──────────────────────────────────────────────────────
+  const [modalMeiAberto, setModalMeiAberto] = useState(false);
+  const [meiCnpj, setMeiCnpj] = useState('');
+  const [meiRazaoSocial, setMeiRazaoSocial] = useState('');
+  const [meiRamo, setMeiRamo] = useState('');
+  const [meiCnae, setMeiCnae] = useState('');
+  const [meiDataAbertura, setMeiDataAbertura] = useState('');
+  const [salvandoMei, setSalvandoMei] = useState(false);
+  const inputMeiCnpjRef = useRef<HTMLInputElement>(null);
+
   // ── Modal — separação de fato ────────────────────────────────────────────────
   const [modalSepAberto, setModalSepAberto] = useState(false);
   const [sepConjugeNome, setSepConjugeNome] = useState('');
@@ -96,6 +107,20 @@ export function StepGatilhos({ clientId, value, onChange, onNext, onBack, benefi
       } else {
         setNomeProprietario('');
         setModalImovelAberto(true);
+      }
+      return;
+    }
+
+    if (gatilho === 'mei_inativo') {
+      if (value.includes('mei_inativo')) {
+        onChange(value.filter((g) => g !== 'mei_inativo'));
+      } else {
+        setMeiCnpj('');
+        setMeiRazaoSocial('');
+        setMeiRamo('');
+        setMeiCnae('');
+        setMeiDataAbertura('');
+        setModalMeiAberto(true);
       }
       return;
     }
@@ -166,6 +191,37 @@ export function StepGatilhos({ clientId, value, onChange, onNext, onBack, benefi
       setModalSepAberto(false);
     } finally {
       setSalvandoSep(false);
+    }
+  }
+
+  // ── MEI handlers ────────────────────────────────────────────────────────────
+
+  function podeSalvarMei() {
+    return meiCnpj.trim() && meiRazaoSocial.trim() && meiRamo.trim() &&
+      meiCnae.trim() && meiDataAbertura.trim();
+  }
+
+  async function confirmarMei() {
+    if (!podeSalvarMei() || salvandoMei) return;
+    setSalvandoMei(true);
+    try {
+      await fetch(`/api/clientes/${clientId}/contextual-data`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          empresa_mei: {
+            cnpj: meiCnpj.trim(),
+            razao_social: meiRazaoSocial.trim(),
+            ramo: meiRamo.trim(),
+            cnae: meiCnae.trim(),
+            data_abertura: meiDataAbertura,
+          },
+        }),
+      });
+      onChange([...value, 'mei_inativo']);
+      setModalMeiAberto(false);
+    } finally {
+      setSalvandoMei(false);
     }
   }
 
@@ -261,6 +317,94 @@ export function StepGatilhos({ clientId, value, onChange, onNext, onBack, benefi
           <Button onClick={onNext} className="rounded-xl">Avançar</Button>
         </div>
       </div>
+
+      {/* ── Modal — MEI inativo ── */}
+      <Dialog open={modalMeiAberto} onOpenChange={(open) => { if (!salvandoMei) setModalMeiAberto(open); }}>
+        <DialogContent
+          className="sm:max-w-md"
+          onOpenAutoFocus={(e) => { e.preventDefault(); inputMeiCnpjRef.current?.focus(); }}
+        >
+          <DialogHeader>
+            <DialogTitle>Dados do MEI inativo</DialogTitle>
+            <DialogDescription>
+              Informações para preencher a Declaração de Inatividade de Empresa.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-1">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">CNPJ</Label>
+              <Input
+                ref={inputMeiCnpjRef}
+                placeholder="Ex: 55.844.121/0001-01"
+                value={meiCnpj}
+                onChange={(e) => setMeiCnpj(e.target.value)}
+                disabled={salvandoMei}
+                className="rounded-xl"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Razão Social</Label>
+              <Input
+                placeholder="Nome completo conforme CNPJ"
+                value={meiRazaoSocial}
+                onChange={(e) => setMeiRazaoSocial(e.target.value)}
+                disabled={salvandoMei}
+                className="rounded-xl"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Ramo de atividade</Label>
+              <Input
+                placeholder="Ex: Arte e Cultura"
+                value={meiRamo}
+                onChange={(e) => setMeiRamo(e.target.value)}
+                disabled={salvandoMei}
+                className="rounded-xl"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">CNAE</Label>
+              <Input
+                placeholder="Ex: R-9001-9/02"
+                value={meiCnae}
+                onChange={(e) => setMeiCnae(e.target.value)}
+                disabled={salvandoMei}
+                className="rounded-xl"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Aberta em / Inativa desde</Label>
+              <Input
+                type="date"
+                value={meiDataAbertura}
+                onChange={(e) => setMeiDataAbertura(e.target.value)}
+                disabled={salvandoMei}
+                className="rounded-xl"
+              />
+              <p className="text-xs text-muted-foreground">A empresa encontra-se inativa desde sua abertura.</p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" className="rounded-xl" disabled={salvandoMei}>Cancelar</Button>
+            </DialogClose>
+            <Button
+              className="rounded-xl gap-2"
+              onClick={confirmarMei}
+              disabled={!podeSalvarMei() || salvandoMei}
+            >
+              {salvandoMei && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Modal — proprietário do imóvel ── */}
       <Dialog open={modalImovelAberto} onOpenChange={(open) => { if (!salvandoImovel) setModalImovelAberto(open); }}>

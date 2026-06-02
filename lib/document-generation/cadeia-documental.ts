@@ -142,9 +142,16 @@ export const CATALOGO_TEMPLATES: TemplateMetadata[] = [
     obrigatorio: false,
     ordem: 7,
   },
-  // NOTA: Declaração de Inatividade de Empresa (código '07') ainda não
-  // cadastrada no DB. Motor gera aviso 'MEI_TEMPLATE_AUSENTE' quando
-  // gatilho mei_inativo é selecionado.
+  {
+    codigo: '07',
+    categoria: 'declaracao',
+    nome: 'Declaração de Inatividade de Empresa',
+    beneficios: [],
+    perfis: [],
+    gatilhos: ['mei_inativo'],
+    obrigatorio: false,
+    ordem: 8,
+  },
 ];
 
 // ─── validarCoerencia — funções puras, testáveis independentemente ────────────
@@ -152,17 +159,6 @@ export const CATALOGO_TEMPLATES: TemplateMetadata[] = [
 export function validarCoerencia(cenario: Cenario): Alerta[] {
   const alertas: Alerta[] = [];
   const { beneficio, perfil, gatilhos } = cenario;
-
-  // Aviso: mei_inativo — template não cadastrado no DB ainda
-  if (gatilhos.includes('mei_inativo')) {
-    alertas.push({
-      nivel: 'aviso',
-      codigo: 'MEI_TEMPLATE_AUSENTE',
-      mensagem:
-        'Declaração de Inatividade de Empresa ainda não cadastrada no sistema. Adicione o template (código 07) para incluí-la automaticamente no futuro.',
-      campo_relacionado: 'gatilhos[mei_inativo]',
-    });
-  }
 
   // Info: perfil de menor/incapaz sem gatilho tem_representacao_legal
   if (PERFIS_MENORES.includes(perfil) && !gatilhos.includes('tem_representacao_legal')) {
