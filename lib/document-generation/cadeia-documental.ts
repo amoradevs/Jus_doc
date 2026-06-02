@@ -133,12 +133,10 @@ export const CATALOGO_TEMPLATES: TemplateMetadata[] = [
     ordem: 5,
   },
   {
-    // Spec 4.3: separado_de_fato só se aplica ao BPC.
-    // Em outros benefícios o motor gera aviso e omite o documento.
     codigo: '06',
     categoria: 'declaracao',
     nome: 'Declaração de Separação de Fato (Anexo I)',
-    beneficios: ['bpc'],
+    beneficios: [],
     perfis: [],
     gatilhos: ['separado_de_fato'],
     obrigatorio: false,
@@ -154,17 +152,6 @@ export const CATALOGO_TEMPLATES: TemplateMetadata[] = [
 export function validarCoerencia(cenario: Cenario): Alerta[] {
   const alertas: Alerta[] = [];
   const { beneficio, perfil, gatilhos } = cenario;
-
-  // Aviso: separado_de_fato fora do BPC → declaração omitida
-  if (gatilhos.includes('separado_de_fato') && beneficio !== 'bpc') {
-    alertas.push({
-      nivel: 'aviso',
-      codigo: 'SEPARADO_FATO_FORA_BPC',
-      mensagem:
-        'A Declaração de Separação de Fato (Anexo I) é específica do BPC e foi omitida. Se relevante para este benefício, comprove a separação de outra forma.',
-      campo_relacionado: 'gatilhos[separado_de_fato]',
-    });
-  }
 
   // Aviso: mei_inativo — template não cadastrado no DB ainda
   if (gatilhos.includes('mei_inativo')) {

@@ -163,7 +163,7 @@ export type TemplateContext = {
   representante: { nome_completo: string; cpf: string; rg: string; parentesco: string };
   dependentes: Array<{ nome_completo: string; cpf: string; rg: string; data_nascimento: string; parentesco: string }>;
   conjuge: { nome_completo: string; data_nascimento: string };
-  separacao: { data: string; recebe_pensao: boolean; valor_pensao: string };
+  separacao: { conjuge_nome: string; conjuge_data_nascimento: string; recebe_pensao: boolean; nao_recebe_pensao: boolean; valor_pensao: string; checkbox_recebe: string; checkbox_nao_recebe: string };
   empresa: { cnpj: string; razao_social: string; cnae: string; ramo: string; data_abertura: string; data_inicio_inatividade: string };
   testemunhas: Array<{ tipo_label: string; nome_completo: string; cpf: string; rg: string; tem_rg: boolean; data_nascimento: string; id_linha: string }>;
   validador: { nome_completo: string; cpf: string; rg: string; tem_rg: boolean; id_linha: string };
@@ -483,11 +483,19 @@ export async function buildTemplateContext(
     },
 
     // Separação
-    separacao: {
-      data: '',
-      recebe_pensao: false,
-      valor_pensao: '',
-    },
+    separacao: (() => {
+      const sep = ctx?.separacao as Record<string, unknown> | null | undefined;
+      const recebe = !!(sep?.recebe_pensao);
+      return {
+        conjuge_nome: (sep?.conjuge_nome as string) ?? '',
+        conjuge_data_nascimento: formatarData((sep?.conjuge_data_nascimento as string) ?? ''),
+        recebe_pensao: recebe,
+        nao_recebe_pensao: !recebe,
+        valor_pensao: (sep?.valor_pensao as string) ?? '',
+        checkbox_recebe: recebe ? 'X' : ' ',
+        checkbox_nao_recebe: recebe ? ' ' : 'X',
+      };
+    })(),
 
     // Empresa MEI
     empresa: {

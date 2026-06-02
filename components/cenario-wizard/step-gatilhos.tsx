@@ -13,7 +13,16 @@ import {
 import type { GatilhoId, BeneficioId, PerfilId } from '@/lib/document-generation/cadeia-documental';
 import { PERFIS_MENORES } from '@/lib/document-generation/cadeia-documental';
 
-const TODAS_OPCOES: { value: GatilhoId; label: string; descricao: string; Icon: React.ElementType; beneficios?: BeneficioId[] }[] = [
+type OpcaoGatilho = {
+  value: GatilhoId;
+  label: string;
+  descricao: string;
+  Icon: React.ElementType;
+  beneficios?: BeneficioId[];
+  perfis_excluidos?: PerfilId[];
+};
+
+const TODAS_OPCOES: OpcaoGatilho[] = [
   {
     value: 'imovel_terceiro',
     label: 'Imóvel de terceiro',
@@ -31,9 +40,9 @@ const TODAS_OPCOES: { value: GatilhoId; label: string; descricao: string; Icon: 
   {
     value: 'separado_de_fato',
     label: 'Separado de fato',
-    descricao: 'Separação não formalizada — gera Declaração de Separação de Fato (BPC).',
+    descricao: 'Separação não formalizada — gera Declaração de Separação de Fato.',
     Icon: HeartCrack,
-    beneficios: ['bpc'],
+    perfis_excluidos: ['menor_impubere', 'menor_pubere'],
   },
   {
     value: 'tem_representacao_legal',
@@ -57,25 +66,49 @@ type Props = {
 export function StepGatilhos({ clientId, value, onChange, onNext, onBack, beneficio, perfil }: Props) {
   const perfilEhMenor = perfil !== null && perfil !== undefined && PERFIS_MENORES.includes(perfil);
 
-  const OPCOES = TODAS_OPCOES.filter(
-    (o) => !o.beneficios || !beneficio || o.beneficios.includes(beneficio),
-  );
+  const OPCOES = TODAS_OPCOES.filter((o) => {
+    if (o.beneficios && beneficio && !o.beneficios.includes(beneficio)) return false;
+    if (o.perfis_excluidos && perfil && o.perfis_excluidos.includes(perfil)) return false;
+    return true;
+  });
 
-  const [modalAberto, setModalAberto] = useState(false);
+  // ── Modal — proprietário do imóvel ──────────────────────────────────────────
+  const [modalImovelAberto, setModalImovelAberto] = useState(false);
   const [nomeProprietario, setNomeProprietario] = useState('');
-  const [salvando, setSalvando] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [salvandoImovel, setSalvandoImovel] = useState(false);
+  const inputImovelRef = useRef<HTMLInputElement>(null);
+
+  // ── Modal — separação de fato ────────────────────────────────────────────────
+  const [modalSepAberto, setModalSepAberto] = useState(false);
+  const [sepConjugeNome, setSepConjugeNome] = useState('');
+  const [sepConjugeNasc, setSepConjugeNasc] = useState('');
+  const [sepRecebePensao, setSepRecebePensao] = useState(false);
+  const [sepValorPensao, setSepValorPensao] = useState('');
+  const [salvandoSep, setSalvandoSep] = useState(false);
+  const inputSepNomeRef = useRef<HTMLInputElement>(null);
 
   function toggle(gatilho: GatilhoId) {
     if (gatilho === 'tem_representacao_legal' && perfilEhMenor) return;
+
     if (gatilho === 'imovel_terceiro') {
       if (value.includes('imovel_terceiro')) {
-        // Desmarcar — apenas remove, sem modal
         onChange(value.filter((g) => g !== 'imovel_terceiro'));
       } else {
-        // Marcar — abre modal para capturar nome do proprietário
         setNomeProprietario('');
-        setModalAberto(true);
+        setModalImovelAberto(true);
+      }
+      return;
+    }
+
+    if (gatilho === 'separado_de_fato') {
+      if (value.includes('separado_de_fato')) {
+        onChange(value.filter((g) => g !== 'separado_de_fato'));
+      } else {
+        setSepConjugeNome('');
+        setSepConjugeNasc('');
+        setSepRecebePensao(false);
+        setSepValorPensao('');
+        setModalSepAberto(true);
       }
       return;
     }
@@ -87,11 +120,12 @@ export function StepGatilhos({ clientId, value, onChange, onNext, onBack, benefi
     );
   }
 
+  // ── Imovel handlers ─────────────────────────────────────────────────────────
+
   async function confirmarProprietario() {
     const nome = nomeProprietario.trim();
-    if (!nome || salvando) return;
-
-    setSalvando(true);
+    if (!nome || salvandoImovel) return;
+    setSalvandoImovel(true);
     try {
       await fetch(`/api/clientes/${clientId}/contextual-data`, {
         method: 'PATCH',
@@ -99,14 +133,40 @@ export function StepGatilhos({ clientId, value, onChange, onNext, onBack, benefi
         body: JSON.stringify({ imovel: { proprietario_nome: nome, cedido: true } }),
       });
       onChange([...value, 'imovel_terceiro']);
-      setModalAberto(false);
+      setModalImovelAberto(false);
     } finally {
-      setSalvando(false);
+      setSalvandoImovel(false);
     }
   }
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') confirmarProprietario();
+  // ── Separação handlers ───────────────────────────────────────────────────────
+
+  function podeSalvarSep() {
+    return sepConjugeNome.trim() && sepConjugeNasc.trim() &&
+      (!sepRecebePensao || sepValorPensao.trim());
+  }
+
+  async function confirmarSeparacao() {
+    if (!podeSalvarSep() || salvandoSep) return;
+    setSalvandoSep(true);
+    try {
+      await fetch(`/api/clientes/${clientId}/contextual-data`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          separacao: {
+            conjuge_nome: sepConjugeNome.trim(),
+            conjuge_data_nascimento: sepConjugeNasc,
+            recebe_pensao: sepRecebePensao,
+            valor_pensao: sepRecebePensao ? sepValorPensao.trim() : '',
+          },
+        }),
+      });
+      onChange([...value, 'separado_de_fato']);
+      setModalSepAberto(false);
+    } finally {
+      setSalvandoSep(false);
+    }
   }
 
   const isNenhumaChecked = value.length === 0;
@@ -121,7 +181,6 @@ export function StepGatilhos({ clientId, value, onChange, onNext, onBack, benefi
       </div>
 
       <div className="space-y-2">
-        {/* Opção padrão — oculta para perfis de menor/incapaz */}
         {!perfilEhMenor && (
           <label
             htmlFor="gatilho-nenhuma"
@@ -204,10 +263,10 @@ export function StepGatilhos({ clientId, value, onChange, onNext, onBack, benefi
       </div>
 
       {/* ── Modal — proprietário do imóvel ── */}
-      <Dialog open={modalAberto} onOpenChange={(open) => { if (!salvando) setModalAberto(open); }}>
+      <Dialog open={modalImovelAberto} onOpenChange={(open) => { if (!salvandoImovel) setModalImovelAberto(open); }}>
         <DialogContent
           className="sm:max-w-sm"
-          onOpenAutoFocus={(e) => { e.preventDefault(); inputRef.current?.focus(); }}
+          onOpenAutoFocus={(e) => { e.preventDefault(); inputImovelRef.current?.focus(); }}
         >
           <DialogHeader>
             <DialogTitle>Quem é o proprietário do imóvel?</DialogTitle>
@@ -215,31 +274,122 @@ export function StepGatilhos({ clientId, value, onChange, onNext, onBack, benefi
               O nome será incluído automaticamente na Declaração de Residência.
             </DialogDescription>
           </DialogHeader>
-
           <div className="py-1">
             <Input
-              ref={inputRef}
+              ref={inputImovelRef}
               placeholder="Nome completo do proprietário"
               value={nomeProprietario}
               onChange={(e) => setNomeProprietario(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={salvando}
+              onKeyDown={(e) => { if (e.key === 'Enter') confirmarProprietario(); }}
+              disabled={salvandoImovel}
               className="rounded-xl"
             />
           </div>
-
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="outline" className="rounded-xl" disabled={salvando}>
-                Cancelar
-              </Button>
+              <Button variant="outline" className="rounded-xl" disabled={salvandoImovel}>Cancelar</Button>
             </DialogClose>
             <Button
               className="rounded-xl gap-2"
               onClick={confirmarProprietario}
-              disabled={!nomeProprietario.trim() || salvando}
+              disabled={!nomeProprietario.trim() || salvandoImovel}
             >
-              {salvando && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              {salvandoImovel && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Modal — separação de fato ── */}
+      <Dialog open={modalSepAberto} onOpenChange={(open) => { if (!salvandoSep) setModalSepAberto(open); }}>
+        <DialogContent
+          className="sm:max-w-md"
+          onOpenAutoFocus={(e) => { e.preventDefault(); inputSepNomeRef.current?.focus(); }}
+        >
+          <DialogHeader>
+            <DialogTitle>Dados da separação de fato</DialogTitle>
+            <DialogDescription>
+              Informações para preencher a Declaração de Separação de Fato.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-1">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Nome do cônjuge / companheiro(a)</Label>
+              <Input
+                ref={inputSepNomeRef}
+                placeholder="Nome completo do Sr./Sra."
+                value={sepConjugeNome}
+                onChange={(e) => setSepConjugeNome(e.target.value)}
+                disabled={salvandoSep}
+                className="rounded-xl"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Data de nascimento do cônjuge</Label>
+              <Input
+                type="date"
+                value={sepConjugeNasc}
+                onChange={(e) => setSepConjugeNasc(e.target.value)}
+                disabled={salvandoSep}
+                className="rounded-xl"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Pensão alimentícia</Label>
+              <div className="flex flex-col gap-2">
+                <label className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2.5 transition-all ${!sepRecebePensao ? 'border-primary/40 bg-primary/5' : 'border-border hover:border-primary/30'}`}>
+                  <input
+                    type="radio"
+                    name="pensao"
+                    checked={!sepRecebePensao}
+                    onChange={() => { setSepRecebePensao(false); setSepValorPensao(''); }}
+                    disabled={salvandoSep}
+                    className="accent-primary"
+                  />
+                  <span className="text-sm">Não recebo pensão de alimentos</span>
+                </label>
+                <label className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2.5 transition-all ${sepRecebePensao ? 'border-primary/40 bg-primary/5' : 'border-border hover:border-primary/30'}`}>
+                  <input
+                    type="radio"
+                    name="pensao"
+                    checked={sepRecebePensao}
+                    onChange={() => setSepRecebePensao(true)}
+                    disabled={salvandoSep}
+                    className="accent-primary"
+                  />
+                  <span className="text-sm">Recebo pensão de alimentos</span>
+                </label>
+              </div>
+            </div>
+
+            {sepRecebePensao && (
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Valor da pensão (R$)</Label>
+                <Input
+                  placeholder="Ex: 500,00"
+                  value={sepValorPensao}
+                  onChange={(e) => setSepValorPensao(e.target.value)}
+                  disabled={salvandoSep}
+                  className="rounded-xl"
+                />
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" className="rounded-xl" disabled={salvandoSep}>Cancelar</Button>
+            </DialogClose>
+            <Button
+              className="rounded-xl gap-2"
+              onClick={confirmarSeparacao}
+              disabled={!podeSalvarSep() || salvandoSep}
+            >
+              {salvandoSep && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               Confirmar
             </Button>
           </DialogFooter>
