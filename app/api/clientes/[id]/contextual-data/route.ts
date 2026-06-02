@@ -60,7 +60,6 @@ export async function PATCH(req: Request, { params }: Params) {
     filho_dependente: body.filho_dependente ?? prev.filho_dependente ?? null,
     empresa_mei: body.empresa_mei ?? prev.empresa_mei ?? null,
     imovel: body.imovel ?? prev.imovel ?? null,
-    separacao: body.separacao ?? prev.separacao ?? null,
     testemunhas: body.testemunhas ?? prev.testemunhas ?? null,
     validador: body.validador ?? prev.validador ?? null,
   };

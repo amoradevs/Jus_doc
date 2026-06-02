@@ -154,9 +154,9 @@ export function StepGatilhos({ clientId, value, onChange, onNext, onBack, benefi
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          separacao: {
-            conjuge_nome: sepConjugeNome.trim(),
-            conjuge_data_nascimento: sepConjugeNasc,
+          conjuge: {
+            nome_completo: sepConjugeNome.trim(),
+            data_nascimento: sepConjugeNasc,
             recebe_pensao: sepRecebePensao,
             valor_pensao: sepRecebePensao ? sepValorPensao.trim() : '',
           },

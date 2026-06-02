@@ -482,16 +482,16 @@ export async function buildTemplateContext(
       data_nascimento: formatarData((ctx?.conjuge as Record<string, string>)?.data_nascimento ?? ''),
     },
 
-    // Separação
+    // Separação — dados armazenados na coluna conjuge (jsonb existente)
     separacao: (() => {
-      const sep = ctx?.separacao as Record<string, unknown> | null | undefined;
-      const recebe = !!(sep?.recebe_pensao);
+      const conj = ctx?.conjuge as Record<string, unknown> | null | undefined;
+      const recebe = !!(conj?.recebe_pensao);
       return {
-        conjuge_nome: (sep?.conjuge_nome as string) ?? '',
-        conjuge_data_nascimento: formatarData((sep?.conjuge_data_nascimento as string) ?? ''),
+        conjuge_nome: (conj?.nome_completo as string) ?? '',
+        conjuge_data_nascimento: formatarData((conj?.data_nascimento as string) ?? ''),
         recebe_pensao: recebe,
         nao_recebe_pensao: !recebe,
-        valor_pensao: (sep?.valor_pensao as string) ?? '',
+        valor_pensao: (conj?.valor_pensao as string) ?? '',
         checkbox_recebe: recebe ? 'X' : ' ',
         checkbox_nao_recebe: recebe ? ' ' : 'X',
       };
