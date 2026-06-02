@@ -14,6 +14,10 @@ function angularParser(tag: string) {
   return { get: (scope: unknown) => expr(scope) };
 }
 
+const IMAGE_SIZES: Record<string, [number, number]> = {
+  logo_inss: [480, 165],
+};
+
 function makeImageModule() {
   return new ImageModule({
     centered: false,
@@ -21,7 +25,8 @@ function makeImageModule() {
       const imgPath = path.resolve(process.cwd(), tagValue);
       return fs.readFileSync(imgPath);
     },
-    getSize: () => [180, 50],
+    getSize: (_img: Buffer, _tagValue: string, tagName: string) =>
+      IMAGE_SIZES[tagName] ?? [180, 50],
   });
 }
 

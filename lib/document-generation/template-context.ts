@@ -203,6 +203,7 @@ export type TemplateContext = {
   doc: { cidade_assinatura: string; dia_assinatura: string; mes_assinatura_extenso: string; mes_assinatura_numero: string; ano_assinatura: string };
   checkbox: Record<string, string>;
   checkbox_X: Record<string, string>;
+  logo_inss: string;
 };
 
 // ─── Mapeamento BeneficioId → texto jurídico ──────────────────────────────────
@@ -660,6 +661,8 @@ export async function buildTemplateContext(
     apenas_lidiane: advogadas === 'lidiane',
     apenas_alcione: advogadas === 'alcione',
     incluir_assinatura_lidiane: incluirAssinaturaLidiane && advogadas === 'lidiane',
+
+    logo_inss: 'templates/inss-logo.png',
   };
 
   if (!cenario) return baseContext;
