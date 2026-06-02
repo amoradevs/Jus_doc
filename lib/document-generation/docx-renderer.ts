@@ -22,6 +22,10 @@ function makeImageModule() {
   return new ImageModule({
     centered: false,
     getImage: (tagValue: string) => {
+      if (tagValue.startsWith('data:')) {
+        const base64 = tagValue.split(',')[1];
+        return Buffer.from(base64, 'base64');
+      }
       const imgPath = path.resolve(process.cwd(), tagValue);
       return fs.readFileSync(imgPath);
     },

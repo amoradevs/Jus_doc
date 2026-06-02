@@ -1,5 +1,19 @@
+import fs from 'fs';
+import path from 'path';
 import { db } from '@/lib/db';
 import type { Cenario } from './cadeia-documental';
+
+// Lido uma vez no startup — evita leitura de filesystem no Vercel em runtime.
+function loadLogoBase64(filePath: string): string {
+  try {
+    const buf = fs.readFileSync(path.resolve(process.cwd(), filePath));
+    return `data:image/png;base64,${buf.toString('base64')}`;
+  } catch {
+    return '';
+  }
+}
+
+const LOGO_INSS_BASE64 = loadLogoBase64('templates/inss-logo.png');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -662,7 +676,7 @@ export async function buildTemplateContext(
     apenas_alcione: advogadas === 'alcione',
     incluir_assinatura_lidiane: incluirAssinaturaLidiane && advogadas === 'lidiane',
 
-    logo_inss: 'templates/inss-logo.png',
+    logo_inss: LOGO_INSS_BASE64,
   };
 
   if (!cenario) return baseContext;
