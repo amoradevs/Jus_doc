@@ -1,5 +1,6 @@
 import { PdfCompressor } from '@/components/ferramentas/pdf-compressor';
 import { TempEmail } from '@/components/ferramentas/temp-email';
+import { DocumentosEscritorio } from '@/components/ferramentas/documentos-escritorio';
 
 export const metadata = { title: 'Ferramentas — Rocha & Alencar' };
 
@@ -16,6 +17,7 @@ export default function FerramentasPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PdfCompressor />
         <TempEmail />
+        <DocumentosEscritorio />
       </div>
     </div>
   );
