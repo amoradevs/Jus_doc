@@ -38,6 +38,107 @@ function displayName(nome: string): string {
   return nome.replace(/\.(pdf|docx)$/i, '');
 }
 
+// ─── File Viewer ─────────────────────────────────────────────────────────────
+
+function FileViewer({ file, onClose }: { file: FileItem; onClose: () => void }) {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [officeUrl, setOfficeUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [downloading, setDownloading] = useState(false);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch(`/api/ferramentas/documentos-escritorio/url?path=${encodeURIComponent(file.path)}`);
+        const data = await res.json() as { url?: string };
+        if (!data.url) throw new Error('Erro ao gerar link.');
+        if (file.tipo === 'pdf') {
+          const r = await fetch(data.url);
+          if (!r.ok) throw new Error('Erro ao carregar PDF.');
+          setBlobUrl(URL.createObjectURL(await r.blob()));
+        } else {
+          setOfficeUrl(data.url);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erro ao carregar arquivo.');
+      } finally {
+        setLoading(false);
+      }
+    }
+    void load();
+    return () => { setBlobUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return null; }); };
+  }, [file.path, file.tipo]);
+
+  const handleSave = async () => {
+    setDownloading(true);
+    try {
+      const res = await fetch(`/api/ferramentas/documentos-escritorio/url?path=${encodeURIComponent(file.path)}`);
+      const data = await res.json() as { url?: string };
+      if (!data.url) return;
+      const r = await fetch(data.url);
+      const blob = await r.blob();
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = href; a.download = file.nome;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(href);
+    } finally { setDownloading(false); }
+  };
+
+  const FileIcon = file.tipo === 'pdf' ? FileImage : FileText;
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-background">
+      {/* Header */}
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-card shrink-0">
+        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+          <FileIcon className={`w-4 h-4 ${file.tipo === 'pdf' ? 'text-red-500' : 'text-blue-500'}`} />
+        </div>
+        <span className="flex-1 text-sm font-medium text-foreground truncate min-w-0">
+          {displayName(file.nome)}
+        </span>
+        <Button size="sm" onClick={handleSave} disabled={downloading} className="gap-1.5">
+          {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+          Salvar
+        </Button>
+        <button
+          onClick={onClose}
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shrink-0 ml-1"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Body */}
+      <div className="flex-1 relative bg-secondary/20">
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center gap-3">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Carregando…</span>
+          </div>
+        )}
+        {error && !loading && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="text-sm text-muted-foreground">{error}</p>
+          </div>
+        )}
+        {file.tipo === 'pdf' && blobUrl && (
+          <iframe src={blobUrl} className="w-full h-full border-0" title={displayName(file.nome)} />
+        )}
+        {file.tipo === 'docx' && officeUrl && (
+          <iframe
+            src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(officeUrl)}`}
+            className="w-full h-full border-0"
+            title={displayName(file.nome)}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Skeleton ────────────────────────────────────────────────────────────────
 
 function Skeleton() {
@@ -74,12 +175,12 @@ function FileRow({
   onDelete: () => void;
   onRename: (novoNome: string) => Promise<void>;
 }) {
+  const [viewing, setViewing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState('');
   const [renaming, setRenaming] = useState(false);
   const [renameError, setRenameError] = useState<string | null>(null);
-  const [loadingVer, setLoadingVer] = useState(false);
   const [loadingFile, setLoadingFile] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
@@ -129,39 +230,28 @@ function FileRow({
     if (e.key === 'Escape') cancelRename();
   };
 
-  const getSignedUrl = async () => {
-    const res = await fetch(`/api/ferramentas/documentos-escritorio/url?path=${encodeURIComponent(file.path)}`);
-    const data = await res.json() as { url?: string; error?: string };
-    if (!res.ok || !data.url) throw new Error(data.error ?? 'Erro ao gerar link.');
-    return data.url;
-  };
-
-  const handleVer = async () => {
-    setLoadingVer(true);
-    try {
-      const url = await getSignedUrl();
-      // DOCX: Microsoft Office Online (mais confiável que Google Docs Viewer)
-      // PDF: abre direto no browser
-      if (file.tipo === 'docx') {
-        window.open(`https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(url)}`, '_blank');
-      } else {
-        window.open(url, '_blank');
-      }
-    } catch { /* silently ignore */ } finally { setLoadingVer(false); }
-  };
-
   const handleDownloadFile = async () => {
     setLoadingFile(true);
     try {
-      const url = await getSignedUrl();
-      // Abre em nova aba — PDF renderiza no browser, DOCX inicia download
-      window.open(url, '_blank');
+      const res = await fetch(`/api/ferramentas/documentos-escritorio/url?path=${encodeURIComponent(file.path)}`);
+      const data = await res.json() as { url?: string };
+      if (!data.url) return;
+      const r = await fetch(data.url);
+      const blob = await r.blob();
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = href; a.download = file.nome;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(href);
     } catch { /* silently ignore */ } finally { setLoadingFile(false); }
   };
 
   const FileIcon = file.tipo === 'pdf' ? FileImage : FileText;
 
   return (
+    <>
+    {viewing && <FileViewer file={file} onClose={() => setViewing(false)} />}
     <div className="flex items-center gap-3 py-2 px-1 rounded-lg hover:bg-secondary/40 transition-colors">
       {/* Checkbox */}
       <Checkbox
@@ -214,8 +304,8 @@ function FileRow({
       {/* Actions — always visible, hidden while renaming */}
       {!isRenaming && (
         <div className="flex items-center gap-0.5 shrink-0">
-          <button onClick={handleVer} disabled={loadingVer} className={BTN_ACTION} aria-label="Ver arquivo">
-            {loadingVer ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Eye className="w-3.5 h-3.5" />}
+          <button onClick={() => setViewing(true)} className={BTN_ACTION} aria-label="Ver arquivo">
+            <Eye className="w-3.5 h-3.5" />
             Ver
           </button>
 
@@ -227,7 +317,7 @@ function FileRow({
           )}
 
           {file.tipo === 'docx' && (
-            <button onClick={handleDownloadFile} disabled={loadingFile} className={BTN_ACTION} aria-label="Abrir no Word">
+            <button onClick={handleDownloadFile} disabled={loadingFile} className={BTN_ACTION} aria-label="Baixar Word">
               {loadingFile ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
               Word
             </button>
@@ -244,6 +334,7 @@ function FileRow({
         </div>
       )}
     </div>
+    </>
   );
 }
 
