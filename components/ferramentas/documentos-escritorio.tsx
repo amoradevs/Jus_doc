@@ -84,6 +84,7 @@ function FileRow({
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState('');
   const [renaming, setRenaming] = useState(false);
+  const [renameError, setRenameError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
 
@@ -111,6 +112,7 @@ function FileRow({
 
   const startRename = () => {
     setRenameValue(displayName(file.nome));
+    setRenameError(null);
     setIsRenaming(true);
     setConfirmDelete(false);
   };
@@ -126,12 +128,12 @@ function FileRow({
       return;
     }
     setRenaming(true);
+    setRenameError(null);
     try {
       await onRename(trimmed);
       setIsRenaming(false);
-    } catch {
-      // silently revert — user can retry
-      setIsRenaming(false);
+    } catch (err) {
+      setRenameError(err instanceof Error ? err.message : 'Erro ao renomear.');
     } finally {
       setRenaming(false);
     }
@@ -190,14 +192,15 @@ function FileRow({
 
       {/* Name + meta — or rename input */}
       {isRenaming ? (
-        <div className="flex-1 min-w-0 flex items-center gap-1.5">
+        <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+          <div className="flex items-center gap-1.5">
           <input
             ref={renameInputRef}
             value={renameValue}
-            onChange={(e) => setRenameValue(e.target.value)}
+            onChange={(e) => { setRenameValue(e.target.value); setRenameError(null); }}
             onKeyDown={handleRenameKeyDown}
             disabled={renaming}
-            className="flex-1 min-w-0 text-sm font-medium bg-background border border-border rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+            className={`flex-1 min-w-0 text-sm font-medium bg-background border rounded-md px-2 py-1 focus:outline-none focus:ring-1 disabled:opacity-50 ${renameError ? 'border-red-400 focus:ring-red-400' : 'border-border focus:ring-primary'}`}
             aria-label="Novo nome do arquivo"
           />
           <button
@@ -216,6 +219,10 @@ function FileRow({
           >
             <X className="w-3.5 h-3.5" />
           </button>
+          </div>
+          {renameError && (
+            <p className="text-xs text-red-500 px-1">{renameError}</p>
+          )}
         </div>
       ) : (
         <label htmlFor={`file-${file.path}`} className="flex-1 min-w-0 cursor-pointer">

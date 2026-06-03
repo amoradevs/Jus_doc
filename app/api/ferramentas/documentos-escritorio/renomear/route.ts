@@ -44,10 +44,18 @@ export async function POST(req: Request) {
   }
 
   const storage = getStorage();
-  const { error } = await storage.storage.from('templates').move(path, newPath);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  // copy + remove é mais confiável que move no Supabase Storage
+  const { error: copyError } = await storage.storage.from('templates').copy(path, newPath);
+  if (copyError) {
+    console.error('[renomear] copy error:', copyError);
+    return NextResponse.json({ error: copyError.message }, { status: 500 });
+  }
+
+  const { error: removeError } = await storage.storage.from('templates').remove([path]);
+  if (removeError) {
+    console.error('[renomear] remove error:', removeError);
+    // arquivo copiado com sucesso — retorna o novo path mesmo com erro na remoção do original
   }
 
   return NextResponse.json({ ok: true, path: newPath, nome: newName });
