@@ -283,8 +283,6 @@ export async function renderTermoRepresentacaoInss(ctx: TemplateContext): Promis
     y -= LH * 0.5;
   } else {
     if (ctx.bloco_assinatura_menor) {
-      page.drawText(cl.nome_completo, { x: sig1X + (155 - tw(cl.nome_completo, fn, FS_SM)) / 2, y, size: FS_SM, font: fn, color: rgb(0, 0, 0) });
-      y -= LH * 0.95;
       const { parentesco, nome_completo: repNome } = ctx.representante;
       if (parentesco && repNome) {
         const repLine = `${parentesco}: ${repNome}`;
