@@ -9,6 +9,9 @@ import {
   Download,
   Trash2,
   Loader2,
+  Pencil,
+  Check,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -68,15 +71,21 @@ function FileRow({
   checked,
   onToggle,
   onDelete,
+  onRename,
 }: {
   file: FileItem;
   checked: boolean;
   onToggle: () => void;
   onDelete: () => void;
+  onRename: (novoNome: string) => Promise<void>;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
+  const [renaming, setRenaming] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
 
   const handleDeleteClick = () => {
     if (confirmDelete) {
@@ -93,6 +102,45 @@ function FileRow({
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (isRenaming) {
+      setTimeout(() => renameInputRef.current?.focus(), 0);
+    }
+  }, [isRenaming]);
+
+  const startRename = () => {
+    setRenameValue(displayName(file.nome));
+    setIsRenaming(true);
+    setConfirmDelete(false);
+  };
+
+  const cancelRename = () => {
+    setIsRenaming(false);
+  };
+
+  const confirmRename = async () => {
+    const trimmed = renameValue.trim();
+    if (!trimmed || trimmed === displayName(file.nome)) {
+      setIsRenaming(false);
+      return;
+    }
+    setRenaming(true);
+    try {
+      await onRename(trimmed);
+      setIsRenaming(false);
+    } catch {
+      // silently revert — user can retry
+      setIsRenaming(false);
+    } finally {
+      setRenaming(false);
+    }
+  };
+
+  const handleRenameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') void confirmRename();
+    if (e.key === 'Escape') cancelRename();
+  };
 
   const handleDownload = async () => {
     setDownloading(true);
@@ -122,6 +170,7 @@ function FileRow({
         onCheckedChange={onToggle}
         id={`file-${file.path}`}
         aria-label={`Selecionar ${file.nome}`}
+        disabled={isRenaming}
       />
 
       {/* Icon */}
@@ -139,54 +188,94 @@ function FileRow({
         />
       </div>
 
-      {/* Name + meta */}
-      <label htmlFor={`file-${file.path}`} className="flex-1 min-w-0 cursor-pointer">
-        <p className="text-sm font-medium text-foreground truncate">{displayName(file.nome)}</p>
-        <div className="flex items-center gap-2 mt-0.5">
-          <span
-            className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold leading-none ${
-              file.tipo === 'pdf'
-                ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
-                : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'
-            }`}
+      {/* Name + meta — or rename input */}
+      {isRenaming ? (
+        <div className="flex-1 min-w-0 flex items-center gap-1.5">
+          <input
+            ref={renameInputRef}
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onKeyDown={handleRenameKeyDown}
+            disabled={renaming}
+            className="flex-1 min-w-0 text-sm font-medium bg-background border border-border rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+            aria-label="Novo nome do arquivo"
+          />
+          <button
+            onClick={() => void confirmRename()}
+            disabled={renaming}
+            className="p-1 rounded-md text-green-600 hover:bg-green-50 dark:hover:bg-green-950/30 transition-colors disabled:opacity-50 shrink-0"
+            aria-label="Confirmar novo nome"
           >
-            {file.tipo.toUpperCase()}
-          </span>
-          <span className="text-xs text-muted-foreground">{formatSize(file.tamanho)}</span>
+            {renaming ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+          </button>
+          <button
+            onClick={cancelRename}
+            disabled={renaming}
+            className="p-1 rounded-md text-muted-foreground hover:bg-secondary transition-colors disabled:opacity-50 shrink-0"
+            aria-label="Cancelar renomeação"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
-      </label>
+      ) : (
+        <label htmlFor={`file-${file.path}`} className="flex-1 min-w-0 cursor-pointer">
+          <p className="text-sm font-medium text-foreground truncate">{displayName(file.nome)}</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span
+              className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold leading-none ${
+                file.tipo === 'pdf'
+                  ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
+                  : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'
+              }`}
+            >
+              {file.tipo.toUpperCase()}
+            </span>
+            <span className="text-xs text-muted-foreground">{formatSize(file.tamanho)}</span>
+          </div>
+        </label>
+      )}
 
-      {/* Actions */}
-      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onClick={handleDownload}
-          disabled={downloading}
-          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
-          aria-label="Baixar arquivo"
-        >
-          {downloading ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <Download className="w-3.5 h-3.5" />
-          )}
-        </button>
+      {/* Actions — hidden while renaming */}
+      {!isRenaming && (
+        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={startRename}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            aria-label="Renomear arquivo"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
 
-        <button
-          onClick={handleDeleteClick}
-          className={`px-2 py-1 rounded-md text-xs font-medium transition-colors ${
-            confirmDelete
-              ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/60'
-              : 'text-muted-foreground hover:text-red-500 hover:bg-secondary'
-          }`}
-          aria-label={confirmDelete ? 'Confirmar remoção' : 'Remover arquivo'}
-        >
-          {confirmDelete ? (
-            'Confirmar?'
-          ) : (
-            <Trash2 className="w-3.5 h-3.5" />
-          )}
-        </button>
-      </div>
+          <button
+            onClick={handleDownload}
+            disabled={downloading}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
+            aria-label="Baixar arquivo"
+          >
+            {downloading ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Download className="w-3.5 h-3.5" />
+            )}
+          </button>
+
+          <button
+            onClick={handleDeleteClick}
+            className={`px-2 py-1 rounded-md text-xs font-medium transition-colors ${
+              confirmDelete
+                ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/60'
+                : 'text-muted-foreground hover:text-red-500 hover:bg-secondary'
+            }`}
+            aria-label={confirmDelete ? 'Confirmar remoção' : 'Remover arquivo'}
+          >
+            {confirmDelete ? (
+              'Confirmar?'
+            ) : (
+              <Trash2 className="w-3.5 h-3.5" />
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -272,9 +361,10 @@ export function DocumentosEscritorio() {
   const handleFileInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
     if (!fileList || fileList.length === 0) return;
-    e.target.value = '';
 
+    // Copiar referências ANTES de limpar o input — Chrome/Safari invalidam FileList após value=''
     const filesToUpload = Array.from(fileList);
+    e.target.value = '';
 
     // Inicializar estados de upload
     const initialStates: UploadState[] = filesToUpload.map((f) => ({
@@ -320,6 +410,32 @@ export function DocumentosEscritorio() {
     );
 
     await loadFiles();
+  };
+
+  // ── Rename ──────────────────────────────────────────────────────────────────
+
+  const handleRename = async (path: string, novoNome: string) => {
+    const res = await fetch('/api/ferramentas/documentos-escritorio/renomear', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path, novoNome }),
+    });
+    const data = await res.json() as { ok?: boolean; path?: string; nome?: string; error?: string };
+    if (!res.ok || !data.ok) throw new Error(data.error ?? 'Erro ao renomear.');
+    setFiles((prev) =>
+      prev.map((f) =>
+        f.path === path
+          ? { ...f, path: data.path ?? f.path, nome: data.nome ?? f.nome }
+          : f,
+      ),
+    );
+    setSelected((prev) => {
+      if (!prev.has(path) || !data.path) return prev;
+      const next = new Set(prev);
+      next.delete(path);
+      next.add(data.path);
+      return next;
+    });
   };
 
   // ── Delete ──────────────────────────────────────────────────────────────────
@@ -432,6 +548,7 @@ export function DocumentosEscritorio() {
                 checked={selected.has(file.path)}
                 onToggle={() => toggleFile(file.path)}
                 onDelete={() => handleDelete(file.path)}
+                onRename={(novoNome) => handleRename(file.path, novoNome)}
               />
             ))}
           </div>
