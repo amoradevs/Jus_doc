@@ -140,10 +140,10 @@ function FileRow({
     setLoadingVer(true);
     try {
       const url = await getSignedUrl();
-      // DOCX: abre no Google Docs Viewer para visualização rápida
+      // DOCX: Microsoft Office Online (mais confiável que Google Docs Viewer)
       // PDF: abre direto no browser
       if (file.tipo === 'docx') {
-        window.open(`https://docs.google.com/viewer?url=${encodeURIComponent(url)}`, '_blank');
+        window.open(`https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(url)}`, '_blank');
       } else {
         window.open(url, '_blank');
       }
@@ -154,10 +154,8 @@ function FileRow({
     setLoadingFile(true);
     try {
       const url = await getSignedUrl();
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = file.nome;
-      a.click();
+      // Abre em nova aba — PDF renderiza no browser, DOCX inicia download
+      window.open(url, '_blank');
     } catch { /* silently ignore */ } finally { setLoadingFile(false); }
   };
 
