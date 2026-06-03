@@ -5,7 +5,6 @@ import {
   FolderOpen,
   Plus,
   FileText,
-  FileImage,
   Download,
   Trash2,
   Loader2,
@@ -87,14 +86,12 @@ function FileViewer({ file, onClose }: { file: FileItem; onClose: () => void }) 
     } finally { setDownloading(false); }
   };
 
-  const FileIcon = file.tipo === 'pdf' ? FileImage : FileText;
-
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background">
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-card shrink-0">
         <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-          <FileIcon className={`w-4 h-4 ${file.tipo === 'pdf' ? 'text-red-500' : 'text-blue-500'}`} />
+          <FileText className="w-4 h-4 text-primary" />
         </div>
         <span className="flex-1 text-sm font-medium text-foreground truncate min-w-0">
           {displayName(file.nome)}
@@ -247,8 +244,6 @@ function FileRow({
     } catch { /* silently ignore */ } finally { setLoadingFile(false); }
   };
 
-  const FileIcon = file.tipo === 'pdf' ? FileImage : FileText;
-
   return (
     <>
     {viewing && <FileViewer file={file} onClose={() => setViewing(false)} />}
@@ -263,10 +258,8 @@ function FileRow({
       />
 
       {/* Icon */}
-      <div className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
-        file.tipo === 'pdf' ? 'bg-red-50 dark:bg-red-950/30' : 'bg-blue-50 dark:bg-blue-950/30'
-      }`}>
-        <FileIcon className={`w-4 h-4 ${file.tipo === 'pdf' ? 'text-red-500' : 'text-blue-500'}`} />
+      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+        <FileText className="w-4 h-4 text-primary" />
       </div>
 
       {/* Name — double-click to rename */}
