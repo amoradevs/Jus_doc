@@ -21,16 +21,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
   }
 
-  // Preserve the original extension
+  // Preserve the original extension, sanitize the new name
   const oldName = path.split('/').pop() ?? '';
   const ext = oldName.includes('.') ? '.' + oldName.split('.').pop()!.toLowerCase() : '';
-  const cleanName = novoNome.replace(/[<>:"/\\|?*\x00-\x1f]/g, '').trim();
+  const sanitized = novoNome
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^\w\s\-]/g, '')
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_')
+    .trim();
 
-  if (!cleanName) {
+  if (!sanitized) {
     return NextResponse.json({ error: 'Nome inválido.' }, { status: 422 });
   }
 
-  const newName = cleanName.toLowerCase().endsWith(ext) ? cleanName : cleanName + ext;
+  const newName = sanitized.toLowerCase().endsWith(ext) ? sanitized : sanitized + ext;
   const newPath = `${allowedPrefix}${newName}`;
 
   if (path === newPath) {
