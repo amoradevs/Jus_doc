@@ -10,6 +10,9 @@ import {
   Loader2,
   Eye,
   X,
+  Pencil,
+  Printer,
+  ArrowLeft,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -40,11 +43,15 @@ function displayName(nome: string): string {
 // ─── File Viewer ─────────────────────────────────────────────────────────────
 
 function FileViewer({ file, onClose }: { file: FileItem; onClose: () => void }) {
+  const [view, setView] = useState<'viewer' | 'editor'>('viewer');
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [officeUrl, setOfficeUrl] = useState<string | null>(null);
+  const [html, setHtml] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadingEditor, setLoadingEditor] = useState(false);
   const [error, setError] = useState('');
   const [downloading, setDownloading] = useState(false);
+  const editorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function load() {
@@ -68,6 +75,43 @@ function FileViewer({ file, onClose }: { file: FileItem; onClose: () => void }) 
     void load();
     return () => { setBlobUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return null; }); };
   }, [file.path, file.tipo]);
+
+  const abrirEditor = async () => {
+    setLoadingEditor(true);
+    try {
+      const res = await fetch(`/api/ferramentas/documentos-escritorio/html?path=${encodeURIComponent(file.path)}`);
+      const data = await res.json() as { html?: string; error?: string };
+      if (!res.ok || !data.html) throw new Error(data.error ?? 'Este documento não suporta edição.');
+      setHtml(data.html);
+      setView('editor');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao carregar editor.');
+    } finally {
+      setLoadingEditor(false);
+    }
+  };
+
+  const salvarComoPDF = () => {
+    const content = editorRef.current?.innerHTML ?? html;
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.write(`<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>${displayName(file.nome)}</title><style>
+  body { font-family: Arial, sans-serif; font-size: 12pt; line-height: 1.5; color: #000; margin: 0; }
+  @page { margin: 2.5cm; size: A4; }
+  h1, h2, h3 { text-align: center; font-weight: bold; margin: 0.5em 0; font-size: 12pt; }
+  p { margin: 0 0 0.5em; text-align: justify; }
+  strong, b { font-weight: bold; }
+  em, i { font-style: italic; }
+  u { text-decoration: underline; }
+  table { width: 100%; border-collapse: collapse; margin: 0.5em 0; }
+  td, th { border: 1px solid #000; padding: 3px 6px; font-size: 11pt; }
+  ul, ol { margin: 0.3em 0 0.3em 1.5em; }
+</style></head><body>${content}</body></html>`);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 400);
+  };
 
   const handleSave = async () => {
     setDownloading(true);
@@ -96,10 +140,33 @@ function FileViewer({ file, onClose }: { file: FileItem; onClose: () => void }) 
         <span className="flex-1 text-sm font-medium text-foreground truncate min-w-0">
           {displayName(file.nome)}
         </span>
-        <Button size="sm" onClick={handleSave} disabled={downloading} className="gap-1.5">
-          {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-          Salvar
-        </Button>
+
+        {view === 'viewer' ? (
+          <div className="flex items-center gap-2 shrink-0">
+            {file.tipo === 'docx' && (
+              <Button size="sm" variant="outline" onClick={abrirEditor} disabled={loadingEditor || loading} className="gap-1.5">
+                {loadingEditor ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Pencil className="w-3.5 h-3.5" />}
+                Editar
+              </Button>
+            )}
+            <Button size="sm" onClick={handleSave} disabled={downloading} className="gap-1.5">
+              {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+              Salvar
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 shrink-0">
+            <Button size="sm" variant="outline" onClick={() => setView('viewer')} className="gap-1.5">
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Ver documento
+            </Button>
+            <Button size="sm" onClick={salvarComoPDF} className="gap-1.5">
+              <Printer className="w-3.5 h-3.5" />
+              Salvar como PDF
+            </Button>
+          </div>
+        )}
+
         <button
           onClick={onClose}
           className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shrink-0 ml-1"
@@ -109,29 +176,71 @@ function FileViewer({ file, onClose }: { file: FileItem; onClose: () => void }) 
       </div>
 
       {/* Body */}
-      <div className="flex-1 relative bg-secondary/20">
-        {loading && (
-          <div className="absolute inset-0 flex items-center justify-center gap-3">
-            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Carregando…</span>
+      {view === 'viewer' ? (
+        <div className="flex-1 relative bg-secondary/20">
+          {loading && (
+            <div className="absolute inset-0 flex items-center justify-center gap-3">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Carregando…</span>
+            </div>
+          )}
+          {error && !loading && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <p className="text-sm text-muted-foreground">{error}</p>
+            </div>
+          )}
+          {file.tipo === 'pdf' && blobUrl && (
+            <iframe src={blobUrl} className="w-full h-full border-0" title={displayName(file.nome)} />
+          )}
+          {file.tipo === 'docx' && officeUrl && (
+            <iframe
+              src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(officeUrl)}`}
+              className="w-full h-full border-0"
+              title={displayName(file.nome)}
+            />
+          )}
+        </div>
+      ) : (
+        <div className="flex-1 overflow-auto bg-secondary/10 py-10 px-4">
+          <div className="max-w-3xl mx-auto">
+            <div className="mb-4 px-4 py-3 bg-primary/5 border border-primary/20 rounded-xl space-y-2">
+              <div className="flex items-center gap-2">
+                <Pencil className="w-3.5 h-3.5 text-primary shrink-0" />
+                <p className="text-xs font-medium text-foreground">Como usar o editor</p>
+              </div>
+              <ul className="text-xs text-muted-foreground space-y-1 pl-5 list-disc">
+                <li>Clique em qualquer trecho do documento para editar o texto.</li>
+                <li>
+                  Formatação rápida:{' '}
+                  <kbd className="px-1 py-0.5 bg-secondary rounded font-mono">Ctrl+B</kbd> negrito &nbsp;
+                  <kbd className="px-1 py-0.5 bg-secondary rounded font-mono">Ctrl+I</kbd> itálico &nbsp;
+                  <kbd className="px-1 py-0.5 bg-secondary rounded font-mono">Ctrl+U</kbd> sublinhado
+                </li>
+                <li>Quando terminar, clique em <strong>Salvar como PDF</strong> — escolha <em>"Salvar como PDF"</em> na lista de impressoras.</li>
+                <li>Para voltar ao documento original, clique em <strong>Ver documento</strong>.</li>
+              </ul>
+            </div>
+            <style>{`
+              .doc-editor p { margin: 0 0 0.55em; text-align: justify; }
+              .doc-editor h1, .doc-editor h2, .doc-editor h3 { text-align: center; font-weight: bold; margin: 0.6em 0 0.3em; font-size: 12pt; }
+              .doc-editor strong { font-weight: bold; }
+              .doc-editor em { font-style: italic; }
+              .doc-editor u { text-decoration: underline; }
+              .doc-editor table { width: 100%; border-collapse: collapse; margin: 0.5em 0; }
+              .doc-editor td, .doc-editor th { border: 1px solid #333; padding: 4px 8px; }
+              .doc-editor ul, .doc-editor ol { margin: 0.3em 0 0.3em 1.5em; }
+            `}</style>
+            <div
+              ref={editorRef}
+              contentEditable
+              suppressContentEditableWarning
+              dangerouslySetInnerHTML={{ __html: html }}
+              className="doc-editor bg-white shadow-sm rounded-xl outline-none focus:ring-2 focus:ring-primary/20"
+              style={{ fontFamily: 'Arial, sans-serif', fontSize: '12pt', lineHeight: '1.5', color: '#000', padding: '2.5cm', minHeight: '29.7cm' }}
+            />
           </div>
-        )}
-        {error && !loading && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <p className="text-sm text-muted-foreground">{error}</p>
-          </div>
-        )}
-        {file.tipo === 'pdf' && blobUrl && (
-          <iframe src={blobUrl} className="w-full h-full border-0" title={displayName(file.nome)} />
-        )}
-        {file.tipo === 'docx' && officeUrl && (
-          <iframe
-            src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(officeUrl)}`}
-            className="w-full h-full border-0"
-            title={displayName(file.nome)}
-          />
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
