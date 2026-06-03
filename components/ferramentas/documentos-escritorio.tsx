@@ -37,7 +37,7 @@ type UploadState = {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function displayName(nome: string): string {
-  return nome.replace(/\.(pdf|docx)$/i, '');
+  return nome.replace(/\.(pdf|docx)$/i, '').replace(/_/g, ' ');
 }
 
 // ─── File Viewer ─────────────────────────────────────────────────────────────
