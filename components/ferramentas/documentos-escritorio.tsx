@@ -9,8 +9,7 @@ import {
   Download,
   Trash2,
   Loader2,
-  Pencil,
-  Check,
+  Eye,
   X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -34,12 +33,6 @@ type UploadState = {
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function formatSize(bytes: number): string {
-  if (bytes === 0) return '—';
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-}
 
 function displayName(nome: string): string {
   return nome.replace(/\.(pdf|docx)$/i, '');
@@ -66,6 +59,8 @@ function Skeleton() {
 
 // ─── File Row ────────────────────────────────────────────────────────────────
 
+const BTN_ACTION = 'flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1 rounded-md hover:bg-secondary disabled:opacity-40';
+
 function FileRow({
   file,
   checked,
@@ -80,13 +75,20 @@ function FileRow({
   onRename: (novoNome: string) => Promise<void>;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [downloading, setDownloading] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState('');
   const [renaming, setRenaming] = useState(false);
   const [renameError, setRenameError] = useState<string | null>(null);
+  const [loadingVer, setLoadingVer] = useState(false);
+  const [loadingFile, setLoadingFile] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+
+  useEffect(() => {
+    if (isRenaming) setTimeout(() => renameInputRef.current?.focus(), 0);
+  }, [isRenaming]);
 
   const handleDeleteClick = () => {
     if (confirmDelete) {
@@ -98,18 +100,6 @@ function FileRow({
     }
   };
 
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isRenaming) {
-      setTimeout(() => renameInputRef.current?.focus(), 0);
-    }
-  }, [isRenaming]);
-
   const startRename = () => {
     setRenameValue(displayName(file.nome));
     setRenameError(null);
@@ -117,16 +107,11 @@ function FileRow({
     setConfirmDelete(false);
   };
 
-  const cancelRename = () => {
-    setIsRenaming(false);
-  };
+  const cancelRename = () => setIsRenaming(false);
 
   const confirmRename = async () => {
     const trimmed = renameValue.trim();
-    if (!trimmed || trimmed === displayName(file.nome)) {
-      setIsRenaming(false);
-      return;
-    }
+    if (!trimmed || trimmed === displayName(file.nome)) { setIsRenaming(false); return; }
     setRenaming(true);
     setRenameError(null);
     try {
@@ -144,28 +129,42 @@ function FileRow({
     if (e.key === 'Escape') cancelRename();
   };
 
-  const handleDownload = async () => {
-    setDownloading(true);
-    try {
-      const res = await fetch(`/api/ferramentas/documentos-escritorio/url?path=${encodeURIComponent(file.path)}`);
-      const data = await res.json() as { url?: string; error?: string };
-      if (!res.ok || !data.url) throw new Error(data.error ?? 'Erro ao gerar link.');
-      const a = document.createElement('a');
-      a.href = data.url;
-      a.download = file.nome;
-      a.click();
-    } catch {
-      // silently ignore — user can retry
-    } finally {
-      setDownloading(false);
-    }
+  const getSignedUrl = async () => {
+    const res = await fetch(`/api/ferramentas/documentos-escritorio/url?path=${encodeURIComponent(file.path)}`);
+    const data = await res.json() as { url?: string; error?: string };
+    if (!res.ok || !data.url) throw new Error(data.error ?? 'Erro ao gerar link.');
+    return data.url;
   };
 
-  const FileIcon =
-    file.tipo === 'pdf' ? FileImage : file.tipo === 'docx' ? FileText : FileText;
+  const handleVer = async () => {
+    setLoadingVer(true);
+    try {
+      const url = await getSignedUrl();
+      // DOCX: abre no Google Docs Viewer para visualização rápida
+      // PDF: abre direto no browser
+      if (file.tipo === 'docx') {
+        window.open(`https://docs.google.com/viewer?url=${encodeURIComponent(url)}`, '_blank');
+      } else {
+        window.open(url, '_blank');
+      }
+    } catch { /* silently ignore */ } finally { setLoadingVer(false); }
+  };
+
+  const handleDownloadFile = async () => {
+    setLoadingFile(true);
+    try {
+      const url = await getSignedUrl();
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.nome;
+      a.click();
+    } catch { /* silently ignore */ } finally { setLoadingFile(false); }
+  };
+
+  const FileIcon = file.tipo === 'pdf' ? FileImage : FileText;
 
   return (
-    <div className="flex items-center gap-3 py-2 px-1 rounded-lg hover:bg-secondary/40 transition-colors group">
+    <div className="flex items-center gap-3 py-2 px-1 rounded-lg hover:bg-secondary/40 transition-colors">
       {/* Checkbox */}
       <Checkbox
         checked={checked}
@@ -176,110 +175,73 @@ function FileRow({
       />
 
       {/* Icon */}
-      <div
-        className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
-          file.tipo === 'pdf'
-            ? 'bg-red-50 dark:bg-red-950/30'
-            : 'bg-blue-50 dark:bg-blue-950/30'
-        }`}
-      >
-        <FileIcon
-          className={`w-4 h-4 ${
-            file.tipo === 'pdf' ? 'text-red-500' : 'text-blue-500'
-          }`}
-        />
+      <div className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
+        file.tipo === 'pdf' ? 'bg-red-50 dark:bg-red-950/30' : 'bg-blue-50 dark:bg-blue-950/30'
+      }`}>
+        <FileIcon className={`w-4 h-4 ${file.tipo === 'pdf' ? 'text-red-500' : 'text-blue-500'}`} />
       </div>
 
-      {/* Name + meta — or rename input */}
+      {/* Name — double-click to rename */}
       {isRenaming ? (
         <div className="flex-1 min-w-0 flex flex-col gap-0.5">
           <div className="flex items-center gap-1.5">
-          <input
-            ref={renameInputRef}
-            value={renameValue}
-            onChange={(e) => { setRenameValue(e.target.value); setRenameError(null); }}
-            onKeyDown={handleRenameKeyDown}
-            disabled={renaming}
-            className={`flex-1 min-w-0 text-sm font-medium bg-background border rounded-md px-2 py-1 focus:outline-none focus:ring-1 disabled:opacity-50 ${renameError ? 'border-red-400 focus:ring-red-400' : 'border-border focus:ring-primary'}`}
-            aria-label="Novo nome do arquivo"
-          />
-          <button
-            onClick={() => void confirmRename()}
-            disabled={renaming}
-            className="p-1 rounded-md text-green-600 hover:bg-green-50 dark:hover:bg-green-950/30 transition-colors disabled:opacity-50 shrink-0"
-            aria-label="Confirmar novo nome"
-          >
-            {renaming ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-          </button>
-          <button
-            onClick={cancelRename}
-            disabled={renaming}
-            className="p-1 rounded-md text-muted-foreground hover:bg-secondary transition-colors disabled:opacity-50 shrink-0"
-            aria-label="Cancelar renomeação"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
+            <input
+              ref={renameInputRef}
+              value={renameValue}
+              onChange={(e) => { setRenameValue(e.target.value); setRenameError(null); }}
+              onKeyDown={handleRenameKeyDown}
+              disabled={renaming}
+              className={`flex-1 min-w-0 text-sm font-medium bg-background border rounded-md px-2 py-1 focus:outline-none focus:ring-1 disabled:opacity-50 ${
+                renameError ? 'border-red-400 focus:ring-red-400' : 'border-border focus:ring-primary'
+              }`}
+              aria-label="Novo nome do arquivo"
+            />
+            {renaming
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground shrink-0" />
+              : <button onClick={cancelRename} className="p-1 rounded-md text-muted-foreground hover:bg-secondary transition-colors shrink-0" aria-label="Cancelar"><X className="w-3.5 h-3.5" /></button>
+            }
           </div>
-          {renameError && (
-            <p className="text-xs text-red-500 px-1">{renameError}</p>
-          )}
+          {renameError && <p className="text-xs text-red-500 px-0.5">{renameError}</p>}
         </div>
       ) : (
-        <label htmlFor={`file-${file.path}`} className="flex-1 min-w-0 cursor-pointer">
+        <div
+          className="flex-1 min-w-0 cursor-text select-none"
+          onDoubleClick={startRename}
+          title="Clique duas vezes para renomear"
+        >
           <p className="text-sm font-medium text-foreground truncate">{displayName(file.nome)}</p>
-          <div className="flex items-center gap-2 mt-0.5">
-            <span
-              className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold leading-none ${
-                file.tipo === 'pdf'
-                  ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
-                  : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'
-              }`}
-            >
-              {file.tipo.toUpperCase()}
-            </span>
-            <span className="text-xs text-muted-foreground">{formatSize(file.tamanho)}</span>
-          </div>
-        </label>
+        </div>
       )}
 
-      {/* Actions — hidden while renaming */}
+      {/* Actions — always visible, hidden while renaming */}
       {!isRenaming && (
-        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
-            onClick={startRename}
-            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-            aria-label="Renomear arquivo"
-          >
-            <Pencil className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-0.5 shrink-0">
+          <button onClick={handleVer} disabled={loadingVer} className={BTN_ACTION} aria-label="Ver arquivo">
+            {loadingVer ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Eye className="w-3.5 h-3.5" />}
+            Ver
           </button>
 
-          <button
-            onClick={handleDownload}
-            disabled={downloading}
-            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
-            aria-label="Baixar arquivo"
-          >
-            {downloading ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Download className="w-3.5 h-3.5" />
-            )}
-          </button>
+          {file.tipo === 'pdf' && (
+            <button onClick={handleDownloadFile} disabled={loadingFile} className={BTN_ACTION} aria-label="Baixar PDF">
+              {loadingFile ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+              PDF
+            </button>
+          )}
+
+          {file.tipo === 'docx' && (
+            <button onClick={handleDownloadFile} disabled={loadingFile} className={BTN_ACTION} aria-label="Abrir no Word">
+              {loadingFile ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
+              Word
+            </button>
+          )}
 
           <button
             onClick={handleDeleteClick}
-            className={`px-2 py-1 rounded-md text-xs font-medium transition-colors ${
-              confirmDelete
-                ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/60'
-                : 'text-muted-foreground hover:text-red-500 hover:bg-secondary'
-            }`}
-            aria-label={confirmDelete ? 'Confirmar remoção' : 'Remover arquivo'}
+            className={`${BTN_ACTION} ${confirmDelete ? 'text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-950/50' : 'hover:text-red-500'}`}
+            aria-label={confirmDelete ? 'Confirmar exclusão' : 'Excluir arquivo'}
           >
-            {confirmDelete ? (
-              'Confirmar?'
-            ) : (
-              <Trash2 className="w-3.5 h-3.5" />
-            )}
+            <Trash2 className="w-3.5 h-3.5" />
+            {confirmDelete ? 'Confirmar?' : 'Excluir'}
           </button>
         </div>
       )}
