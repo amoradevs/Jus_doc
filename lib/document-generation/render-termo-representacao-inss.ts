@@ -97,15 +97,13 @@ function drawJustified(
   return y;
 }
 
-function drawCheckbox(page: PDFPage, x: number, y: number, checked: boolean, font: PDFFont) {
+function drawCheckbox(page: PDFPage, x: number, y: number, checked: boolean, _font: PDFFont) {
   const b = FS;
   page.drawRectangle({
     x, y: y - 1, width: b, height: b,
-    borderColor: rgb(0, 0, 0), borderWidth: 0.5, color: rgb(1, 1, 1),
+    borderColor: rgb(0, 0, 0), borderWidth: 0.5,
+    color: checked ? rgb(0, 0, 0) : rgb(1, 1, 1),
   });
-  if (checked) {
-    page.drawText('x', { x: x + 1.5, y: y + 0.5, size: FS - 2, font, color: rgb(0, 0, 0) });
-  }
 }
 
 function isChecked(val: string | undefined) {
