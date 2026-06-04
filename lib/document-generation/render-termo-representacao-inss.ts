@@ -303,9 +303,25 @@ export async function renderTermoRepresentacaoInss(ctx: TemplateContext): Promis
   );
   y -= LH;
 
-  // ── Assinatura Procurador (nome + OAB da advogada) ────────────────────────
+  // ── Assinatura Procurador (imagem + nome + OAB da advogada) ──────────────
   page.drawText(`${cidadeUf}, ${dataStr}.`, { x, y, size: FS, font: fn, color: rgb(0, 0, 0) });
   const sig2X = x + BW - 155;
+
+  // Desenha imagem da assinatura acima da linha, se disponível
+  if (ctx.incluir_assinatura_lidiane) {
+    const sigImgPath = path.resolve(process.cwd(), ctx.escritorio.adv1_assinatura_path);
+    if (fs.existsSync(sigImgPath)) {
+      const sigImg = await pdfDoc.embedPng(fs.readFileSync(sigImgPath));
+      const sd = sigImg.scaleToFit(120, 28);
+      page.drawImage(sigImg, {
+        x: sig2X + (155 - sd.width) / 2,
+        y,
+        width: sd.width,
+        height: sd.height,
+      });
+    }
+  }
+
   page.drawLine({ start: { x: sig2X, y }, end: { x: x + BW, y }, thickness: 0.5, color: rgb(0, 0, 0) });
   y -= LH * 0.9;
   page.drawText(wr.adv1_nome, { x: sig2X + (155 - tw(wr.adv1_nome, fn, FS_SM)) / 2, y, size: FS_SM, font: fn, color: rgb(0, 0, 0) });
