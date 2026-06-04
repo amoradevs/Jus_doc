@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-type Doc = { codigo: string; nome: string; nome_arquivo: string };
+type Doc = { codigo: string; nome: string; nome_arquivo: string; tem_docx?: boolean };
 type Status = 'idle' | 'loading' | 'done' | 'error';
 
 async function fetchBlob(url: string): Promise<Blob> {

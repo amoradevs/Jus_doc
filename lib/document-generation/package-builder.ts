@@ -76,9 +76,17 @@ export async function buildDocumentPackage(
         : context;
 
       if (template.codigo === '05') {
-        fileBuffer = await renderTermoRepresentacaoInss(ctx);
+        // Termo de Representação INSS: Lidiane sempre presente e com assinatura
+        const termoCtx = { ...ctx, mostrar_lidiane: true, incluir_assinatura_lidiane: true };
+        fileBuffer = await renderTermoRepresentacaoInss(termoCtx);
         extensao = 'pdf';
         contentType = 'application/pdf';
+        try {
+          const tmplPath = path.resolve(process.cwd(), 'templates/14_termo_representacao_inss.docx');
+          if (fs.existsSync(tmplPath)) {
+            docxBuffer = await renderDocxTemplate(fs.readFileSync(tmplPath), termoCtx);
+          }
+        } catch { /* DOCX é opcional */ }
       } else if (template.formato === 'docx') {
         const templateBuffer = await getTemplateBuffer(template);
         docxBuffer = await renderDocxTemplate(templateBuffer, ctx);

@@ -17,15 +17,17 @@ export async function GET(_req: Request, { params }: { params: Promise<{ package
   const codigos = genDocs.map((d) => d.template_codigo);
   const { data: templates } = await db
     .from('document_templates')
-    .select('codigo, nome')
+    .select('codigo, nome, formato')
     .in('codigo', codigos);
 
   const nomeMap = Object.fromEntries((templates ?? []).map((t) => [t.codigo, t.nome]));
+  const formatoMap = Object.fromEntries((templates ?? []).map((t) => [t.codigo, t.formato]));
 
   const docs = genDocs.map((d) => ({
     codigo: d.template_codigo,
     nome: nomeMap[d.template_codigo] ?? d.template_codigo,
     nome_arquivo: d.nome_arquivo,
+    tem_docx: formatoMap[d.template_codigo] === 'docx',
   }));
 
   return NextResponse.json(docs);

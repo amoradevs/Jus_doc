@@ -85,7 +85,7 @@ export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientI
           templateCodes: codigosAtivos,
           cenario: pacote.cenario,
           processoId: processoId ?? undefined,
-          advogadas_selecionadas: advogadasSelecionadas,
+          advogadas_selecionadas: advogadasSelecionadas === 'adv1' ? 'lidiane' : advogadasSelecionadas === 'adv2' ? 'alcione' : 'branco',
 
         }),
       });
