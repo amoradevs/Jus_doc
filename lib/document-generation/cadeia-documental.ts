@@ -26,6 +26,7 @@ export interface Cenario {
   perfil: PerfilId;
   gatilhos: GatilhoId[];
   ms_orgao?: 'inss' | 'cras';
+  aposentadoria_idade_modalidade?: 'urbana' | 'rural';
 }
 
 export interface Alerta {

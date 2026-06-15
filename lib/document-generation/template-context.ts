@@ -233,6 +233,16 @@ const BENEFICIO_ID_MAP: Record<string, { descricao: string; objeto: string; marc
     objeto: 'ingressar com Pedido de BENEFÍCIO DE APOSENTADORIA POR IDADE EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
     marcados: ['aposentadoria_idade'],
   },
+  aposentadoria_idade_urbana: {
+    descricao: 'BENEFÍCIO DE APOSENTADORIA POR IDADE URBANA',
+    objeto: 'ingressar com Pedido de BENEFÍCIO DE APOSENTADORIA POR IDADE EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
+    marcados: ['aposentadoria_idade', 'aposentadoria_idade_urbana'],
+  },
+  aposentadoria_idade_rural: {
+    descricao: 'BENEFÍCIO DE APOSENTADORIA POR IDADE RURAL',
+    objeto: 'ingressar com Pedido de BENEFÍCIO DE APOSENTADORIA POR IDADE RURAL EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
+    marcados: ['aposentadoria_idade', 'aposentadoria_idade_rural'],
+  },
   pensao_morte: {
     descricao: 'BENEFÍCIO DE PENSÃO POR MORTE PREVIDENCIÁRIA',
     objeto: 'ingressar com Pedido de BENEFÍCIO DE PENSÃO POR MORTE EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
@@ -271,7 +281,11 @@ export function getCenarioContextOverrides(cenario: Cenario): Partial<TemplateCo
 
   const bloco_paragrafos_recurso = !ehMS;
 
-  const benInfo = BENEFICIO_ID_MAP[cenario.beneficio] ?? BENEFICIO_ID_MAP.bpc;
+  const beneficioKey =
+    cenario.beneficio === 'aposentadoria_idade' && cenario.aposentadoria_idade_modalidade
+      ? `aposentadoria_idade_${cenario.aposentadoria_idade_modalidade}`
+      : cenario.beneficio;
+  const benInfo = BENEFICIO_ID_MAP[beneficioKey] ?? BENEFICIO_ID_MAP[cenario.beneficio] ?? BENEFICIO_ID_MAP.bpc;
 
   let objetoProcuracao = benInfo.objeto;
   if (ehMS && cenario.ms_orgao === 'cras') {

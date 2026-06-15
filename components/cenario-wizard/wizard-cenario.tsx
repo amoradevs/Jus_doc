@@ -74,6 +74,7 @@ export function WizardCenario({ clientId, processoId, advSettings }: Props) {
   const [step, setStep] = useState<Step>(1);
   const [beneficio, setBeneficio] = useState<BeneficioId | null>(null);
   const [msOrgao, setMsOrgao] = useState<'inss' | 'cras' | null>(null);
+  const [aposentadoriaModalidade, setAposentadoriaModalidade] = useState<'urbana' | 'rural' | null>(null);
   const [perfil, setPerfil] = useState<PerfilId | null>(null);
   const [gatilhos, setGatilhos] = useState<GatilhoId[]>([]);
   const [pacote, setPacote] = useState<PacoteDocumental | null>(null);
@@ -112,6 +113,7 @@ export function WizardCenario({ clientId, processoId, advSettings }: Props) {
       setPacote(null);
       setCodigosAtivos([]);
       setMsOrgao(null);
+      setAposentadoriaModalidade(null);
     }
     setBeneficio(b);
   }
@@ -136,7 +138,13 @@ export function WizardCenario({ clientId, processoId, advSettings }: Props) {
 
   function irParaConfirmacao() {
     if (!beneficio || !perfil) return;
-    const cenario = { beneficio, perfil, gatilhos, ...(msOrgao ? { ms_orgao: msOrgao } : {}) };
+    const cenario = {
+      beneficio,
+      perfil,
+      gatilhos,
+      ...(msOrgao ? { ms_orgao: msOrgao } : {}),
+      ...(beneficio === 'aposentadoria_idade' && aposentadoriaModalidade ? { aposentadoria_idade_modalidade: aposentadoriaModalidade } : {}),
+    };
     const p = montarPacote(cenario);
     setPacote(p);
     setCodigosAtivos([...p.codigos]);
@@ -160,6 +168,8 @@ export function WizardCenario({ clientId, processoId, advSettings }: Props) {
           onNext={() => irParaPasso(2)}
           msOrgao={msOrgao}
           onMsOrgaoChange={setMsOrgao}
+          aposentadoriaModalidade={aposentadoriaModalidade}
+          onAposentadoriaModalidadeChange={setAposentadoriaModalidade}
         />
       )}
 

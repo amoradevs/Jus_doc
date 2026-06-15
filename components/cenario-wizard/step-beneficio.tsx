@@ -63,21 +63,40 @@ type Props = {
   onNext: () => void;
   msOrgao: 'inss' | 'cras' | null;
   onMsOrgaoChange: (orgao: 'inss' | 'cras') => void;
+  aposentadoriaModalidade: 'urbana' | 'rural' | null;
+  onAposentadoriaModalidadeChange: (m: 'urbana' | 'rural') => void;
 };
 
-export function StepBeneficio({ value, onChange, onNext, msOrgao, onMsOrgaoChange }: Props) {
+const MODALIDADES_APOSENTADORIA: { value: 'urbana' | 'rural'; label: string; descricao: string }[] = [
+  { value: 'urbana', label: 'Urbana', descricao: 'Trabalhador urbano com contribuições ao INSS.' },
+  { value: 'rural', label: 'Rural', descricao: 'Trabalhador rural em regime de economia familiar.' },
+];
+
+export function StepBeneficio({ value, onChange, onNext, msOrgao, onMsOrgaoChange, aposentadoriaModalidade, onAposentadoriaModalidadeChange }: Props) {
   const [modalAberto, setModalAberto] = useState(false);
   const [orgaoLocal, setOrgaoLocal] = useState<'inss' | 'cras' | null>(null);
 
-  function abrirModal() {
+  const [modalAposentadoriaAberto, setModalAposentadoriaAberto] = useState(false);
+  const [modalidadeLocal, setModalidadeLocal] = useState<'urbana' | 'rural' | null>(null);
+
+  function abrirModalOrgao() {
     setOrgaoLocal(msOrgao);
     setModalAberto(true);
+  }
+
+  function abrirModalAposentadoria() {
+    setModalidadeLocal(aposentadoriaModalidade);
+    setModalAposentadoriaAberto(true);
   }
 
   function handleBeneficioChange(v: string) {
     onChange(v as BeneficioId);
     if (v === 'mandado_seguranca') {
-      abrirModal();
+      abrirModalOrgao();
+    }
+    if (v === 'aposentadoria_idade') {
+      setModalidadeLocal(null);
+      setModalAposentadoriaAberto(true);
     }
   }
 
@@ -87,9 +106,19 @@ export function StepBeneficio({ value, onChange, onNext, msOrgao, onMsOrgaoChang
     setModalAberto(false);
   }
 
+  function confirmarModalidade() {
+    if (!modalidadeLocal) return;
+    onAposentadoriaModalidadeChange(modalidadeLocal);
+    setModalAposentadoriaAberto(false);
+  }
+
   function handleAvancar() {
     if (value === 'mandado_seguranca' && !msOrgao) {
-      abrirModal();
+      abrirModalOrgao();
+      return;
+    }
+    if (value === 'aposentadoria_idade' && !aposentadoriaModalidade) {
+      abrirModalAposentadoria();
       return;
     }
     onNext();
@@ -112,7 +141,11 @@ export function StepBeneficio({ value, onChange, onNext, msOrgao, onMsOrgaoChang
           <RadioGroupPrimitive.Item
             key={v}
             value={v}
-            onClick={v === 'mandado_seguranca' && value === 'mandado_seguranca' ? abrirModal : undefined}
+            onClick={
+              (v === 'mandado_seguranca' && value === 'mandado_seguranca') ? abrirModalOrgao :
+              (v === 'aposentadoria_idade' && value === 'aposentadoria_idade') ? abrirModalAposentadoria :
+              undefined
+            }
             className={cn(
               'group w-full rounded-2xl border border-border bg-card text-left transition-all',
               'hover:border-primary/40 hover:bg-accent/30',
@@ -137,6 +170,11 @@ export function StepBeneficio({ value, onChange, onNext, msOrgao, onMsOrgaoChang
                   {v === 'mandado_seguranca' && value === 'mandado_seguranca' && msOrgao && (
                     <span className="ml-2 text-xs font-normal text-muted-foreground">
                       — em face do {msOrgao.toUpperCase()}
+                    </span>
+                  )}
+                  {v === 'aposentadoria_idade' && value === 'aposentadoria_idade' && aposentadoriaModalidade && (
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      — {aposentadoriaModalidade}
                     </span>
                   )}
                 </p>
@@ -203,6 +241,60 @@ export function StepBeneficio({ value, onChange, onNext, msOrgao, onMsOrgaoChang
             <Button
               onClick={confirmarOrgao}
               disabled={!orgaoLocal}
+              className="w-full rounded-xl"
+            >
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Modal — Aposentadoria por Idade: Urbana ou Rural ── */}
+      <Dialog open={modalAposentadoriaAberto} onOpenChange={(open) => { if (!open) setModalAposentadoriaAberto(false); }}>
+        <DialogContent showCloseButton={false} className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Aposentadoria Urbana ou Rural?</DialogTitle>
+            <DialogDescription>
+              Selecione a modalidade para preencher corretamente o Termo de Representação INSS.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2 py-1">
+            {MODALIDADES_APOSENTADORIA.map(({ value: mv, label, descricao }) => (
+              <button
+                key={mv}
+                type="button"
+                onClick={() => setModalidadeLocal(mv)}
+                className={cn(
+                  'w-full rounded-2xl border border-border bg-card text-left transition-all',
+                  'hover:border-primary/40 hover:bg-accent/30',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                  modalidadeLocal === mv && 'border-primary bg-primary/5',
+                )}
+              >
+                <div className="flex items-start gap-3 px-4 py-3.5">
+                  <div className="flex-1 min-w-0">
+                    <p className={cn(
+                      'text-sm font-medium text-foreground transition-colors',
+                      modalidadeLocal === mv && 'text-primary',
+                    )}>
+                      {label}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">{descricao}</p>
+                  </div>
+                  <div className={cn(
+                    'mt-1 size-4 shrink-0 rounded-full border-2 transition-all',
+                    modalidadeLocal === mv ? 'border-primary bg-primary' : 'border-border',
+                  )} />
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={confirmarModalidade}
+              disabled={!modalidadeLocal}
               className="w-full rounded-xl"
             >
               Confirmar
