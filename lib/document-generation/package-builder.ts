@@ -76,8 +76,8 @@ export async function buildDocumentPackage(
         : context;
 
       if (template.codigo === '05') {
-        // Termo de Representação INSS: Lidiane sempre presente e com assinatura
-        const termoCtx = { ...ctx, mostrar_lidiane: true, incluir_assinatura_lidiane: true };
+        // Termo de Representação INSS: imagem de assinatura apenas quando adv2 não for a signatária
+        const termoCtx = { ...ctx, incluir_assinatura_lidiane: !ctx.apenas_alcione };
         fileBuffer = await renderTermoRepresentacaoInss(termoCtx);
         extensao = 'pdf';
         contentType = 'application/pdf';

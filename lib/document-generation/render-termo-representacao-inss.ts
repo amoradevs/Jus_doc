@@ -148,12 +148,17 @@ export async function renderTermoRepresentacaoInss(ctx: TemplateContext): Promis
   // ── Corpo do formulário ────────────────────────────────────────────────────
   const x = ML;
 
+  // Advogada signatária: adv2 quando selecionada, adv1 (Lidiane) como padrão
+  const signerNome = ctx.apenas_alcione ? wr.adv2_nome : wr.adv1_nome;
+  const signerCpf  = ctx.apenas_alcione ? wr.adv2_cpf  : wr.adv1_cpf;
+  const signerOab  = ctx.apenas_alcione ? wr.adv2_oab  : wr.adv1_oab;
+
   // Bloco de identificação: parágrafo único contínuo, igual ao formulário oficial do INSS.
   const identificacao =
     `Eu, ${cl.nome_completo}, inscrito(a) no CPF nº ${cl.cpf}, RG nº ${cl.rg || ''}, ` +
     `residente e domiciliado(a) em, ${endFull}, no Município de ${en.cidade}/${en.uf}, ` +
-    `CEP ${en.cep}, representado pela advogada ${wr.adv1_nome}, CPF nº ${wr.adv1_cpf}, ` +
-    `OAB Nº ${wr.adv1_oab}, CONFIRO PODERES ESPECÍFICOS para me ` +
+    `CEP ${en.cep}, representado pela advogada ${signerNome}, CPF nº ${signerCpf}, ` +
+    `OAB Nº ${signerOab}, CONFIRO PODERES ESPECÍFICOS para me ` +
     `representar perante o INSS na solicitação do serviço ou benefício abaixo indicado e ` +
     `AUTORIZO o(a) referido(a) profissional a ter acesso apenas às informações pessoais ` +
     `necessárias a subsidiar o requerimento eletrônico do serviço ou benefício abaixo elencado:`;
@@ -322,9 +327,9 @@ export async function renderTermoRepresentacaoInss(ctx: TemplateContext): Promis
 
   page.drawLine({ start: { x: sig2X, y }, end: { x: x + BW, y }, thickness: 0.5, color: rgb(0, 0, 0) });
   y -= LH * 0.9;
-  page.drawText(wr.adv1_nome, { x: sig2X + (155 - tw(wr.adv1_nome, fn, FS_SM)) / 2, y, size: FS_SM, font: fn, color: rgb(0, 0, 0) });
+  page.drawText(signerNome, { x: sig2X + (155 - tw(signerNome, fn, FS_SM)) / 2, y, size: FS_SM, font: fn, color: rgb(0, 0, 0) });
   y -= LH * 0.85;
-  const oabStr = `OAB ${wr.adv1_oab}`;
+  const oabStr = `OAB ${signerOab}`;
   page.drawText(oabStr, { x: sig2X + (155 - tw(oabStr, fn, FS_SM)) / 2, y, size: FS_SM, font: fn, color: rgb(0, 0, 0) });
   y -= LH * 1.5;
 
