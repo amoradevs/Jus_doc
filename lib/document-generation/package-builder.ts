@@ -112,9 +112,10 @@ export async function buildDocumentPackage(
   );
 
   for (const doc of docs) {
-    zip.file(doc.nome_arquivo, doc.buffer);
+    const nomeDisplay = doc.nome.replace(/[<>:"/\\|?*]/g, '').trim();
+    zip.file(`${nomeDisplay}.${doc.extensao}`, doc.buffer);
     if (doc.docxBuffer && doc.extensao === 'pdf') {
-      zip.file(doc.nome_arquivo.replace(/\.pdf$/, '.docx'), doc.docxBuffer);
+      zip.file(`${nomeDisplay}.docx`, doc.docxBuffer);
     }
   }
 
