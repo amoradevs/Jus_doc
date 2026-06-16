@@ -28,13 +28,23 @@ export default async function GerarPage({ params, searchParams }: Props) {
 
   const { data: settingsRows } = await db
     .from('office_settings')
-    .select('advogada_principal_nome')
+    .select('advogada_principal_nome, advogada_principal_nome_curto, advogada_principal_oab, advogada_parceira_nome, advogada_parceira_nome_curto, advogada_parceira_oab')
     .eq('tenant_id', user.tenantId)
     .limit(1);
 
   if (!settingsRows?.[0]?.advogada_principal_nome) {
     redirect('/configuracoes?aviso=preencha-antes-de-gerar');
   }
+
+  const s = settingsRows[0];
+  const advSettings = {
+    adv1Nome: s.advogada_principal_nome,
+    adv1NomeCurto: s.advogada_principal_nome_curto,
+    adv1Oab: s.advogada_principal_oab,
+    adv2Nome: s.advogada_parceira_nome,
+    adv2NomeCurto: s.advogada_parceira_nome_curto,
+    adv2Oab: s.advogada_parceira_oab,
+  };
 
   const { data: processoRows } = await db
     .from('processos')
@@ -112,7 +122,7 @@ export default async function GerarPage({ params, searchParams }: Props) {
               </Link>
             </div>
           )}
-          <GerarModo clientId={id} processoId={processoId} />
+          <GerarModo clientId={id} processoId={processoId} advSettings={advSettings} />
         </>
       )}
     </div>
