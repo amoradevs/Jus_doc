@@ -14,7 +14,7 @@ import { AlertaItem } from './alerta-item';
 import { CATALOGO_TEMPLATES } from '@/lib/document-generation/cadeia-documental';
 import type { PacoteDocumental, Alerta } from '@/lib/document-generation/cadeia-documental';
 
-type AdvogadasSelecionadas = 'adv1' | 'adv2' | 'branco';
+type AdvogadasSelecionadas = 'adv1' | 'adv2';
 
 type AdvSettings = { adv1Nome: string; adv1NomeCurto: string; adv1Oab: string; adv2Nome: string; adv2NomeCurto: string; adv2Oab: string };
 
@@ -45,9 +45,8 @@ export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientI
   const temParceira = !!(advSettings?.adv2Nome);
 
   const opcoesAdvogada: { value: AdvogadasSelecionadas; label: string; sub?: string }[] = temParceira ? [
-    { value: 'adv1', label: `Apenas ${advSettings?.adv1NomeCurto || advSettings?.adv1Nome}`, sub: advSettings?.adv1Oab ? `OAB ${advSettings.adv1Oab}` : undefined },
-    { value: 'adv2', label: `Apenas ${advSettings?.adv2NomeCurto || advSettings?.adv2Nome}`, sub: advSettings?.adv2Oab ? `OAB ${advSettings.adv2Oab}` : undefined },
-    { value: 'branco',  label: 'Deixar em branco', sub: 'preencher manualmente depois' },
+    { value: 'adv1', label: `${advSettings?.adv1NomeCurto || advSettings?.adv1Nome}`, sub: advSettings?.adv1Oab ? `OAB ${advSettings.adv1Oab}` : undefined },
+    { value: 'adv2', label: `${advSettings?.adv2NomeCurto || advSettings?.adv2Nome}`, sub: advSettings?.adv2Oab ? `OAB ${advSettings.adv2Oab}` : undefined },
   ] : [];
 
   // Alertas dinâmicos por cadeia mínima desmarcada
@@ -85,7 +84,7 @@ export function StepConfirmacao({ pacote, codigosAtivos, onToggleCodigo, clientI
           templateCodes: codigosAtivos,
           cenario: pacote.cenario,
           processoId: processoId ?? undefined,
-          advogadas_selecionadas: advogadasSelecionadas === 'adv1' ? 'lidiane' : advogadasSelecionadas === 'adv2' ? 'alcione' : 'branco',
+          advogadas_selecionadas: advogadasSelecionadas === 'adv2' ? 'alcione' : 'lidiane',
 
         }),
       });
