@@ -439,7 +439,9 @@ export async function buildTemplateContext(
   }
 
   // ── Data de assinatura ────────────────────────────────────────────────────
-  const hoje = new Date();
+  const hojeISO = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
+  const [anoStr, mesStr, diaStr] = hojeISO.split('-');
+  const hoje = { getDate: () => Number(diaStr), getMonth: () => Number(mesStr) - 1, getFullYear: () => Number(anoStr) };
 
   // ── Contexto final ────────────────────────────────────────────────────────
   const baseContext: TemplateContext = {
