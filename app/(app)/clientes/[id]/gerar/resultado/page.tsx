@@ -18,6 +18,10 @@ async function fetchBlob(url: string): Promise<Blob> {
   return res.blob();
 }
 
+function nomeArquivo(nome: string, ext: string) {
+  return nome.replace(/[<>:"/\\|?*]/g, '').trim() + '.' + ext;
+}
+
 async function triggerDownload(blob: Blob, filename: string) {
   const href = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -110,7 +114,7 @@ function PdfViewer({
     setDownloading(true);
     const res = await fetch(blobUrl);
     const blob = await res.blob();
-    await triggerDownload(blob, doc.nome_arquivo);
+    await triggerDownload(blob, nomeArquivo(doc.nome, 'pdf'));
     setDownloading(false);
   }
 
@@ -349,7 +353,7 @@ export default function ResultadoPage() {
     setDownloadingPdf(doc.codigo);
     try {
       const blob = await fetchBlob(`/api/download/${packageId}/pdf/${doc.codigo}`);
-      await triggerDownload(blob, doc.nome_arquivo);
+      await triggerDownload(blob, nomeArquivo(doc.nome, 'pdf'));
     } catch {
       setErrorMsg('Erro ao baixar PDF.');
     }
@@ -360,7 +364,7 @@ export default function ResultadoPage() {
     setDownloadingDocx(doc.codigo);
     try {
       const blob = await fetchBlob(`/api/download/${packageId}/docx/${doc.codigo}`);
-      await triggerDownload(blob, doc.nome_arquivo.replace(/\.pdf$/, '.docx'));
+      await triggerDownload(blob, nomeArquivo(doc.nome, 'docx'));
     } catch {
       setErrorMsg('Erro ao baixar Word.');
     }
