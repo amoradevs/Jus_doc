@@ -153,7 +153,7 @@ export async function renderTermoRepresentacaoInss(ctx: TemplateContext): Promis
     `Eu, ${cl.nome_completo}, inscrito(a) no CPF nº ${cl.cpf}, RG nº ${cl.rg || ''}, ` +
     `residente e domiciliado(a) em, ${endFull}, no Município de ${en.cidade}/${en.uf}, ` +
     `CEP ${en.cep}, representado pela advogada ${wr.adv1_nome}, CPF nº ${wr.adv1_cpf}, ` +
-    `OAB Nº ${wr.adv1_oab}, NIT nº ${cl.nit || ''}, CONFIRO PODERES ESPECÍFICOS para me ` +
+    `OAB Nº ${wr.adv1_oab}, CONFIRO PODERES ESPECÍFICOS para me ` +
     `representar perante o INSS na solicitação do serviço ou benefício abaixo indicado e ` +
     `AUTORIZO o(a) referido(a) profissional a ter acesso apenas às informações pessoais ` +
     `necessárias a subsidiar o requerimento eletrônico do serviço ou benefício abaixo elencado:`;
