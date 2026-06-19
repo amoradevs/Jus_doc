@@ -95,9 +95,12 @@ scripts/
 | NextAuth, não Supabase Auth | Sistema legado; tabela `users` customizada. FKs para `auth.users` não existem — usar `UUID` sem FK |
 | Contrato e Procuração (categorias) sempre geram com ambas advogadas | Regra de negócio fixa; modal de seleção se aplica apenas ao Termo INSS |
 | DOCX salvo no Storage ao lado do PDF | Advogada precisa editar antes de assinar |
-| Checkboxes como `(X)` / `( )` em negrito, não Unicode | Impressão e leitores de PDF rendem corretamente; Unicode fragmenta em alguns drivers |
+| Checkboxes no Termo INSS (PDF) são quadrados preenchidos em preto sólido via `drawRectangle` | Mais fiel ao formulário INSS; DOCX templates ainda usam `(X)` em negrito para impressão |
 | `drawJustified()` implementado manualmente | pdf-lib não tem justificação nativa |
 | Texto de identificação no Termo INSS é parágrafo único contínuo | Reproduz exatamente o formulário oficial do INSS — campo a campo isolado é incorreto |
+| Signatária do Termo INSS é dinâmica | Selecionada no modal antes de gerar: Dra. Lidiane → imagem de assinatura + linha + nome + OAB; Dra. Alcione → apenas linha + nome + OAB (sem imagem). Corpo do texto também reflete a signatária. Contrato e Procuração sempre saem com as duas. |
+| Nomes de arquivos baixados e do ZIP = nome de exibição do documento | `nomeDisplay = doc.nome` — sem código nem data no nome do arquivo entregue à cliente; internamente o storage usa o nome normalizado com data |
+| `numero_nro_formatado` no TemplateContext | Campo composto: `, Nº ${numero}` quando preenchido, `''` quando vazio. Todos os templates DOCX usam `{endereco.numero_nro_formatado}` — nunca aparece pontuação solta quando número ausente |
 
 ---
 
@@ -121,10 +124,13 @@ scripts/
 - Templates DOCX com condicionais DocxTemplater (advogadas, checkboxes, representante legal, cônjuge, MEI, imóvel de terceiro)
 - Template 05 — Termo de Representação INSS: PDF pixel-perfect com pdf-lib, brasão da República, texto justificado, tabela de 8 checkboxes, duas assinaturas
 - Declaração de Hipossuficiência (código 03) inclusa em **todos os tipos de ação** — `beneficios: []` em `cadeia-documental.ts`
-- Assinatura digital da Dra. Lidiane **sempre ativa** no Termo INSS — `incluir_assinatura_lidiane` hardcoded como `true`; toggle removido do wizard
+- Signatária do Termo INSS definida no modal de seleção de advogada: Dra. Lidiane → imagem de assinatura + linha + nome + OAB; Dra. Alcione → linha + nome + OAB sem imagem. Corpo do texto (nome, CPF, OAB) também muda conforme seleção. Contrato e Procuração sempre saem com as duas advogadas independentemente.
+- `advSettings` (nomes, OABs das advogadas) coletado em `gerar/page.tsx` e passado por toda a cadeia: `GerarModo → WizardCenario → StepConfirmacao` — necessário para o modal de seleção aparecer quando há advogada parceira cadastrada
+- NIT removido do texto de identificação do Termo INSS (campo ficava vazio gerando `"NIT nº ,"`)
 - ZIP "Baixar todos" inclui **PDF e DOCX** de cada documento (templates DOCX convertidos para PDF incluem ambos os formatos no mesmo ZIP)
-- Download em PDF e DOCX por documento individual; ZIP do pacote completo
-- Modal de seleção de advogada antes de gerar (wizard e busca rápida) — define qual assina o Termo INSS; Contrato e Procuração sempre saem com as duas
+- Download em PDF e DOCX por documento individual; ZIP do pacote completo — nomes dos arquivos = nome de exibição do documento (`Contrato de Honorários.pdf`, não `CLIENTE_01_DATA.pdf`)
+- Modal de seleção de advogada antes de gerar — define qual assina o Termo INSS; duas opções apenas (Dra. Lidiane / parceira cadastrada); "Deixar em branco" removido
+- **Número da residência é opcional** no cadastro de clientes — quando vazio, não aparece em nenhum documento (templates DOCX usam `{endereco.numero_nro_formatado}`; PDF do Termo usa `filter(Boolean)` no array do endereço)
 - Contrato de honorários (`01_01_contrato_honorarios.docx`): RG do representante condicional em dois blocos — cabeçalho (`{#representante.rg}, RG: ...{/representante.rg}` inline) e assinatura (parágrafo envolvido por tags de bloco); some completamente quando vazio
 - Histórico de documentos gerados: botão de exclusão por pacote com diálogo de confirmação — remove registro do banco e ZIP do Storage (`DELETE /api/geracao/[packageId]`)
 
