@@ -37,7 +37,7 @@ export const clientSchema = z.object({
   nome_pai: z.string().optional(),
   telefone: z.string().optional(),
   endereco_logradouro: z.string().min(3, 'Logradouro obrigatório'),
-  endereco_numero: z.string().optional().default(''),
+  endereco_numero: z.string(),
   endereco_complemento: z.string().optional(),
   endereco_bairro: z.string().min(2, 'Bairro obrigatório'),
   endereco_cidade: z.string().min(2, 'Cidade obrigatória'),
