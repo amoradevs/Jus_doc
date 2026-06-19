@@ -172,7 +172,7 @@ export type TemplateContext = {
   bloco_mora_com_dependentes: boolean;
 
   cliente: { nome_completo: string; nacionalidade: string; estado_civil: string; cpf: string; rg: string; rg_orgao_emissor: string; data_nascimento: string; nome_mae: string; nome_pai: string; nit: string; condicao_menor: string };
-  endereco: { logradouro: string; numero: string; complemento_formatado: string; bairro: string; cidade: string; uf: string; cep: string };
+  endereco: { logradouro: string; numero: string; numero_nro_formatado: string; complemento_formatado: string; bairro: string; cidade: string; uf: string; cep: string };
   imovel: { cedido: boolean; proprietario_nome: string };
   representante: { nome_completo: string; cpf: string; rg: string; parentesco: string };
   dependentes: Array<{ nome_completo: string; cpf: string; rg: string; data_nascimento: string; parentesco: string }>;
@@ -488,6 +488,7 @@ export async function buildTemplateContext(
     endereco: {
       logradouro: client.endereco_logradouro ?? '',
       numero: client.endereco_numero ?? '',
+      numero_nro_formatado: client.endereco_numero ? `, Nº ${client.endereco_numero}` : '',
       complemento_formatado: client.endereco_complemento ? `, ${client.endereco_complemento}` : '',
       bairro: client.endereco_bairro ?? '',
       cidade: client.endereco_cidade ?? '',
