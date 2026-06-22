@@ -120,7 +120,8 @@ export function WizardCenario({ clientId, processoId, advSettings }: Props) {
 
   function handlePerfilChange(p: PerfilId) {
     setPerfil(p);
-    // Mudança de perfil invalida o pacote computado
+    const gatilhosBase: GatilhoId[] = PERFIS_MENORES.includes(p) ? ['tem_representacao_legal'] : [];
+    setGatilhos(gatilhosBase);
     setPacote(null);
     setCodigosAtivos([]);
   }
@@ -138,10 +139,15 @@ export function WizardCenario({ clientId, processoId, advSettings }: Props) {
 
   function irParaConfirmacao() {
     if (!beneficio || !perfil) return;
+    const ehMenor = PERFIS_MENORES.includes(perfil);
+    const gatilhosFinais =
+      ehMenor && !gatilhos.includes('tem_representacao_legal')
+        ? [...gatilhos, 'tem_representacao_legal' as GatilhoId]
+        : gatilhos;
     const cenario = {
       beneficio,
       perfil,
-      gatilhos,
+      gatilhos: gatilhosFinais,
       ...(msOrgao ? { ms_orgao: msOrgao } : {}),
       ...(beneficio === 'aposentadoria_idade' && aposentadoriaModalidade ? { aposentadoria_idade_modalidade: aposentadoriaModalidade } : {}),
     };
