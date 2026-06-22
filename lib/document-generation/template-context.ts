@@ -640,8 +640,7 @@ export async function buildTemplateContext(
     checkbox_qualidade_representacao_X: (() => {
       const m: Record<string, string> = {};
       for (const q of TODAS_QUALIDADES_REPRESENTACAO) {
-        // Termo de Responsabilidade é sempre para menor — qualidade sempre tutor_nato
-        m[q] = q === 'tutor_nato' ? 'X' : ' ';
+        m[q] = q === 'tutor_nato' ? '■' : '□';
       }
       return m;
     })(),
