@@ -623,7 +623,13 @@ export async function buildTemplateContext(
             (b) => ({ nome: b.nome ?? '', cpf: formatarCPF(b.cpf ?? '') }),
           ),
         }
-      : { representante_nome: '', representante_cpf: '', representante_rg: '', qualidade_descricao: '', beneficiarios_representados: [] },
+      : {
+          representante_nome: (ctx?.representante_legal as Record<string, string>)?.nome_completo ?? '',
+          representante_cpf: formatarCPF((ctx?.representante_legal as Record<string, string>)?.cpf ?? ''),
+          representante_rg: (ctx?.representante_legal as Record<string, string>)?.rg ?? '',
+          qualidade_descricao: '',
+          beneficiarios_representados: [],
+        },
     checkbox_qualidade_representacao: (() => {
       const m: Record<string, string> = {};
       for (const q of TODAS_QUALIDADES_REPRESENTACAO) {
