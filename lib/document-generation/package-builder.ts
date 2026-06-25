@@ -91,9 +91,16 @@ export async function buildDocumentPackage(
         const templateBuffer = await getTemplateBuffer(template);
         docxBuffer = await renderDocxTemplate(templateBuffer, ctx);
         if (usarPdf) {
-          fileBuffer = await convertDocxToPdf(docxBuffer);
-          extensao = 'pdf';
-          contentType = 'application/pdf';
+          try {
+            fileBuffer = await convertDocxToPdf(docxBuffer);
+            extensao = 'pdf';
+            contentType = 'application/pdf';
+          } catch (convErr) {
+            console.error(`[package-builder] Conversão PDF falhou para ${template.codigo}:`, convErr);
+            fileBuffer = docxBuffer;
+            extensao = 'docx';
+            contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+          }
         } else {
           fileBuffer = docxBuffer;
           extensao = 'docx';
