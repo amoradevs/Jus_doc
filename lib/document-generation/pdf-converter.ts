@@ -36,8 +36,9 @@ export async function convertDocxToPdf(docxBuffer: Buffer): Promise<Buffer> {
   const uploadTask = job.tasks.find((t) => t.name === 'upload');
   if (!uploadTask) throw new Error('Upload task não encontrada');
 
-  const arrayBuf = docxBuffer.buffer.slice(docxBuffer.byteOffset, docxBuffer.byteOffset + docxBuffer.byteLength) as ArrayBuffer;
-  await client.tasks.upload(uploadTask, new Blob([arrayBuf]), 'documento.docx');
+  // Passa o Buffer diretamente — evita problemas de Blob/ArrayBuffer em Node.js 18+
+  const safeBuffer = Buffer.from(docxBuffer.buffer, docxBuffer.byteOffset, docxBuffer.byteLength);
+  await client.tasks.upload(uploadTask, safeBuffer, 'documento.docx');
 
   const completed = await client.jobs.wait(job.id);
 
