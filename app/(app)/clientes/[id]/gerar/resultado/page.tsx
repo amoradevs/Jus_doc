@@ -494,13 +494,20 @@ export default function ResultadoPage() {
                 {doc.nome || doc.codigo}
               </span>
               <div className="flex items-center gap-1 shrink-0">
-                <button
-                  onClick={() => setPreviewing(doc)}
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1 rounded-md hover:bg-secondary"
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                  Ver
-                </button>
+                {doc.nome_arquivo.endsWith('.docx') ? (
+                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground px-2 py-1 opacity-40 cursor-default" title="Gerado em Word — baixe para visualizar">
+                    <Eye className="w-3.5 h-3.5" />
+                    Ver
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => setPreviewing(doc)}
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1 rounded-md hover:bg-secondary"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    Ver
+                  </button>
+                )}
                 <button
                   onClick={() => baixarPdf(doc)}
                   disabled={downloadingPdf === doc.codigo}
