@@ -10,6 +10,7 @@
 - **Ajuste 2** — Novo benefício "Aposentadoria por Tempo de Contribuição" adicionado ao wizard
 - **Ajuste 3** — Bloco de assinatura "a rogo" corrigido em 3 documentos (Contrato, Procuração, Declaração de Hipossuficiência): validador da digital agora aparece corretamente
 - **Ajuste 4** — Auditoria do fluxo "a rogo": corrigido alerta/resumo ausente no Passo 4 do wizard e corrigido RG aparecendo sem valor no Termo de Representação INSS
+- **Ajuste 5** — Assinatura da Dra. Alcione (imagem) incluída no Termo de Representação INSS quando ela é a signatária selecionada
 
 ---
 
@@ -114,3 +115,23 @@ A auditoria também expôs um conjunto pré-existente de testes automatizados (`
 
 ### Validação
 `npm run typecheck` e `npx vitest run` sem regressões novas (48 passando, as mesmas 8 falhas pré-existentes e não relacionadas). Testei manualmente a lógica de RG condicional (vazio, preenchido e só-espaço) e o render completo dos 3 documentos corrigidos no Ajuste 3.
+
+---
+
+## Ajuste 5 — Assinatura da Dra. Alcione no Termo de Representação INSS
+
+### Problema
+O sistema já permite escolher qual advogada assina o Termo de Representação INSS quando há duas cadastradas (modal no Passo 4). Mas só a Dra. Lidiane tinha uma imagem de assinatura (`templates/assinaturas/lidiane.png`) — ao selecionar a Dra. Alcione, o documento saía só com nome e OAB em texto, sem a imagem da assinatura.
+
+### Solução
+A Dra. Larissa enviou uma foto da assinatura da Dra. Alcione (papel fotografado). Processei a imagem (removi o fundo do papel, deixei transparente, recortei e ajustei para o mesmo padrão da imagem da Dra. Lidiane — PNG 600×170 com fundo transparente) e salvei em `templates/assinaturas/alcione.png`. Adicionei o campo `adv2_assinatura_path` ao `TemplateContext` e atualizei o renderer do Termo INSS (`render-termo-representacao-inss.ts`) para desenhar a imagem certa conforme a advogada selecionada (`apenas_alcione`).
+
+Confirmei no banco (Supabase) que a Dra. Alcione já está cadastrada como advogada parceira (`Alcione Ferreira Gomes Alencar`, OAB 218550-SP) — o modal de seleção já funcionava, só faltava a imagem.
+
+### Arquivos afetados
+- `templates/assinaturas/alcione.png` — nova imagem de assinatura (processada a partir da foto enviada)
+- `lib/document-generation/template-context.ts` — novo campo `escritorio.adv2_assinatura_path`
+- `lib/document-generation/render-termo-representacao-inss.ts` — desenha a imagem da advogada correta conforme quem assina
+
+### Validação
+`npm run typecheck` passou sem erros. Testei o render real do PDF com a Dra. Alcione selecionada como signatária — a imagem aparece corretamente acima da linha de assinatura, junto com nome e OAB, no mesmo padrão visual da Dra. Lidiane.

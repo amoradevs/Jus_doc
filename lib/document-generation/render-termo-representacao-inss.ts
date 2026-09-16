@@ -311,9 +311,14 @@ export async function renderTermoRepresentacaoInss(ctx: TemplateContext): Promis
   page.drawText(`${cidadeUf}, ${dataStr}.`, { x, y, size: FS, font: fn, color: rgb(0, 0, 0) });
   const sig2X = x + BW - 155;
 
-  // Desenha imagem da assinatura acima da linha, se disponível
-  if (ctx.incluir_assinatura_lidiane) {
-    const sigImgPath = path.resolve(process.cwd(), ctx.escritorio.adv1_assinatura_path);
+  // Desenha imagem da assinatura acima da linha, se disponível — da advogada que está assinando
+  const sigImgRelPath = ctx.apenas_alcione
+    ? ctx.escritorio.adv2_assinatura_path
+    : ctx.incluir_assinatura_lidiane
+      ? ctx.escritorio.adv1_assinatura_path
+      : '';
+  if (sigImgRelPath) {
+    const sigImgPath = path.resolve(process.cwd(), sigImgRelPath);
     if (fs.existsSync(sigImgPath)) {
       const sigImg = await pdfDoc.embedPng(fs.readFileSync(sigImgPath));
       const sd = sigImg.scaleToFit(120, 28);
