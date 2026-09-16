@@ -60,9 +60,14 @@ create table if not exists clients (
   endereco_cep text not null,
   criado_em timestamptz not null default now(),
   atualizado_em timestamptz not null default now(),
-  deletado_em timestamptz,
-  unique(cpf, tenant_id)
+  deletado_em timestamptz
 );
+
+-- CPF só precisa ser único entre clientes ativos — um cliente excluído
+-- (soft delete) libera o CPF para um novo cadastro.
+create unique index if not exists clients_cpf_tenant_ativos_idx
+  on clients (cpf, tenant_id)
+  where deletado_em is null;
 
 create table if not exists client_contextual_data (
   id uuid primary key default uuid_generate_v4(),

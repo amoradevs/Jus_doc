@@ -11,6 +11,7 @@
 - **Ajuste 3** — Bloco de assinatura "a rogo" corrigido em 3 documentos (Contrato, Procuração, Declaração de Hipossuficiência): validador da digital agora aparece corretamente
 - **Ajuste 4** — Auditoria do fluxo "a rogo": corrigido alerta/resumo ausente no Passo 4 do wizard e corrigido RG aparecendo sem valor no Termo de Representação INSS
 - **Ajuste 5** — Assinatura da Dra. Alcione (imagem) incluída no Termo de Representação INSS quando ela é a signatária selecionada
+- **Ajuste 6** — Corrigido erro ao recadastrar cliente com o mesmo CPF de um cliente excluído
 
 ---
 
@@ -135,3 +136,23 @@ Confirmei no banco (Supabase) que a Dra. Alcione já está cadastrada como advog
 
 ### Validação
 `npm run typecheck` passou sem erros. Testei o render real do PDF com a Dra. Alcione selecionada como signatária — a imagem aparece corretamente acima da linha de assinatura, junto com nome e OAB, no mesmo padrão visual da Dra. Lidiane.
+
+---
+
+## Ajuste 6 — Erro ao recadastrar cliente com CPF de um cliente excluído
+
+### Problema
+A cliente "Raquel dos Santos" foi cadastrada com erro de digitação, excluída, e ao tentar cadastrar de novo o sistema mostrava "Erro ao salvar cliente." (toast genérico).
+
+### Causa raiz
+A tabela `clients` tinha uma constraint `unique(cpf, tenant_id)` no banco que valia para **todos** os registros, inclusive os excluídos (soft delete via `deletado_em`). Ou seja, o CPF de um cliente excluído ficava travado para sempre. A checagem de duplicidade da aplicação (`app/api/clientes/route.ts`) já ignorava corretamente clientes excluídos — o problema era só a constraint do banco, que não sabia disso: o INSERT passava pela checagem da aplicação e quebrava direto no Postgres, virando um erro genérico (`DB_ERROR` / 500) sem mensagem clara para a advogada.
+
+### Solução
+Nova migration `docs/migrations/022_cpf_unico_apenas_clientes_ativos.sql`, executada no SQL Editor do Supabase: troca a constraint antiga por um **índice único parcial** — `unique index ... on clients(cpf, tenant_id) where deletado_em is null` — CPF só precisa ser único entre clientes **ativos**; o CPF de um cliente excluído fica livre para reuso. `docs/schema.sql` também atualizado para instalações novas seguirem a mesma regra. Nenhuma mudança de código de aplicação foi necessária.
+
+### Arquivos afetados
+- `docs/migrations/022_cpf_unico_apenas_clientes_ativos.sql` (nova)
+- `docs/schema.sql` — constraint antiga trocada pelo índice único parcial
+
+### Validação
+Migration executada em produção pela Dra. ("Success. No rows returned"). Testei o cenário completo com dados descartáveis (criados e removidos de verdade ao final, sem lixo no banco): criar cliente → soft delete → recriar com o mesmo CPF (funcionou) → tentar criar outro cliente **ativo** com CPF duplicado (bloqueou corretamente, confirmando que a regra de unicidade entre ativos continua valendo).

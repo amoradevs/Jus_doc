@@ -2,7 +2,7 @@
 
 Plataforma de automação documental para advocacia previdenciária.
 
-A advogada cadastra clientes e gera pacotes de documentos jurídicos preenchidos automaticamente, escolhendo livremente entre 15 templates (contratos, procurações, declarações e formulários INSS).
+A advogada cadastra clientes e gera pacotes de documentos jurídicos preenchidos automaticamente a partir do benefício e do perfil do cliente (contratos, procurações, declarações e formulários INSS).
 
 **Deploy em produção:** https://www.gestorali.com.br
 
@@ -43,8 +43,10 @@ Acesse: http://localhost:3000
 | [docs/guides/document-generation.md](docs/guides/document-generation.md) | Fluxo de geração de documentos |
 | [docs/architecture/stack.md](docs/architecture/stack.md) | Decisões de arquitetura |
 | [docs/schema.sql](docs/schema.sql) | Schema completo do banco (executar no Supabase) |
-| [docs/seed.sql](docs/seed.sql) | Dados iniciais: tenant, usuário e 15 templates |
-| [templates/README.md](templates/README.md) | Catálogo dos 15 templates e contrato de variáveis |
+| [docs/seed.sql](docs/seed.sql) | Dados iniciais: tenant, usuário e templates |
+| [docs/migrations/](docs/migrations/) | Migrations incrementais aplicadas após o schema base |
+| [templates/README.md](templates/README.md) | Catálogo dos templates e contrato de variáveis |
+| [ATUALIZAÇÃO_SET_26.md](ATUALIZAÇÃO_SET_26.md) | Changelog da sessão de setembro/2026 (aposentadoria urbana/rural e por tempo de contribuição, correções no fluxo "a rogo", assinatura da Dra. Alcione, correção de CPF de cliente excluído) |
 
 ## Scripts
 
@@ -65,7 +67,7 @@ vercel --prod        # deploy em produção
 |--------|-----------|
 | **Clientes** | Cadastro e edição com CEP auto-complete via ViaCEP |
 | **Pipeline** | Kanban de processos por etapa (Triagem → Concedido) |
-| **Geração documental** | 15 templates — contratos, procurações, formulários INSS |
+| **Geração documental** | Motor de cadeia documental — contratos, procurações, declarações e formulários INSS, montados por benefício (BPC/LOAS, Aposentadoria por Idade, Aposentadoria por Tempo de Contribuição, Mandado de Segurança, Pensão por Morte) e perfil do cliente (adulto capaz, a rogo, menor, incapaz) |
 | **Prazos** | Controle de prazos por processo com alertas de vencimento |
 | **Planejamento Previdenciário** | Motor EC 103/2019 — 5 regras de transição, projeção de aposentadoria, geração de .docx |
 | **Ali** | Agente de IA especializada em BPC/LOAS e Direito Previdenciário |
