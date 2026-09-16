@@ -243,6 +243,16 @@ const BENEFICIO_ID_MAP: Record<string, { descricao: string; objeto: string; marc
     objeto: 'ingressar com Pedido de BENEFÍCIO DE APOSENTADORIA POR IDADE RURAL EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
     marcados: ['aposentadoria_idade', 'aposentadoria_idade_rural'],
   },
+  aposentadoria_idade_urbana_rural: {
+    descricao: 'BENEFÍCIO DE APOSENTADORIA POR IDADE URBANA E RURAL',
+    objeto: 'ingressar com Pedido de BENEFÍCIO DE APOSENTADORIA POR IDADE URBANA E RURAL EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
+    marcados: ['aposentadoria_idade', 'aposentadoria_idade_urbana', 'aposentadoria_idade_rural'],
+  },
+  aposentadoria_tempo: {
+    descricao: 'BENEFÍCIO DE APOSENTADORIA POR TEMPO DE CONTRIBUIÇÃO',
+    objeto: 'ingressar com Pedido de BENEFÍCIO DE APOSENTADORIA POR TEMPO DE CONTRIBUIÇÃO EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
+    marcados: ['aposentadoria_tempo'],
+  },
   pensao_morte: {
     descricao: 'BENEFÍCIO DE PENSÃO POR MORTE PREVIDENCIÁRIA',
     objeto: 'ingressar com Pedido de BENEFÍCIO DE PENSÃO POR MORTE EM FACE DA PREVIDÊNCIA SOCIAL (Instituto Nacional do Seguro Social – INSS)',
@@ -281,10 +291,13 @@ export function getCenarioContextOverrides(cenario: Cenario): Partial<TemplateCo
 
   const bloco_paragrafos_recurso = !ehMS;
 
+  const modalidades = cenario.beneficio === 'aposentadoria_idade' ? (cenario.aposentadoria_idade_modalidade ?? []) : [];
   const beneficioKey =
-    cenario.beneficio === 'aposentadoria_idade' && cenario.aposentadoria_idade_modalidade
-      ? `aposentadoria_idade_${cenario.aposentadoria_idade_modalidade}`
-      : cenario.beneficio;
+    modalidades.length === 2
+      ? 'aposentadoria_idade_urbana_rural'
+      : modalidades.length === 1
+        ? `aposentadoria_idade_${modalidades[0]}`
+        : cenario.beneficio;
   const benInfo = BENEFICIO_ID_MAP[beneficioKey] ?? BENEFICIO_ID_MAP[cenario.beneficio] ?? BENEFICIO_ID_MAP.bpc;
 
   let objetoProcuracao = benInfo.objeto;
@@ -469,8 +482,8 @@ export async function buildTemplateContext(
       nacionalidade: neutralizar(client.nacionalidade ?? 'brasileiro'),
       estado_civil: ESTADO_CIVIL_NEUTRO[client.estado_civil] ?? neutralizar(client.estado_civil ?? ''),
       cpf: formatarCPF(client.cpf ?? ''),
-      rg: client.rg ?? '',
-      rg_orgao_emissor: client.rg_orgao_emissor ?? '',
+      rg: (client.rg ?? '').trim(),
+      rg_orgao_emissor: (client.rg_orgao_emissor ?? '').trim(),
       data_nascimento: formatarData(client.data_nascimento ?? ''),
       nome_mae: client.nome_mae ?? '',
       nome_pai: client.nome_pai ?? '',
@@ -506,7 +519,7 @@ export async function buildTemplateContext(
     representante: {
       nome_completo: (ctx?.representante_legal as Record<string, string>)?.nome_completo ?? '',
       cpf: formatarCPF((ctx?.representante_legal as Record<string, string>)?.cpf ?? ''),
-      rg: (ctx?.representante_legal as Record<string, string>)?.rg ?? '',
+      rg: ((ctx?.representante_legal as Record<string, string>)?.rg ?? '').trim(),
       parentesco: (ctx?.representante_legal as Record<string, string>)?.parentesco ?? '',
     },
 

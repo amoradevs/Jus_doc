@@ -28,14 +28,14 @@ const TODAS_OPCOES: OpcaoGatilho[] = [
     label: 'Imóvel de terceiro',
     descricao: 'O cliente reside em imóvel cedido — gera Declaração de Residência.',
     Icon: Home,
-    beneficios: ['bpc', 'aposentadoria_idade', 'pensao_morte'],
+    beneficios: ['bpc', 'aposentadoria_idade', 'aposentadoria_tempo', 'pensao_morte'],
   },
   {
     value: 'mei_inativo',
     label: 'MEI inativo',
     descricao: 'O cliente possui MEI sem atividade — gera Declaração de Inatividade de Empresa.',
     Icon: Building2,
-    beneficios: ['bpc', 'aposentadoria_idade', 'mandado_seguranca'],
+    beneficios: ['bpc', 'aposentadoria_idade', 'aposentadoria_tempo', 'mandado_seguranca'],
     perfis_excluidos: ['menor_impubere', 'menor_pubere'] as PerfilId[],
   },
   {

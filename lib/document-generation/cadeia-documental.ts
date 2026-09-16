@@ -3,6 +3,7 @@
 export type BeneficioId =
   | 'bpc'
   | 'aposentadoria_idade'
+  | 'aposentadoria_tempo'
   | 'mandado_seguranca'
   | 'pensao_morte';
 
@@ -26,7 +27,7 @@ export interface Cenario {
   perfil: PerfilId;
   gatilhos: GatilhoId[];
   ms_orgao?: 'inss' | 'cras';
-  aposentadoria_idade_modalidade?: 'urbana' | 'rural';
+  aposentadoria_idade_modalidade?: ('urbana' | 'rural')[];
 }
 
 export interface Alerta {
@@ -74,7 +75,7 @@ export const CATALOGO_TEMPLATES: TemplateMetadata[] = [
     codigo: '01',
     categoria: 'contrato',
     nome: 'Contrato de Honorários',
-    beneficios: ['bpc', 'aposentadoria_idade', 'pensao_morte'],
+    beneficios: ['bpc', 'aposentadoria_idade', 'aposentadoria_tempo', 'pensao_morte'],
     perfis: [],
     gatilhos: [],
     obrigatorio: true,
@@ -84,7 +85,7 @@ export const CATALOGO_TEMPLATES: TemplateMetadata[] = [
     codigo: '02',
     categoria: 'procuracao',
     nome: 'Procuração',
-    beneficios: ['bpc', 'aposentadoria_idade', 'mandado_seguranca', 'pensao_morte'],
+    beneficios: ['bpc', 'aposentadoria_idade', 'aposentadoria_tempo', 'mandado_seguranca', 'pensao_morte'],
     perfis: [],
     gatilhos: [],
     obrigatorio: true,
@@ -95,7 +96,7 @@ export const CATALOGO_TEMPLATES: TemplateMetadata[] = [
     codigo: '05',
     categoria: 'termo',
     nome: 'Termo de Representação INSS',
-    beneficios: ['bpc', 'aposentadoria_idade', 'pensao_morte'],
+    beneficios: ['bpc', 'aposentadoria_idade', 'aposentadoria_tempo', 'pensao_morte'],
     perfis: [],
     gatilhos: [],
     obrigatorio: true,
@@ -105,7 +106,7 @@ export const CATALOGO_TEMPLATES: TemplateMetadata[] = [
     codigo: '03',
     categoria: 'declaracao',
     nome: 'Declaração de Hipossuficiência',
-    beneficios: ['bpc', 'aposentadoria_idade', 'pensao_morte'],
+    beneficios: ['bpc', 'aposentadoria_idade', 'aposentadoria_tempo', 'pensao_morte'],
     perfis: [],
     gatilhos: [],
     obrigatorio: true,
@@ -128,7 +129,7 @@ export const CATALOGO_TEMPLATES: TemplateMetadata[] = [
     codigo: '04',
     categoria: 'declaracao',
     nome: 'Declaração de Residência',
-    beneficios: ['bpc', 'aposentadoria_idade', 'pensao_morte'],
+    beneficios: ['bpc', 'aposentadoria_idade', 'aposentadoria_tempo', 'pensao_morte'],
     perfis: [],
     gatilhos: ['imovel_terceiro'],
     obrigatorio: false,
@@ -138,7 +139,7 @@ export const CATALOGO_TEMPLATES: TemplateMetadata[] = [
     codigo: '06',
     categoria: 'declaracao',
     nome: 'Declaração de Separação de Fato (Anexo I)',
-    beneficios: ['bpc', 'aposentadoria_idade', 'pensao_morte'],
+    beneficios: ['bpc', 'aposentadoria_idade', 'aposentadoria_tempo', 'pensao_morte'],
     perfis: [],
     gatilhos: ['separado_de_fato'],
     obrigatorio: false,
@@ -148,7 +149,7 @@ export const CATALOGO_TEMPLATES: TemplateMetadata[] = [
     codigo: '07',
     categoria: 'declaracao',
     nome: 'Declaração de Inatividade de Empresa',
-    beneficios: ['bpc', 'aposentadoria_idade', 'pensao_morte'],
+    beneficios: ['bpc', 'aposentadoria_idade', 'aposentadoria_tempo', 'pensao_morte'],
     perfis: [],
     gatilhos: ['mei_inativo'],
     obrigatorio: false,
@@ -170,6 +171,16 @@ export function validarCoerencia(cenario: Cenario): Alerta[] {
       mensagem:
         'Perfil de menor ou incapaz: verifique se há representante legal e, se sim, ative o gatilho "tem_representacao_legal" para incluir o Termo de Responsabilidade (código 15).',
       campo_relacionado: 'gatilhos',
+    });
+  }
+
+  // Aviso: perfil a rogo — lembra a advogada de confirmar validador + testemunhas
+  if (perfil === 'a_rogo') {
+    alertas.push({
+      nivel: 'aviso',
+      codigo: 'AROGO_CONFIRMAR_TESTEMUNHAS',
+      mensagem: 'Confirme os dados do validador da digital e das duas testemunhas antes de gerar os documentos.',
+      campo_relacionado: 'perfil',
     });
   }
 

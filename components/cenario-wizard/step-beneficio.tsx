@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { RadioGroup as RadioGroupPrimitive } from 'radix-ui';
-import { Briefcase, Scale, Shield, HeartHandshake, Building2, Users } from 'lucide-react';
+import { Briefcase, CalendarClock, Scale, Shield, HeartHandshake, Building2, Users, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,6 +27,12 @@ const OPCOES: { value: BeneficioId; label: string; descricao: string; Icon: Reac
     label: 'Aposentadoria por Idade',
     descricao: 'Benefício previdenciário para segurado que atingiu a idade mínima e cumpriu carência.',
     Icon: Briefcase,
+  },
+  {
+    value: 'aposentadoria_tempo',
+    label: 'Aposentadoria por Tempo de Contribuição',
+    descricao: 'Benefício previdenciário para segurado que cumpriu o tempo mínimo de contribuição ao INSS.',
+    Icon: CalendarClock,
   },
   {
     value: 'mandado_seguranca',
@@ -63,8 +69,8 @@ type Props = {
   onNext: () => void;
   msOrgao: 'inss' | 'cras' | null;
   onMsOrgaoChange: (orgao: 'inss' | 'cras') => void;
-  aposentadoriaModalidade: 'urbana' | 'rural' | null;
-  onAposentadoriaModalidadeChange: (m: 'urbana' | 'rural') => void;
+  aposentadoriaModalidade: ('urbana' | 'rural')[];
+  onAposentadoriaModalidadeChange: (m: ('urbana' | 'rural')[]) => void;
 };
 
 const MODALIDADES_APOSENTADORIA: { value: 'urbana' | 'rural'; label: string; descricao: string }[] = [
@@ -77,7 +83,7 @@ export function StepBeneficio({ value, onChange, onNext, msOrgao, onMsOrgaoChang
   const [orgaoLocal, setOrgaoLocal] = useState<'inss' | 'cras' | null>(null);
 
   const [modalAposentadoriaAberto, setModalAposentadoriaAberto] = useState(false);
-  const [modalidadeLocal, setModalidadeLocal] = useState<'urbana' | 'rural' | null>(null);
+  const [modalidadeLocal, setModalidadeLocal] = useState<('urbana' | 'rural')[]>([]);
 
   function abrirModalOrgao() {
     setOrgaoLocal(msOrgao);
@@ -95,9 +101,15 @@ export function StepBeneficio({ value, onChange, onNext, msOrgao, onMsOrgaoChang
       abrirModalOrgao();
     }
     if (v === 'aposentadoria_idade') {
-      setModalidadeLocal(null);
+      setModalidadeLocal([]);
       setModalAposentadoriaAberto(true);
     }
+  }
+
+  function toggleModalidadeLocal(m: 'urbana' | 'rural') {
+    setModalidadeLocal((prev) =>
+      prev.includes(m) ? prev.filter((v) => v !== m) : [...prev, m],
+    );
   }
 
   function confirmarOrgao() {
@@ -107,7 +119,7 @@ export function StepBeneficio({ value, onChange, onNext, msOrgao, onMsOrgaoChang
   }
 
   function confirmarModalidade() {
-    if (!modalidadeLocal) return;
+    if (modalidadeLocal.length === 0) return;
     onAposentadoriaModalidadeChange(modalidadeLocal);
     setModalAposentadoriaAberto(false);
   }
@@ -117,7 +129,7 @@ export function StepBeneficio({ value, onChange, onNext, msOrgao, onMsOrgaoChang
       abrirModalOrgao();
       return;
     }
-    if (value === 'aposentadoria_idade' && !aposentadoriaModalidade) {
+    if (value === 'aposentadoria_idade' && aposentadoriaModalidade.length === 0) {
       abrirModalAposentadoria();
       return;
     }
@@ -172,9 +184,9 @@ export function StepBeneficio({ value, onChange, onNext, msOrgao, onMsOrgaoChang
                       — em face do {msOrgao.toUpperCase()}
                     </span>
                   )}
-                  {v === 'aposentadoria_idade' && value === 'aposentadoria_idade' && aposentadoriaModalidade && (
+                  {v === 'aposentadoria_idade' && value === 'aposentadoria_idade' && aposentadoriaModalidade.length > 0 && (
                     <span className="ml-2 text-xs font-normal text-muted-foreground">
-                      — {aposentadoriaModalidade}
+                      — {aposentadoriaModalidade.join(' e ')}
                     </span>
                   )}
                 </p>
@@ -255,46 +267,52 @@ export function StepBeneficio({ value, onChange, onNext, msOrgao, onMsOrgaoChang
           <DialogHeader>
             <DialogTitle>Aposentadoria Urbana ou Rural?</DialogTitle>
             <DialogDescription>
-              Selecione a modalidade para preencher corretamente o Termo de Representação INSS.
+              Selecione a(s) modalidade(s) para preencher corretamente o Termo de Representação INSS. Pode marcar as duas quando o segurado tiver contribuição mista.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-2 py-1">
-            {MODALIDADES_APOSENTADORIA.map(({ value: mv, label, descricao }) => (
-              <button
-                key={mv}
-                type="button"
-                onClick={() => setModalidadeLocal(mv)}
-                className={cn(
-                  'w-full rounded-2xl border border-border bg-card text-left transition-all',
-                  'hover:border-primary/40 hover:bg-accent/30',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                  modalidadeLocal === mv && 'border-primary bg-primary/5',
-                )}
-              >
-                <div className="flex items-start gap-3 px-4 py-3.5">
-                  <div className="flex-1 min-w-0">
-                    <p className={cn(
-                      'text-sm font-medium text-foreground transition-colors',
-                      modalidadeLocal === mv && 'text-primary',
+            {MODALIDADES_APOSENTADORIA.map(({ value: mv, label, descricao }) => {
+              const marcado = modalidadeLocal.includes(mv);
+              return (
+                <button
+                  key={mv}
+                  type="button"
+                  onClick={() => toggleModalidadeLocal(mv)}
+                  aria-pressed={marcado}
+                  className={cn(
+                    'w-full rounded-2xl border border-border bg-card text-left transition-all',
+                    'hover:border-primary/40 hover:bg-accent/30',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                    marcado && 'border-primary bg-primary/5',
+                  )}
+                >
+                  <div className="flex items-start gap-3 px-4 py-3.5">
+                    <div className="flex-1 min-w-0">
+                      <p className={cn(
+                        'text-sm font-medium text-foreground transition-colors',
+                        marcado && 'text-primary',
+                      )}>
+                        {label}
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">{descricao}</p>
+                    </div>
+                    <div className={cn(
+                      'mt-1 flex size-4 shrink-0 items-center justify-center rounded-[4px] border-2 transition-all',
+                      marcado ? 'border-primary bg-primary' : 'border-border',
                     )}>
-                      {label}
-                    </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">{descricao}</p>
+                      {marcado && <Check className="size-3 text-primary-foreground" strokeWidth={3} />}
+                    </div>
                   </div>
-                  <div className={cn(
-                    'mt-1 size-4 shrink-0 rounded-full border-2 transition-all',
-                    modalidadeLocal === mv ? 'border-primary bg-primary' : 'border-border',
-                  )} />
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
 
           <DialogFooter>
             <Button
               onClick={confirmarModalidade}
-              disabled={!modalidadeLocal}
+              disabled={modalidadeLocal.length === 0}
               className="w-full rounded-xl"
             >
               Confirmar

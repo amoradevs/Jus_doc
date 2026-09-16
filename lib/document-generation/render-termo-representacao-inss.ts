@@ -154,8 +154,9 @@ export async function renderTermoRepresentacaoInss(ctx: TemplateContext): Promis
   const signerOab  = ctx.apenas_alcione ? wr.adv2_oab  : wr.adv1_oab;
 
   // Bloco de identificação: parágrafo único contínuo, igual ao formulário oficial do INSS.
+  const rgTrecho = cl.rg && cl.rg.trim() ? `, RG nº ${cl.rg}` : '';
   const identificacao =
-    `Eu, ${cl.nome_completo}, inscrito(a) no CPF nº ${cl.cpf}, RG nº ${cl.rg || ''}, ` +
+    `Eu, ${cl.nome_completo}, inscrito(a) no CPF nº ${cl.cpf}${rgTrecho}, ` +
     `residente e domiciliado(a) em, ${endFull}, no Município de ${en.cidade}/${en.uf}, ` +
     `CEP ${en.cep}, representado pela advogada ${signerNome}, CPF nº ${signerCpf}, ` +
     `OAB Nº ${signerOab}, CONFIRO PODERES ESPECÍFICOS para me ` +
