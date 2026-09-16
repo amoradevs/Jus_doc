@@ -12,6 +12,7 @@
 - **Ajuste 4** — Auditoria do fluxo "a rogo": corrigido alerta/resumo ausente no Passo 4 do wizard e corrigido RG aparecendo sem valor no Termo de Representação INSS
 - **Ajuste 5** — Assinatura da Dra. Alcione (imagem) incluída no Termo de Representação INSS quando ela é a signatária selecionada
 - **Ajuste 6** — Corrigido erro ao recadastrar cliente com o mesmo CPF de um cliente excluído
+- **Ajuste 7** — Cards do painel (Total de clientes, Processos ativos, Deferidos, Indeferidos) agora são clicáveis e levam à lista de clientes/processos; corrigido "Processos ativos" que mostrava só os criados no mês em vez do total real em andamento
 
 ---
 
@@ -156,3 +157,31 @@ Nova migration `docs/migrations/022_cpf_unico_apenas_clientes_ativos.sql`, execu
 
 ### Validação
 Migration executada em produção pela Dra. ("Success. No rows returned"). Testei o cenário completo com dados descartáveis (criados e removidos de verdade ao final, sem lixo no banco): criar cliente → soft delete → recriar com o mesmo CPF (funcionou) → tentar criar outro cliente **ativo** com CPF duplicado (bloqueou corretamente, confirmando que a regra de unicidade entre ativos continua valendo).
+
+---
+
+## Ajuste 7 — Painel: cards clicáveis + correção do card "Processos ativos"
+
+### Pedido
+A Dra. pediu para poder clicar nos cards "Processos ativos", "Deferidos" e "Indeferidos" do painel e ver quais clientes estão por trás desses números.
+
+### Achado de correção (antes de implementar o clique)
+"Processos ativos" filtrava pela **data de criação do processo dentro do mês/ano selecionado** — não pelo status atual. Conferi no banco: existem 37 processos com status "em andamento" no total, mas só 5 foram criados especificamente em setembro/2026 (mês corrente por padrão) — o card mostrava "5" quando na real havia 37 processos em andamento. "Deferidos"/"Indeferidos" tinham a mesma limitação (não existe no banco uma data de "quando foi deferido/indeferido", só a de criação do processo).
+
+Combinei com a Dra.: os 4 cards passam a mostrar sempre o **total geral** (sem filtro de período), igual "Total de clientes" já fazia. Como consequência, o seletor de mês/ano no topo do painel foi removido (não filtrava mais nada).
+
+### Solução
+- Nova página `/processos?status=em_andamento|deferido|indeferido` — lista os processos daquele status com nome do cliente, CPF, benefício e número interno, cada linha linkando para o detalhe do processo. Sem `status` na URL, lista todos os processos.
+- Card "Total de clientes" agora linka para `/clientes` (listagem já existente).
+- Extraído o badge de status (`StatusBadge`) da página de detalhe do processo para `components/status-badge.tsx`, reaproveitado na nova listagem.
+- `app/(app)/page.tsx`: os 4 `MetricCard` agora são links; queries de Deferidos/Indeferidos/Processos ativos perderam o filtro de data (sempre total geral); removido o seletor de período e o componente `FiltroPeriodo` (ficou sem uso).
+
+### Arquivos afetados
+- `app/(app)/page.tsx` — cards viram links, queries sem filtro de período, seletor de período removido
+- `app/(app)/processos/page.tsx` (nova) — listagem de processos por status
+- `components/status-badge.tsx` (novo) — badge de status extraído para reuso
+- `app/(app)/processos/[numero_interno]/page.tsx` — passa a importar `StatusBadge` em vez de defini-lo localmente
+- `components/dashboard/filtro-periodo.tsx` — removido (ficou sem nenhum uso)
+
+### Validação
+`npm run typecheck` e `npx vitest run` sem regressões novas. Testei a query da nova listagem direto no banco (bate com os 37 processos em andamento). Subi o servidor local e confirmei que `/` e `/processos?status=em_andamento` respondem sem erro (redirecionam para login sem sessão, como esperado). Recomendo um teste visual pelo navegador clicando nos 4 cards.

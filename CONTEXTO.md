@@ -12,7 +12,7 @@ Sistema web privado de gestão e geração de documentos jurídicos para o escri
 
 **Função central:** dado um cliente e um cenário (benefício previdenciário + perfil + gatilhos), o sistema monta o pacote documental correto, substitui variáveis nos templates DOCX/PDF, converte para PDF e entrega como ZIP para download.
 
-**Domínio:** benefícios do INSS — BPC/LOAS, Aposentadoria por Idade, Pensão por Morte, Mandado de Segurança. Clientes com perfis: adulto capaz, a rogo, menor impúbere (<16), menor púbere (16–18), incapaz com curador.
+**Domínio:** benefícios do INSS — BPC/LOAS, Aposentadoria por Idade (urbana/rural, seleção múltipla), Aposentadoria por Tempo de Contribuição, Pensão por Morte, Mandado de Segurança. Clientes com perfis: adulto capaz, a rogo, menor impúbere (<16), menor púbere (16–18), incapaz com curador.
 
 ---
 
@@ -98,7 +98,7 @@ scripts/
 | Checkboxes no Termo INSS (PDF) são quadrados preenchidos em preto sólido via `drawRectangle` | Mais fiel ao formulário INSS; DOCX templates ainda usam `(X)` em negrito para impressão |
 | `drawJustified()` implementado manualmente | pdf-lib não tem justificação nativa |
 | Texto de identificação no Termo INSS é parágrafo único contínuo | Reproduz exatamente o formulário oficial do INSS — campo a campo isolado é incorreto |
-| Signatária do Termo INSS é dinâmica | Selecionada no modal antes de gerar: Dra. Lidiane → imagem de assinatura + linha + nome + OAB; Dra. Alcione → apenas linha + nome + OAB (sem imagem). Corpo do texto também reflete a signatária. Contrato e Procuração sempre saem com as duas. |
+| Signatária do Termo INSS é dinâmica | Selecionada no modal antes de gerar: Dra. Lidiane ou Dra. Alcione → imagem de assinatura + linha + nome + OAB (ambas têm imagem desde 2026-09-16). Corpo do texto também reflete a signatária. Contrato e Procuração sempre saem com as duas. |
 | Nomes de arquivos baixados e do ZIP = nome de exibição do documento | `nomeDisplay = doc.nome` — sem código nem data no nome do arquivo entregue à cliente; internamente o storage usa o nome normalizado com data |
 | `numero_nro_formatado` no TemplateContext | Campo composto: `, Nº ${numero}` quando preenchido, `''` quando vazio. Todos os templates DOCX usam `{endereco.numero_nro_formatado}` — nunca aparece pontuação solta quando número ausente |
 
@@ -124,7 +124,9 @@ scripts/
 - Templates DOCX com condicionais DocxTemplater (advogadas, checkboxes, representante legal, cônjuge, MEI, imóvel de terceiro)
 - Template 05 — Termo de Representação INSS: PDF pixel-perfect com pdf-lib, brasão da República, texto justificado, tabela de 8 checkboxes, duas assinaturas
 - Declaração de Hipossuficiência (código 03) inclusa em **todos os tipos de ação** — `beneficios: []` em `cadeia-documental.ts`
-- Signatária do Termo INSS definida no modal de seleção de advogada: Dra. Lidiane → imagem de assinatura + linha + nome + OAB; Dra. Alcione → linha + nome + OAB sem imagem. Corpo do texto (nome, CPF, OAB) também muda conforme seleção. Contrato e Procuração sempre saem com as duas advogadas independentemente.
+- Signatária do Termo INSS definida no modal de seleção de advogada: Dra. Lidiane → imagem de assinatura + linha + nome + OAB; Dra. Alcione → imagem de assinatura + linha + nome + OAB (`templates/assinaturas/alcione.png`, adicionada em 2026-09-16 — antes só saía nome/OAB em texto). Corpo do texto (nome, CPF, OAB) também muda conforme seleção. Contrato e Procuração sempre saem com as duas advogadas independentemente.
+- Aposentadoria por Idade tem modal de modalidade com seleção múltipla (Urbana, Rural, ou as duas) — pinta os checkboxes correspondentes no Termo INSS. Aposentadoria por Tempo de Contribuição é um benefício irmão (mesma cadeia documental, pinta o item II do Termo INSS em vez do item I)
+- Perfil "a rogo": modal de validador + 2 testemunhas (`step-perfil.tsx`) já ativo para todos os benefícios, inclusive BPC. Blocos de assinatura a rogo dos templates 01 (Contrato), 02 (Procuração) e 03 (Hipossuficiência) corrigidos em 2026-09-16 — antes não mostravam o validador da digital; agora seguem o mesmo padrão do 05/06 (`A ROGO: {validador.nome_completo}` + RG condicional + testemunhas em tabela de 2 colunas)
 - `advSettings` (nomes, OABs das advogadas) coletado em `gerar/page.tsx` e passado por toda a cadeia: `GerarModo → WizardCenario → StepConfirmacao` — necessário para o modal de seleção aparecer quando há advogada parceira cadastrada
 - NIT removido do texto de identificação do Termo INSS (campo ficava vazio gerando `"NIT nº ,"`)
 - ZIP "Baixar todos" inclui **PDF e DOCX** de cada documento (templates DOCX convertidos para PDF incluem ambos os formatos no mesmo ZIP)
@@ -132,6 +134,7 @@ scripts/
 - Modal de seleção de advogada antes de gerar — define qual assina o Termo INSS; duas opções apenas (Dra. Lidiane / parceira cadastrada); "Deixar em branco" removido
 - **Número da residência é opcional** no cadastro de clientes — quando vazio, não aparece em nenhum documento (templates DOCX usam `{endereco.numero_nro_formatado}`; PDF do Termo usa `filter(Boolean)` no array do endereço)
 - Contrato de honorários (`01_01_contrato_honorarios.docx`): RG do representante condicional em dois blocos — cabeçalho (`{#representante.rg}, RG: ...{/representante.rg}` inline) e assinatura (parágrafo envolvido por tags de bloco); some completamente quando vazio
+- **RG nunca aparece se não preenchido** — `cliente.rg` e `representante.rg` passam por `.trim()` em `buildTemplateContext()` (evita RG "só espaço em branco" escapar do condicional); Termo INSS (`render-termo-representacao-inss.ts`) corrigido em 2026-09-16 — antes mostrava `"RG nº ,"` sempre, mesmo sem RG cadastrado
 - Histórico de documentos gerados: botão de exclusão por pacote com diálogo de confirmação — remove registro do banco e ZIP do Storage (`DELETE /api/geracao/[packageId]`)
 
 ### Wizard de cenário (4 steps)
@@ -142,8 +145,10 @@ scripts/
 
 ### Gestão de clientes e processos
 - CRUD completo de clientes com soft delete
+- **CPF de cliente excluído é reutilizável** (migration 022, 2026-09-16) — a unicidade de `(cpf, tenant_id)` agora é um índice único parcial (`where deletado_em is null`), só vale entre clientes ativos. Antes, excluir um cliente prendia o CPF para sempre e o recadastro falhava com erro genérico
 - Processos desacoplados de clientes (1 cliente → N processos), numeração `YYYY-NNNN`
 - Pipeline Kanban com drag-and-drop por etapa
+- Painel (`/`) com 4 cards clicáveis (Total de clientes, Processos ativos, Deferidos, Indeferidos) — todos totais gerais, sem filtro de período. "Processos ativos"/"Deferidos"/"Indeferidos" levam a `/processos?status=...` (nova página de listagem); "Total de clientes" leva a `/clientes`
 - Tracker de prazos processuais (administrativo, judicial, comercial, evento) com cálculo de dias úteis/corridos, feriados nacionais, recesso forense
 - Exclusão de pacotes gerados pela advogada diretamente no portal (hard delete — pacote de teste não polui o histórico do cliente)
 
@@ -185,6 +190,22 @@ scripts/
 **Causa raiz (camada 2 — dado nunca coletado no wizard):** O fluxo wizard nunca exibia o formulário de campos contextuais (`contextual-fields-form.tsx`), que só existe na busca rápida. Para qualquer cliente menor gerado pelo wizard, `representante_legal` era `null` no banco. **Correção (2026-05-20):** subformulário inline adicionado no Step 3 (Gatilhos) — aparece quando `tem_representacao_legal` está ativo e salva via PATCH antes de avançar.
 
 **Invariante documentada:** o campo de nome do representante deve sempre usar a chave `nome_completo` em todas as camadas — formulário contextual, PATCH payload, `buildTemplateContext()` e placeholders `{representante.nome_completo}` dos templates 03, 04, 06, 07. Nunca usar `nome`.
+
+### BUG-02 — CPF de cliente excluído bloqueava recadastro ✅ RESOLVIDO (2026-09-16)
+
+**Sintoma:** excluir um cliente (soft delete) e tentar cadastrar de novo com o mesmo CPF (ex.: corrigindo erro de digitação) dava "Erro ao salvar cliente." genérico.
+
+**Causa raiz:** a constraint `unique(cpf, tenant_id)` na tabela `clients` valia para **todos** os registros, inclusive os com `deletado_em` preenchido. A checagem de duplicidade da aplicação (`app/api/clientes/route.ts`) já ignorava corretamente clientes excluídos, então o INSERT passava pela validação da API e quebrava direto no Postgres — virava um `DB_ERROR`/500 sem mensagem útil.
+
+**Correção:** migration `022_cpf_unico_apenas_clientes_ativos.sql` — troca a constraint por um índice único parcial (`unique index ... where deletado_em is null`). CPF de cliente excluído fica livre para reuso; a unicidade entre clientes ativos continua valendo. `docs/schema.sql` também atualizado.
+
+### BUG-03 — RG aparecendo em branco no Termo INSS + alerta do Passo 4 (perfil a rogo) ✅ RESOLVIDO (2026-09-16)
+
+**Sintoma 1:** o Termo de Representação INSS sempre imprimia `"RG nº ,"` mesmo quando o cliente não tinha RG cadastrado — `render-termo-representacao-inss.ts` montava a linha de identificação com `RG nº ${cl.rg || ''}`, sem condicional (diferente do validador/testemunhas no mesmo arquivo, que já usavam `if (v.rg)`).
+
+**Sintoma 2:** o Passo 4 (Confirmação) do wizard nunca mostrava o resumo "Testemunha 1: X · Testemunha 2: Y" + botão Editar para clientes a rogo — a UI já existia em `step-confirmacao.tsx`, mas o alerta `AROGO_CONFIRMAR_TESTEMUNHAS` que a dispara nunca era gerado por `validarCoerencia()` (havia inclusive um teste automatizado esperando esse alerta, nunca implementado).
+
+**Correção:** trecho `", RG nº X"` do Termo INSS agora é condicional; adicionado o alerta `AROGO_CONFIRMAR_TESTEMUNHAS` em `validarCoerencia()` (`cadeia-documental.ts`) para perfil `a_rogo`. `cliente.rg` e `representante.rg` também passaram a receber `.trim()` em `buildTemplateContext()`, para não deixar um RG "só espaço em branco" escapar do condicional em nenhum documento.
 
 ---
 

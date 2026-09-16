@@ -2,7 +2,6 @@ import { getCurrentUser } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
 import Link from 'next/link';
 import { maskCPF } from '@/lib/validators/cpf';
-import { FiltroPeriodo } from '@/components/dashboard/filtro-periodo';
 import { CalendarioSemanal } from '@/components/dashboard/calendario-semanal';
 
 type RecentClient = {
@@ -13,12 +12,7 @@ type RecentClient = {
   endereco_uf: string;
 };
 
-export default async function DashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ mes?: string; ano?: string }>;
-}) {
-  const { mes, ano } = await searchParams;
+export default async function DashboardPage() {
   const user = await getCurrentUser();
   const firstName = 'Doutores';
   const today = new Date().toLocaleDateString('pt-BR', {
@@ -28,49 +22,17 @@ export default async function DashboardPage({
     timeZone: 'America/Sao_Paulo',
   });
 
-  const anoAtual = new Date().getFullYear();
-  const mesAtual = new Date().getMonth() + 1;
-  const mesParam = mes ? parseInt(mes) : mesAtual;
-  const anoParam = ano ? parseInt(ano) : anoAtual;
-
-  let dateStart: string | null = null;
-  let dateEnd: string | null = null;
-
-  if (anoParam) {
-    const m = mesParam;
-    if (m && m >= 1 && m <= 12) {
-      dateStart = new Date(anoParam, m - 1, 1).toISOString();
-      dateEnd = new Date(anoParam, m, 0, 23, 59, 59, 999).toISOString();
-    } else {
-      dateStart = new Date(anoParam, 0, 1).toISOString();
-      dateEnd = new Date(anoParam, 11, 31, 23, 59, 59, 999).toISOString();
-    }
-  } else if (mesParam && mesParam >= 1 && mesParam <= 12) {
-    dateStart = new Date(anoAtual, mesParam - 1, 1).toISOString();
-    dateEnd = new Date(anoAtual, mesParam, 0, 23, 59, 59, 999).toISOString();
-  }
-
-  const filtrado = !!(dateStart && dateEnd);
-
-  // Clientes: conta sempre (sem filtro de data)
+  // Todos os KPIs abaixo são totais gerais (sem filtro de período) — refletem
+  // o estado atual do escritório, não o que foi criado num mês específico.
   const qTotal = db
     .from('clients')
     .select('*', { count: 'exact', head: true })
     .eq('tenant_id', user.tenantId)
     .is('deletado_em', null);
 
-  // KPIs de processo — filtráveis por data de criação do processo
-  const qDeferidos = filtrado
-    ? db.from('processos').select('*, clients!inner(deletado_em)', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'deferido').is('clients.deletado_em', null).gte('created_at', dateStart!).lte('created_at', dateEnd!)
-    : db.from('processos').select('*, clients!inner(deletado_em)', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'deferido').is('clients.deletado_em', null);
-
-  const qIndeferidos = filtrado
-    ? db.from('processos').select('*, clients!inner(deletado_em)', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'indeferido').is('clients.deletado_em', null).gte('created_at', dateStart!).lte('created_at', dateEnd!)
-    : db.from('processos').select('*, clients!inner(deletado_em)', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'indeferido').is('clients.deletado_em', null);
-
-  const qAndamento = filtrado
-    ? db.from('processos').select('*, clients!inner(deletado_em)', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'em_andamento').is('clients.deletado_em', null).gte('created_at', dateStart!).lte('created_at', dateEnd!)
-    : db.from('processos').select('*, clients!inner(deletado_em)', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'em_andamento').is('clients.deletado_em', null);
+  const qDeferidos = db.from('processos').select('*, clients!inner(deletado_em)', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'deferido').is('clients.deletado_em', null);
+  const qIndeferidos = db.from('processos').select('*, clients!inner(deletado_em)', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'indeferido').is('clients.deletado_em', null);
+  const qAndamento = db.from('processos').select('*, clients!inner(deletado_em)', { count: 'exact', head: true }).eq('tenant_id', user.tenantId).eq('status_resultado', 'em_andamento').is('clients.deletado_em', null);
 
   const qRecentes = db
     .from('clients')
@@ -90,14 +52,6 @@ export default async function DashboardPage({
 
   const lista = (recentes ?? []) as RecentClient[];
 
-  const labelPeriodo = filtrado
-    ? mesParam && anoParam
-      ? `${['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][(mesParam ?? 1) - 1]} de ${anoParam}`
-      : mesParam
-      ? `${['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][(mesParam ?? 1) - 1]} de ${anoAtual}`
-      : `${anoParam}`
-    : null;
-
   return (
     <div>
       <div className="mb-8">
@@ -105,20 +59,13 @@ export default async function DashboardPage({
         <h1 className="text-2xl font-bold text-foreground">Olá, {firstName}</h1>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-y-3 mb-5">
-        <div>
-          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-            Visão Geral
-          </h2>
-          {labelPeriodo && (
-            <p className="text-[10px] text-muted-foreground mt-0.5">{labelPeriodo}</p>
-          )}
-        </div>
-        <FiltroPeriodo mesAtivo={mesParam} anoAtivo={anoParam} anoAtual={anoAtual} isPadrao={!mes && !ano} />
-      </div>
+      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-5">
+        Visão Geral
+      </h2>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10">
         <MetricCard
+          href="/clientes"
           label="Total de clientes"
           value={total ?? 0}
           numClass="text-foreground"
@@ -131,6 +78,7 @@ export default async function DashboardPage({
           }
         />
         <MetricCard
+          href="/processos?status=em_andamento"
           label="Processos ativos"
           value={andamento ?? 0}
           numClass="text-primary"
@@ -142,6 +90,7 @@ export default async function DashboardPage({
           }
         />
         <MetricCard
+          href="/processos?status=deferido"
           label="Deferidos"
           value={deferidos ?? 0}
           numClass="text-emerald-600 dark:text-emerald-400"
@@ -153,6 +102,7 @@ export default async function DashboardPage({
           }
         />
         <MetricCard
+          href="/processos?status=indeferido"
           label="Indeferidos"
           value={indeferidos ?? 0}
           numClass="text-destructive"
@@ -219,12 +169,15 @@ export default async function DashboardPage({
   );
 }
 
-function MetricCard({ label, value, numClass, icon }: { label: string; value: number; numClass: string; icon: React.ReactNode }) {
+function MetricCard({ href, label, value, numClass, icon }: { href: string; label: string; value: number; numClass: string; icon: React.ReactNode }) {
   return (
-    <div className="bg-card rounded-2xl border border-border p-5">
+    <Link
+      href={href}
+      className="bg-card rounded-2xl border border-border p-5 transition-colors hover:border-primary/40 hover:bg-secondary/30"
+    >
       <div className="text-muted-foreground/50 mb-3">{icon}</div>
       <p className={`text-3xl font-bold tabular-nums ${numClass}`}>{value}</p>
       <p className="text-xs text-muted-foreground mt-1 leading-tight">{label}</p>
-    </div>
+    </Link>
   );
 }
